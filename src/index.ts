@@ -27,18 +27,25 @@ function findNode(sourceFile: ts.SourceFile, position: number): ts.Node | undefi
 
 
 function create(info: ts.server.PluginCreateInfo) {
-  debugger;
+  const logger = (msg: string) => info.project.projectService.logger.info(`[ts-graphql-plugin] ${msg}`);
+  logger('config: ' + JSON.stringify(info.config));
   if (!info.config.schema) {
     throw new Error('Please provide a GraphQL Schema!');
   }
 
+  info.project.projectService.logger.info(
+    "Setting up the GraphQL Plugin"
+  );
   const tagTemplate = info.config.template || 'gql';
-  const schema = loadSchema(info.config.schema);
 
   const proxy = createBasicDecorator(info);
 
   proxy.getQuickInfoAtPosition = (filename: string, cursorPosition: number) => {
     debugger;
+    const schema = loadSchema(info.config.schema);
+    info.project.projectService.logger.info(
+      "Got the schema."
+    );
     const program = info.languageService.getProgram();
     if (!program) return undefined
 
@@ -73,6 +80,8 @@ function create(info: ts.server.PluginCreateInfo) {
     }
   }
 
+  logger('proxy: ' + JSON.stringify(proxy));
+
   return proxy;
 }
 
@@ -80,4 +89,4 @@ const init: ts.server.PluginModuleFactory = () => {
   return { create };
 };
 
-export default init;
+export = init;

@@ -1,11 +1,11 @@
 import ts from "typescript/lib/tsserverlibrary";
 import { isTaggedTemplateExpression, isIdentifier } from 'tsutils'
-import { getHoverInformation } from 'graphql-language-service'
+import { getHoverInformation, getAutocompleteSuggestions } from 'graphql-language-service'
 import { GraphQLSchema } from 'graphql'
 import { Cursor } from "./cursor";
 import { loadSchema } from "./getSchema";
 import { getToken } from "./token";
-import { isNoSubstitutionTemplateLiteral } from "typescript";
+import { isNoSubstitutionTemplateLiteral, ScriptElementKind } from "typescript";
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -43,10 +43,55 @@ function create(info: ts.server.PluginCreateInfo) {
   const proxy = createBasicDecorator(info);
   const schema = loadSchema(info.config.schema);
 
+  proxy.getCompletionsAtPosition = (
+    filename: string,
+    cursorPosition: number,
+    options: ts.GetCompletionsAtPositionOptions | undefined,
+    formattingSettings?: ts.FormatCodeSettings | undefined,
+  ): ts.WithMetadata<ts.CompletionInfo> | undefined => {
+    const program = info.languageService.getProgram();
+    if (!program) return undefined
+
+    const source = program.getSourceFile(filename)
+    if (!source) return undefined
+
+    let node = findNode(source, cursorPosition)
+    if (!node) return undefined;
+
+    if (isNoSubstitutionTemplateLiteral(node)) {
+      node = node.parent
+    }
+
+    if (isTaggedTemplateExpression(node)) {
+      const { template, tag } = node;
+      if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
+
+      const text = template.getText().slice(1, -1)
+      // TODO: this might be the inner token
+      const foundToken = getToken(template, cursorPosition)
+
+      if (!foundToken) return undefined
+
+      const suggestions = getAutocompleteSuggestions(schema, text, new Cursor(foundToken.line, foundToken.start))
+
+      const result: ts.WithMetadata<ts.CompletionInfo> = {
+        isGlobalCompletion: false,
+        isMemberCompletion: false,
+        isNewIdentifierLocation: false,
+        entries: suggestions.map(suggestion => ({
+          kind: ScriptElementKind.variableElement,
+          name: suggestion.label,
+          kindModifiers: 'declare',
+          sortText: '0',
+        })),
+      }
+      return result
+    } else {
+      return undefined
+    }
+  }
+
   proxy.getQuickInfoAtPosition = (filename: string, cursorPosition: number) => {
-    info.project.projectService.logger.info(
-      "Got the schema."
-    );
     const program = info.languageService.getProgram();
     if (!program) return undefined
 
@@ -70,15 +115,17 @@ function create(info: ts.server.PluginCreateInfo) {
       if (!foundToken) return undefined
 
       const info = getHoverInformation(schema as GraphQLSchema, text, new Cursor(foundToken.line, foundToken.start))
-      return {
+      const result: ts.QuickInfo = {
         kind: ts.ScriptElementKind.string,
         textSpan: {
           start: cursorPosition,
           length: 1
         },
         kindModifiers: '',
-        displayParts: Array.isArray(info) ? info.map(item => ({ kind: '', text: item })) : [{ kind: '', text: info }]
-      } as ts.QuickInfo;
+        displayParts: Array.isArray(info) ? info.map(item => ({ kind: '', text: item as string })) : [{ kind: '', text: info as string }]
+      };
+
+      return result;
     } else {
       return undefined
     }

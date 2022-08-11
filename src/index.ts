@@ -1,4 +1,5 @@
 import ts from "typescript/lib/tsserverlibrary";
+import { parse } from 'graphql'
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -11,6 +12,15 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   return proxy;
 }
 
+export function findNode(sourceFile: ts.SourceFile, position: number): ts.Node | undefined {
+  function find(node: ts.Node): ts.Node | undefined {
+    if (position >= node.getStart() && position < node.getEnd()) {
+      return ts.forEachChild(node, find) || node;
+    }
+  }
+  return find(sourceFile);
+}
+
 function create(info: ts.server.PluginCreateInfo) {
   // const config = info.config;
   // TODO: get schema, this should be derived from the above config
@@ -19,6 +29,12 @@ function create(info: ts.server.PluginCreateInfo) {
   const proxy = createBasicDecorator(info);
 
   proxy.getCompletionsAtPosition = (filename: string, position: number, options: ts.GetCompletionsAtPositionOptions | undefined, formattingSettings?: ts.FormatCodeSettings | undefined) => {
+    const program = info.languageService.getProgram()
+    if (!program) throw new Error()
+    const source = program.getSourceFile(filename)
+    if (!source) throw new Error()
+
+    const node = findNode(source, position)
     // Can be used to autocomplete stuff, i.e. we can detect when we are in an invocation of gql`` or someone dong /** GraphQL */ to activate this
     return {
       isGlobalCompletion: false,

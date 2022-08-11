@@ -1,9 +1,11 @@
 import ts from "typescript/lib/tsserverlibrary";
 import { isTaggedTemplateExpression, isIdentifier } from 'tsutils'
 import { getHoverInformation } from 'graphql-language-service'
+import { GraphQLSchema } from 'graphql'
 import { Cursor } from "./cursor";
 import { loadSchema } from "./getSchema";
 import { getToken } from "./token";
+import { isNoSubstitutionTemplateLiteral } from "typescript";
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -39,10 +41,9 @@ function create(info: ts.server.PluginCreateInfo) {
   const tagTemplate = info.config.template || 'gql';
 
   const proxy = createBasicDecorator(info);
+  const schema = loadSchema(info.config.schema);
 
   proxy.getQuickInfoAtPosition = (filename: string, cursorPosition: number) => {
-    debugger;
-    const schema = loadSchema(info.config.schema);
     info.project.projectService.logger.info(
       "Got the schema."
     );
@@ -52,20 +53,23 @@ function create(info: ts.server.PluginCreateInfo) {
     const source = program.getSourceFile(filename)
     if (!source) return undefined
 
-    const node = findNode(source, cursorPosition)
+    let node = findNode(source, cursorPosition)
     if (!node) return undefined;
+
+    if (isNoSubstitutionTemplateLiteral(node)) {
+      node = node.parent
+    }
 
     if (isTaggedTemplateExpression(node)) {
       const { template, tag } = node;
       if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
 
-      const text = template.getText()
+      const text = template.getText().slice(1, -1)
       const foundToken = getToken(template, cursorPosition)
 
       if (!foundToken) return undefined
 
-      const info = getHoverInformation(schema, text, new Cursor(foundToken.line, foundToken.start), foundToken)
-
+      const info = getHoverInformation(schema as GraphQLSchema, text, new Cursor(foundToken.line, foundToken.start))
       return {
         kind: ts.ScriptElementKind.string,
         textSpan: {

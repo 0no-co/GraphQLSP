@@ -11,11 +11,11 @@ export interface Token {
 }
 
 export const getToken = (template: ts.TemplateLiteral, cursorPosition: number): Token | undefined => {
-  const text = template.getText();
+  const text = template.getText().slice(1, -1);
   const input = text.split('\n')
   const parser = onlineParser();
   const state = parser.startState();
-  let cPos = template.pos;
+  let cPos = template.pos + 1;
 
   let foundToken: Token | undefined = undefined;
   for (let i = 0; i < input.length; i++) {
@@ -25,15 +25,16 @@ export const getToken = (template: ts.TemplateLiteral, cursorPosition: number): 
       const token = parser.token(stream, state)
       const string = stream.current();
 
-      if (string && lPos + stream.getStartOfToken() <= cursorPosition && lPos + stream.getCurrentPosition() <= cursorPosition) {
+      if (string && lPos + stream.getStartOfToken() <= cursorPosition && lPos + stream.getCurrentPosition() >= cursorPosition) {
         foundToken = {
-          line: i + 1,
-          start: stream.getStartOfToken(),
+          line: i,
+          start: stream.getStartOfToken() + 1,
           end: stream.getCurrentPosition(),
           string,
           state,
           tokenKind: token
         }
+        break;
       }
     }
 

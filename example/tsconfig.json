@@ -2,7 +2,7 @@
   "compilerOptions": {
     "plugins": [{
       "name": "plugin",
-      "schema": "https://trygql.formidable.dev/graphql/basic-pokedex"
+      "schema": "./schema.graphql"
     }],
     /* Visit https://aka.ms/tsconfig to read more about this file */
 

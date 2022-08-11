@@ -2,7 +2,7 @@
   "name": "graphqlsp",
   "version": "1.0.0",
   "description": "https://github.com/microsoft/TypeScript/wiki/Writing-a-Language-Service-Plugin",
-  "main": "index.js",
+  "main": "src/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
@@ -22,6 +22,11 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
-    "graphql-language-service": "^5.0.6"
+    "@graphql-tools/graphql-file-loader": "^7.5.2",
+    "@graphql-tools/json-file-loader": "^7.4.3",
+    "@graphql-tools/load": "^7.7.4",
+    "@graphql-tools/url-loader": "^7.13.5",
+    "graphql-language-service": "^5.0.6",
+    "tsutils": "^3.21.0"
   }
 }

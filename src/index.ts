@@ -1,5 +1,9 @@
 import ts from "typescript/lib/tsserverlibrary";
-import { parse } from 'graphql'
+import { isTaggedTemplateExpression, isIdentifier } from 'tsutils'
+import { getHoverInformation } from 'graphql-language-service'
+import { Cursor } from "./cursor";
+import { loadSchema } from "./getSchema";
+import { getToken } from "./token";
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -12,7 +16,7 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   return proxy;
 }
 
-export function findNode(sourceFile: ts.SourceFile, position: number): ts.Node | undefined {
+function findNode(sourceFile: ts.SourceFile, position: number): ts.Node | undefined {
   function find(node: ts.Node): ts.Node | undefined {
     if (position >= node.getStart() && position < node.getEnd()) {
       return ts.forEachChild(node, find) || node;
@@ -21,32 +25,53 @@ export function findNode(sourceFile: ts.SourceFile, position: number): ts.Node |
   return find(sourceFile);
 }
 
+
 function create(info: ts.server.PluginCreateInfo) {
-  // const config = info.config;
-  // TODO: get schema, this should be derived from the above config
-  // the config here are the additional options passed to the plugin in the tsconfig
+  debugger;
+  if (!info.config.schema) {
+    throw new Error('Please provide a GraphQL Schema!');
+  }
+
+  const tagTemplate = info.config.template || 'gql';
+  const schema = loadSchema(info.config.schema);
 
   const proxy = createBasicDecorator(info);
 
-  proxy.getCompletionsAtPosition = (filename: string, position: number, options: ts.GetCompletionsAtPositionOptions | undefined, formattingSettings?: ts.FormatCodeSettings | undefined) => {
-    const program = info.languageService.getProgram()
-    if (!program) throw new Error()
+  proxy.getQuickInfoAtPosition = (filename: string, cursorPosition: number) => {
+    debugger;
+    const program = info.languageService.getProgram();
+    if (!program) return undefined
+
     const source = program.getSourceFile(filename)
-    if (!source) throw new Error()
+    if (!source) return undefined
 
-    const node = findNode(source, position)
-    // Can be used to autocomplete stuff, i.e. we can detect when we are in an invocation of gql`` or someone dong /** GraphQL */ to activate this
-    return {
-      isGlobalCompletion: false,
-      isMemberCompletion: false,
-      isNewIdentifierLocation: false,
-      entries: []
-    };
+    const node = findNode(source, cursorPosition)
+    if (!node) return undefined;
+
+    if (isTaggedTemplateExpression(node)) {
+      const { template, tag } = node;
+      if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
+
+      const text = template.getText()
+      const foundToken = getToken(template, cursorPosition)
+
+      if (!foundToken) return undefined
+
+      const info = getHoverInformation(schema, text, new Cursor(foundToken.line, foundToken.start), foundToken)
+
+      return {
+        kind: ts.ScriptElementKind.string,
+        textSpan: {
+          start: cursorPosition,
+          length: 1
+        },
+        kindModifiers: '',
+        displayParts: Array.isArray(info) ? info.map(item => ({ kind: '', text: item })) : [{ kind: '', text: info }]
+      } as ts.QuickInfo;
+    } else {
+      return undefined
+    }
   }
-
-  // TODO: how to hook into TypeScript to show errors
-  // TODO: we have to register fragments we find in invocations of gql for auto-completion
-  // TODO: should we auto-generate typed-document nodes for the result of gql`` invocations?
 
   return proxy;
 }

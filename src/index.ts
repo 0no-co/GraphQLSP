@@ -1,11 +1,12 @@
 import ts from "typescript/lib/tsserverlibrary";
-import { isTaggedTemplateExpression, isIdentifier } from 'tsutils'
-import { getHoverInformation, getAutocompleteSuggestions } from 'graphql-language-service'
+import { isNoSubstitutionTemplateLiteral, ScriptElementKind, TaggedTemplateExpression, isIdentifier, isTaggedTemplateExpression} from "typescript";
+import { getHoverInformation, getAutocompleteSuggestions, getDiagnostics } from 'graphql-language-service'
 import { GraphQLSchema } from 'graphql'
+
 import { Cursor } from "./cursor";
 import { loadSchema } from "./getSchema";
 import { getToken } from "./token";
-import { isNoSubstitutionTemplateLiteral, ScriptElementKind } from "typescript";
+import { findAllTaggedTemplateNodes, findNode, getSource } from "./utils";
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -17,16 +18,6 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
 
   return proxy;
 }
-
-function findNode(sourceFile: ts.SourceFile, position: number): ts.Node | undefined {
-  function find(node: ts.Node): ts.Node | undefined {
-    if (position >= node.getStart() && position < node.getEnd()) {
-      return ts.forEachChild(node, find) || node;
-    }
-  }
-  return find(sourceFile);
-}
-
 
 function create(info: ts.server.PluginCreateInfo) {
   const logger = (msg: string) => info.project.projectService.logger.info(`[ts-graphql-plugin] ${msg}`);
@@ -43,16 +34,39 @@ function create(info: ts.server.PluginCreateInfo) {
   const proxy = createBasicDecorator(info);
   const schema = loadSchema(info.config.schema);
 
+  proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
+    const source = getSource(info, filename)
+    if (!source) return []
+
+    const nodes = findAllTaggedTemplateNodes(source)
+    const diagnostics = nodes.map(x => {
+      let node = x;
+      if (isNoSubstitutionTemplateLiteral(node)) {
+        node = node.parent
+      }
+
+      return getDiagnostics((node as TaggedTemplateExpression).template.getText().slice(1, -1), schema).map(x => ({ ...x, start: node.getStart(), length: node.getWidth() }))
+    }).flat()
+
+    return diagnostics.map(diag => {
+      const result: ts.Diagnostic = {
+        file: source,
+        length: diag.length,
+        start: diag.start,
+        category: diag.severity === 2 ? ts.DiagnosticCategory.Warning : ts.DiagnosticCategory.Error,
+        code: 51001,
+        messageText: diag.message.split('\n')[0],
+      }
+
+      return result;
+    })
+  }
+
   proxy.getCompletionsAtPosition = (
     filename: string,
     cursorPosition: number,
-    options: ts.GetCompletionsAtPositionOptions | undefined,
-    formattingSettings?: ts.FormatCodeSettings | undefined,
   ): ts.WithMetadata<ts.CompletionInfo> | undefined => {
-    const program = info.languageService.getProgram();
-    if (!program) return undefined
-
-    const source = program.getSourceFile(filename)
+    const source = getSource(info, filename)
     if (!source) return undefined
 
     let node = findNode(source, cursorPosition)
@@ -67,7 +81,6 @@ function create(info: ts.server.PluginCreateInfo) {
       if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
 
       const text = template.getText().slice(1, -1)
-      // TODO: this might be the inner token
       const foundToken = getToken(template, cursorPosition)
 
       if (!foundToken) return undefined
@@ -92,10 +105,7 @@ function create(info: ts.server.PluginCreateInfo) {
   }
 
   proxy.getQuickInfoAtPosition = (filename: string, cursorPosition: number) => {
-    const program = info.languageService.getProgram();
-    if (!program) return undefined
-
-    const source = program.getSourceFile(filename)
+    const source = getSource(info, filename)
     if (!source) return undefined
 
     let node = findNode(source, cursorPosition)

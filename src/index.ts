@@ -32,7 +32,8 @@ function create(info: ts.server.PluginCreateInfo) {
   const tagTemplate = info.config.template || 'gql';
 
   const proxy = createBasicDecorator(info);
-  const schema = loadSchema(info.config.schema);
+  // TODO: we have to initialize a watcher for schema changes
+  const schema = loadSchema(info.project.getProjectName(), info.config.schema);
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const source = getSource(info, filename)

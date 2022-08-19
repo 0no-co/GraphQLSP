@@ -1,12 +1,13 @@
 import ts from "typescript/lib/tsserverlibrary";
-import { isNoSubstitutionTemplateLiteral, ScriptElementKind, TaggedTemplateExpression, isIdentifier, isTaggedTemplateExpression} from "typescript";
-import { getHoverInformation, getAutocompleteSuggestions, getDiagnostics } from 'graphql-language-service'
+import { isNoSubstitutionTemplateLiteral, ScriptElementKind, TaggedTemplateExpression, isIdentifier, isTaggedTemplateExpression, isToken, isTemplateExpression} from "typescript";
+import { getHoverInformation, getAutocompleteSuggestions, getDiagnostics, Diagnostic } from 'graphql-language-service'
 import { GraphQLSchema } from 'graphql'
 
 import { Cursor } from "./cursor";
 import { loadSchema } from "./getSchema";
 import { getToken } from "./token";
 import { findAllTaggedTemplateNodes, findNode, getSource } from "./utils";
+import { resolveTemplate } from "./resolve";
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -42,17 +43,25 @@ function create(info: ts.server.PluginCreateInfo) {
     const nodes = findAllTaggedTemplateNodes(source)
     const diagnostics = nodes.map(x => {
       let node = x;
-      if (isNoSubstitutionTemplateLiteral(node)) {
-        node = node.parent
+      if (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node)) {
+        if (isTaggedTemplateExpression(node.parent)) {
+          node = node.parent
+        } else {
+          return undefined
+        }
       }
 
-      return getDiagnostics((node as TaggedTemplateExpression).template.getText().slice(1, -1), schema).map(x => ({ ...x, start: node.getStart(), length: node.getWidth() }))
-    }).flat()
+      const text = resolveTemplate(node, filename, info)
+
+      return getDiagnostics(text, schema).map(x => ({ ...x, start: node.getStart(), length: node.getWidth() }))
+    }).flat().filter(Boolean) as Array<Diagnostic>
 
     return diagnostics.map(diag => {
       const result: ts.Diagnostic = {
         file: source,
+        // @ts-ignore TODO: proper length line * char type of thing again
         length: diag.length,
+        // @ts-ignore TODO: proper start line * char type of thing again
         start: diag.start,
         category: diag.severity === 2 ? ts.DiagnosticCategory.Warning : ts.DiagnosticCategory.Error,
         code: 51001,
@@ -73,7 +82,7 @@ function create(info: ts.server.PluginCreateInfo) {
     let node = findNode(source, cursorPosition)
     if (!node) return undefined;
 
-    if (isNoSubstitutionTemplateLiteral(node)) {
+    while (isNoSubstitutionTemplateLiteral(node) || isToken(node) || isTemplateExpression(node)) {
       node = node.parent
     }
 
@@ -81,7 +90,7 @@ function create(info: ts.server.PluginCreateInfo) {
       const { template, tag } = node;
       if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
 
-      const text = template.getText().slice(1, -1)
+      const text = resolveTemplate(node, filename, info)
       const foundToken = getToken(template, cursorPosition)
 
       if (!foundToken) return undefined
@@ -112,7 +121,7 @@ function create(info: ts.server.PluginCreateInfo) {
     let node = findNode(source, cursorPosition)
     if (!node) return undefined;
 
-    if (isNoSubstitutionTemplateLiteral(node)) {
+    while (isNoSubstitutionTemplateLiteral(node) || isToken(node) || isTemplateExpression(node)) {
       node = node.parent
     }
 
@@ -120,12 +129,12 @@ function create(info: ts.server.PluginCreateInfo) {
       const { template, tag } = node;
       if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
 
-      const text = template.getText().slice(1, -1)
+      const text = resolveTemplate(node, filename, info)
       const foundToken = getToken(template, cursorPosition)
 
       if (!foundToken) return undefined
 
-      const info = getHoverInformation(schema as GraphQLSchema, text, new Cursor(foundToken.line, foundToken.start))
+      const hoverInfo = getHoverInformation(schema as GraphQLSchema, text, new Cursor(foundToken.line, foundToken.start))
       const result: ts.QuickInfo = {
         kind: ts.ScriptElementKind.string,
         textSpan: {
@@ -133,7 +142,7 @@ function create(info: ts.server.PluginCreateInfo) {
           length: 1
         },
         kindModifiers: '',
-        displayParts: Array.isArray(info) ? info.map(item => ({ kind: '', text: item as string })) : [{ kind: '', text: info as string }]
+        displayParts: Array.isArray(hoverInfo) ? hoverInfo.map(item => ({ kind: '', text: item as string })) : [{ kind: '', text: hoverInfo as string }]
       };
 
       return result;

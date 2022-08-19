@@ -10,8 +10,8 @@ export function findNode(sourceFile: ts.SourceFile, position: number): ts.Node |
   return find(sourceFile);
 }
 
-export function findAllTaggedTemplateNodes(sourceFile: ts.SourceFile): ts.Node[] {
-  const result: ts.Node[] = [];
+export function findAllTaggedTemplateNodes(sourceFile: ts.SourceFile): Array<ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral> {
+  const result: Array<ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral> = [];
   function find(node: ts.Node) {
     if (isTaggedTemplateExpression(node) || isNoSubstitutionTemplateLiteral(node)) {
       result.push(node);

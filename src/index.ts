@@ -1,5 +1,5 @@
 import ts from "typescript/lib/tsserverlibrary";
-import { isNoSubstitutionTemplateLiteral, ScriptElementKind, TaggedTemplateExpression, isIdentifier, isTaggedTemplateExpression} from "typescript";
+import { isNoSubstitutionTemplateLiteral, ScriptElementKind, TaggedTemplateExpression, isIdentifier, isTaggedTemplateExpression, isToken, isTemplateExpression} from "typescript";
 import { getHoverInformation, getAutocompleteSuggestions, getDiagnostics, Diagnostic } from 'graphql-language-service'
 import { GraphQLSchema } from 'graphql'
 
@@ -43,7 +43,7 @@ function create(info: ts.server.PluginCreateInfo) {
     const nodes = findAllTaggedTemplateNodes(source)
     const diagnostics = nodes.map(x => {
       let node = x;
-      if (isNoSubstitutionTemplateLiteral(node)) {
+      if (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node)) {
         if (isTaggedTemplateExpression(node.parent)) {
           node = node.parent
         } else {
@@ -82,7 +82,7 @@ function create(info: ts.server.PluginCreateInfo) {
     let node = findNode(source, cursorPosition)
     if (!node) return undefined;
 
-    if (isNoSubstitutionTemplateLiteral(node)) {
+    while (isNoSubstitutionTemplateLiteral(node) || isToken(node) || isTemplateExpression(node)) {
       node = node.parent
     }
 
@@ -121,7 +121,7 @@ function create(info: ts.server.PluginCreateInfo) {
     let node = findNode(source, cursorPosition)
     if (!node) return undefined;
 
-    if (isNoSubstitutionTemplateLiteral(node)) {
+    while (isNoSubstitutionTemplateLiteral(node) || isToken(node) || isTemplateExpression(node)) {
       node = node.parent
     }
 

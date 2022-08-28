@@ -1,5 +1,5 @@
 import ts from "typescript/lib/tsserverlibrary";
-import { isNoSubstitutionTemplateLiteral, ScriptElementKind, TaggedTemplateExpression, isIdentifier, isTaggedTemplateExpression, isToken, isTemplateExpression} from "typescript";
+import { isNoSubstitutionTemplateLiteral, ScriptElementKind, isIdentifier, isTaggedTemplateExpression, isToken, isTemplateExpression} from "typescript";
 import { getHoverInformation, getAutocompleteSuggestions, getDiagnostics, Diagnostic } from 'graphql-language-service'
 import { GraphQLSchema } from 'graphql'
 
@@ -52,16 +52,29 @@ function create(info: ts.server.PluginCreateInfo) {
       }
 
       const text = resolveTemplate(node, filename, info)
+      const lines = text.split('\n')
 
-      return getDiagnostics(text, schema).map(x => ({ ...x, start: node.getStart(), length: node.getWidth() }))
-    }).flat().filter(Boolean) as Array<Diagnostic>
+      return getDiagnostics(text, schema).map(x => {
+        const { start, end } = x.range;
+
+        let startChar = start.character
+        for (let i = 0; i < start.line; i++) {
+          startChar += lines[i].length
+        }
+
+        let endChar = end.character
+        for (let i = 0; i < end.line; i++) {
+          startChar += lines[i].length
+        }
+
+        return { ...x, start: startChar, length: endChar - startChar }
+      })
+    }).flat().filter(Boolean) as Array<Diagnostic & { length: number; start: number }>
 
     return diagnostics.map(diag => {
       const result: ts.Diagnostic = {
         file: source,
-        // @ts-ignore TODO: proper length line * char type of thing again
         length: diag.length,
-        // @ts-ignore TODO: proper start line * char type of thing again
         start: diag.start,
         category: diag.severity === 2 ? ts.DiagnosticCategory.Warning : ts.DiagnosticCategory.Error,
         code: 51001,

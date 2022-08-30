@@ -5,6 +5,7 @@ const query = gql`
   query {
     pokemons {
       id
+      n
     }
   }
 

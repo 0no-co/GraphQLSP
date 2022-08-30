@@ -57,14 +57,14 @@ function create(info: ts.server.PluginCreateInfo) {
       return getDiagnostics(text, schema).map(x => {
         const { start, end } = x.range;
 
-        let startChar = start.character
-        for (let i = 0; i < start.line; i++) {
+        let startChar = start.character + node.pos
+        for (let i = 0; i <= start.line; i++) {
           startChar += lines[i].length
         }
 
-        let endChar = end.character
-        for (let i = 0; i < end.line; i++) {
-          startChar += lines[i].length
+        let endChar = end.character + node.pos
+        for (let i = 0; i <= end.line; i++) {
+          endChar += lines[i].length
         }
 
         return { ...x, start: startChar, length: endChar - startChar }

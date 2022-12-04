@@ -33,6 +33,7 @@ function create(info: ts.server.PluginCreateInfo) {
   const tagTemplate = info.config.template || 'gql';
 
   const proxy = createBasicDecorator(info);
+
   // TODO: we have to initialize a watcher for schema changes
   const schema = loadSchema(info.project.getProjectName(), info.config.schema);
 
@@ -54,25 +55,31 @@ function create(info: ts.server.PluginCreateInfo) {
       const text = resolveTemplate(node, filename, info)
       const lines = text.split('\n')
 
+      // This assumes a prefix of gql`
+      let startingPosition = node.pos + 4
       return getDiagnostics(text, schema).map(x => {
         const { start, end } = x.range;
 
-        let startChar = start.character + node.pos
+        // We add the start.line to account for newline characters which are
+        // split out
+        let startChar = startingPosition + start.line
         for (let i = 0; i <= start.line; i++) {
-          startChar += lines[i].length
+          if (i === start.line) startChar += start.character
+          else startChar += lines[i].length
         }
 
-        let endChar = end.character + node.pos
+        let endChar = startingPosition + end.line
         for (let i = 0; i <= end.line; i++) {
-          endChar += lines[i].length
+          if (i === end.line) endChar += end.character
+          else endChar += lines[i].length
         }
 
-        return { ...x, start: startChar, length: endChar - startChar }
+        // We add 1 to the start because the range is exclusive of start.character
+        return { ...x, start: startChar + 1, length: endChar - startChar }
       })
     }).flat().filter(Boolean) as Array<Diagnostic & { length: number; start: number }>
 
     return diagnostics.map(diag => {
-      // TODO: this currently indicates a bit too much
       const result: ts.Diagnostic = {
         file: source,
         length: diag.length,

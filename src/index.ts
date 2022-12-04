@@ -72,6 +72,7 @@ function create(info: ts.server.PluginCreateInfo) {
     }).flat().filter(Boolean) as Array<Diagnostic & { length: number; start: number }>
 
     return diagnostics.map(diag => {
+      // TODO: this currently indicates a bit too much
       const result: ts.Diagnostic = {
         file: source,
         length: diag.length,
@@ -108,6 +109,7 @@ function create(info: ts.server.PluginCreateInfo) {
 
       if (!foundToken) return undefined
 
+      // TODO: this does not include fragmentSpread suggestions
       const suggestions = getAutocompleteSuggestions(schema, text, new Cursor(foundToken.line, foundToken.start))
 
       const result: ts.WithMetadata<ts.CompletionInfo> = {
@@ -138,6 +140,7 @@ function create(info: ts.server.PluginCreateInfo) {
       node = node.parent
     }
 
+    // TODO: visualize fragment-data
     if (isTaggedTemplateExpression(node)) {
       const { template, tag } = node;
       if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
@@ -163,6 +166,9 @@ function create(info: ts.server.PluginCreateInfo) {
       return undefined
     }
   }
+
+  // to research:
+  // proxy.getTypeDefinitionAtPosition
 
   logger('proxy: ' + JSON.stringify(proxy));
 

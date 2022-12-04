@@ -2,7 +2,6 @@ import { isIdentifier, isNoSubstitutionTemplateLiteral, isTaggedTemplateExpressi
 import ts from "typescript/lib/tsserverlibrary";
 import { findNode, getSource } from "./utils";
 
-
 export function resolveTemplate(node: TaggedTemplateExpression, filename: string, info: ts.server.PluginCreateInfo): string {
   let templateText = node.template.getText().slice(1, -1)
   if (isNoSubstitutionTemplateLiteral(node.template) || node.template.templateSpans.length === 0) {

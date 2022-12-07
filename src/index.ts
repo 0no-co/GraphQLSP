@@ -38,8 +38,9 @@ function create(info: ts.server.PluginCreateInfo) {
   const schema = loadSchema(info.project.getProjectName(), info.config.schema);
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
+    const originalDiagnostics = info.languageService.getSemanticDiagnostics(filename)
     const source = getSource(info, filename)
-    if (!source) return []
+    if (!source) return originalDiagnostics
 
     const nodes = findAllTaggedTemplateNodes(source)
     const diagnostics = nodes.map(x => {
@@ -79,7 +80,7 @@ function create(info: ts.server.PluginCreateInfo) {
       })
     }).flat().filter(Boolean) as Array<Diagnostic & { length: number; start: number }>
 
-    return diagnostics.map(diag => {
+    const newDiagnostics = diagnostics.map(diag => {
       const result: ts.Diagnostic = {
         file: source,
         length: diag.length,
@@ -91,17 +92,34 @@ function create(info: ts.server.PluginCreateInfo) {
 
       return result;
     })
+
+    return [
+      ...newDiagnostics,
+      ...originalDiagnostics
+    ]
   }
 
   proxy.getCompletionsAtPosition = (
     filename: string,
     cursorPosition: number,
+    options: any
   ): ts.WithMetadata<ts.CompletionInfo> | undefined => {
+    const originalCompletions = info.languageService.getCompletionsAtPosition(
+      filename,
+      cursorPosition,
+      options
+    ) || {
+      isGlobalCompletion: false,
+      isMemberCompletion: false,
+      isNewIdentifierLocation: false,
+      entries: [],
+    }
+  
     const source = getSource(info, filename)
-    if (!source) return undefined
+    if (!source) return originalCompletions
 
     let node = findNode(source, cursorPosition)
-    if (!node) return undefined;
+    if (!node) return originalCompletions;
 
     while (isNoSubstitutionTemplateLiteral(node) || isToken(node) || isTemplateExpression(node)) {
       node = node.parent
@@ -109,12 +127,12 @@ function create(info: ts.server.PluginCreateInfo) {
 
     if (isTaggedTemplateExpression(node)) {
       const { template, tag } = node;
-      if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
+      if (!isIdentifier(tag) || tag.text !== tagTemplate) return originalCompletions;
 
       const text = resolveTemplate(node, filename, info)
       const foundToken = getToken(template, cursorPosition)
 
-      if (!foundToken) return undefined
+      if (!foundToken) return originalCompletions
 
       // TODO: this does not include fragmentSpread suggestions
       const suggestions = getAutocompleteSuggestions(schema, text, new Cursor(foundToken.line, foundToken.start))
@@ -123,25 +141,30 @@ function create(info: ts.server.PluginCreateInfo) {
         isGlobalCompletion: false,
         isMemberCompletion: false,
         isNewIdentifierLocation: false,
-        entries: suggestions.map(suggestion => ({
+        entries: [...suggestions.map(suggestion => ({
           kind: ScriptElementKind.variableElement,
           name: suggestion.label,
           kindModifiers: 'declare',
           sortText: '0',
-        })),
+        })), ...originalCompletions.entries],
       }
       return result
     } else {
-      return undefined
+      return originalCompletions
     }
   }
 
   proxy.getQuickInfoAtPosition = (filename: string, cursorPosition: number) => {
+    const originalInfo = info.languageService.getQuickInfoAtPosition(
+      filename,
+      cursorPosition
+    )
+  
     const source = getSource(info, filename)
-    if (!source) return undefined
+    if (!source) return originalInfo
 
     let node = findNode(source, cursorPosition)
-    if (!node) return undefined;
+    if (!node) return originalInfo;
 
     while (isNoSubstitutionTemplateLiteral(node) || isToken(node) || isTemplateExpression(node)) {
       node = node.parent
@@ -150,12 +173,12 @@ function create(info: ts.server.PluginCreateInfo) {
     // TODO: visualize fragment-data
     if (isTaggedTemplateExpression(node)) {
       const { template, tag } = node;
-      if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
+      if (!isIdentifier(tag) || tag.text !== tagTemplate) return originalInfo;
 
       const text = resolveTemplate(node, filename, info)
       const foundToken = getToken(template, cursorPosition)
 
-      if (!foundToken) return undefined
+      if (!foundToken) return originalInfo
 
       const hoverInfo = getHoverInformation(schema as GraphQLSchema, text, new Cursor(foundToken.line, foundToken.start))
       const result: ts.QuickInfo = {
@@ -170,12 +193,13 @@ function create(info: ts.server.PluginCreateInfo) {
 
       return result;
     } else {
-      return undefined
+      return originalInfo
     }
   }
 
   // to research:
   // proxy.getTypeDefinitionAtPosition
+  // proxy.getCompletionEntryDetails
 
   logger('proxy: ' + JSON.stringify(proxy));
 

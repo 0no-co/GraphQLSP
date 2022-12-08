@@ -72,9 +72,13 @@ function create(info: ts.server.PluginCreateInfo) {
         // "Document" behind it and add that to the template-literal.
         const imp = `as import('./${nameParts.join('.')}').PokemonsDocument`;
 
-        // TODO: this is currently not working, we need to figure out how the compiler works.
-        const newSource = source.update(imp, { span: { length: 1, start: nodes[0].end }, newLength: imp.length })
-        info.languageServiceHost.writeFile!(source.fileName, newSource.getText());
+        const span = { length: 1, start: nodes[0].end };
+        const prefix = source.text.substring(0, span.start);
+        const suffix = source.text.substring(span.start + span.length, source.text.length);
+        const text = prefix + imp + suffix;
+
+        source.update(text, { span, newLength: imp.length })
+        info.languageServiceHost.writeFile!(source.fileName, text);
       });
     } catch (e) {
       console.error(e)

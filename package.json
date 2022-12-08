@@ -22,6 +22,10 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
+    "@graphql-codegen/core": "^2.6.8",
+    "@graphql-codegen/typed-document-node": "^2.3.10",
+    "@graphql-codegen/typescript": "^2.8.5",
+    "@graphql-codegen/typescript-operations": "^2.5.10",
     "@graphql-tools/code-file-loader": "^7.3.3",
     "@graphql-tools/graphql-file-loader": "^7.5.2",
     "@graphql-tools/json-file-loader": "^7.4.3",

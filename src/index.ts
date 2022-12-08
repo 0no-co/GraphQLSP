@@ -8,6 +8,7 @@ import { loadSchema } from "./getSchema";
 import { getToken } from "./token";
 import { findAllTaggedTemplateNodes, findNode, getSource } from "./utils";
 import { resolveTemplate } from "./resolve";
+import { generateTypedDocumentNodes } from "./types/generate";
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -43,6 +44,8 @@ function create(info: ts.server.PluginCreateInfo) {
     if (!source) return originalDiagnostics
 
     const nodes = findAllTaggedTemplateNodes(source)
+    const queries = nodes.map(n => n.getText());
+    generateTypedDocumentNodes(schema, queries.join(' '));
     const diagnostics = nodes.map(x => {
       let node = x;
       if (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node)) {

@@ -10,7 +10,7 @@ export const generateTypedDocumentNodes = async (schema: GraphQLSchema, outputFi
     const config = {
         documents: [
             {
-                location: outputFile,
+                location: 'operation.graphql',
                 document: parse(doc),
             },
         ],
@@ -20,8 +20,10 @@ export const generateTypedDocumentNodes = async (schema: GraphQLSchema, outputFi
         filename: outputFile,
         schema: parse(printSchema(schema)),
         plugins: [
-            { 'typescript': {}, 'typescript-operations': {}, 'typed-document-node': {} },
-            ],
+            { 'typescript': {} },
+            { 'typescript-operations': {} },
+            { 'typed-document-node': {} },
+        ],
         pluginMap: {
             typescript: typescriptPlugin,
             'typescript-operations': typescriptOperationsPlugin,
@@ -29,6 +31,7 @@ export const generateTypedDocumentNodes = async (schema: GraphQLSchema, outputFi
         }
     }
 
+    // @ts-ignore
     const output = await codegen(config)
     fs.writeFile(path.join(outputFile), output, 'utf8', (err) => {
         console.error(err)  

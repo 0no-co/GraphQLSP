@@ -112,17 +112,10 @@ function create(info: ts.server.PluginCreateInfo) {
           file: filename,
           diagnostics: [
             {
-              source: 'gql-test',
-              relatedInformation: [
-                {
-                  category: 0,
-                  code: 4242,
-                  sourceFile: source,
-                  start: node.getStart(),
-                  length: node.getEnd() - node.getStart(),
-                  messageText: 'Shit is fucked',
-                },
-              ],
+              start: { line: 0, offset: 0 },
+              end: { line: 5, offset: 0 },
+              text: 'Shit is fucked',
+              category: 'warning',
             },
           ],
         }, 'suggestionDiag');

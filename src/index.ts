@@ -83,7 +83,32 @@ function create(info: ts.server.PluginCreateInfo) {
         const suffix = source.text.substring(span.start + span.length, source.text.length);
         const text = prefix + imp + suffix;
 
-        info.languageServiceHost.writeFile!(source.fileName, text);
+        info.session!.send({
+          seq: 0,
+          type: 'request',
+          command: 'workspace/applyEdit',
+          arguments: {
+            label: 'GraphQL Type Annotation',
+            edit: {
+              documentChanges: [{
+                range: {
+                  start: {
+                    line: 1,
+                    character: 1,
+                  },
+                  end: {
+                    line: 1,
+                    character: 2,
+                  },
+                },
+                newText: '',
+              }],
+            },
+          },
+        } as any);
+
+        // source.update(text, { span, newLength: imp.length })
+        // info.languageServiceHost.writeFile!(source.fileName, text);
       });
     } catch (e) {
       console.error(e)

@@ -38,6 +38,11 @@ function create(info: ts.server.PluginCreateInfo) {
   // TODO: we have to initialize a watcher for schema changes
   const schema = loadSchema(info.project.getProjectName(), info.config.schema);
 
+  proxy.getProgram = (): ts.Program | undefined => {
+    console.log('getProgram');
+    return info.languageService.getProgram();
+  };
+
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics = info.languageService.getSemanticDiagnostics(filename)
     const source = getSource(info, filename)
@@ -83,9 +88,49 @@ function create(info: ts.server.PluginCreateInfo) {
         const suffix = source.text.substring(span.start + span.length, source.text.length);
         const text = prefix + imp + suffix;
 
+        const scriptInfo = info.project.projectService.getScriptInfo(filename);
+        const snapshot = scriptInfo!.getSnapshot();
+        const length = snapshot.getLength();
+
+        // scriptInfo!.editContent(0, length, text);
+        // info.languageServiceHost.writeFile!(source.fileName, text);
+        // scriptInfo!.registerFileUpdate();
+
+        /*
         info.session!.send({
           seq: 0,
           type: 'request',
+          command: 'window/showMessage',
+          arguments: {
+            type: 1,
+            message: 'GraphQL Type Annotation',
+          },
+        } as any);
+        */
+
+        info.session!.event({
+          file: filename,
+          diagnostics: [
+            {
+              source: 'gql-test',
+              relatedInformation: [
+                {
+                  category: 0,
+                  code: 4242,
+                  sourceFile: source,
+                  start: node.getStart(),
+                  length: node.getEnd() - node.getStart(),
+                  messageText: 'Shit is fucked',
+                },
+              ],
+            },
+          ],
+        }, 'suggestionDiag');
+
+        /*
+        info.session!.send({
+          seq: 0,
+          type: 'response',
           command: 'workspace/applyEdit',
           arguments: {
             label: 'GraphQL Type Annotation',
@@ -101,17 +146,19 @@ function create(info: ts.server.PluginCreateInfo) {
                     character: 2,
                   },
                 },
-                newText: '',
+                newText: 'x',
               }],
             },
           },
         } as any);
+        */
 
         // source.update(text, { span, newLength: imp.length })
         // info.languageServiceHost.writeFile!(source.fileName, text);
       });
     } catch (e) {
       console.error(e)
+      throw e
     }
 
     const diagnostics = nodes.map(x => {

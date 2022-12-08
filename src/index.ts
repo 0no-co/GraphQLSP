@@ -44,8 +44,6 @@ function create(info: ts.server.PluginCreateInfo) {
     if (!source) return originalDiagnostics
 
     const nodes = findAllTaggedTemplateNodes(source)
-    const queries = nodes.map(n => n.getText());
-    generateTypedDocumentNodes(schema, queries.join(' '));
     const diagnostics = nodes.map(x => {
       let node = x;
       if (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node)) {
@@ -57,6 +55,16 @@ function create(info: ts.server.PluginCreateInfo) {
       }
 
       const text = resolveTemplate(node, filename, info)
+      try {
+        const parts = source.fileName.split('/');
+        const name = parts[parts.length - 1];
+        const nameParts = name.split('.');
+        nameParts[nameParts.length - 1] = 'generated.ts'
+        parts[parts.length - 1] = nameParts.join('.')
+        generateTypedDocumentNodes(schema, parts.join('/'), text);
+      } catch (e) {
+        console.error(e)
+      }
       const lines = text.split('\n')
 
       // This assumes a prefix of gql`

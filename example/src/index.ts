@@ -5,7 +5,7 @@ const query = gql`
   query {
     pokemons {
       id
-      nowayj
+      name
     }
   }
 

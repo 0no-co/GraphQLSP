@@ -1,13 +1,12 @@
-// import fs from 'node:fs'
-// import path from 'node:path'
+import fs from 'node:fs'
+import path from 'node:path'
 import { printSchema, parse, GraphQLSchema, DocumentNode } from 'graphql'
 import { codegen } from '@graphql-codegen/core'
 import * as typescriptPlugin from '@graphql-codegen/typescript'
 import * as typescriptOperationsPlugin from '@graphql-codegen/typescript-operations'
 import * as typedDocumentNodePlugin from '@graphql-codegen/typed-document-node'
 
-export const generateTypedDocumentNodes = async (schema: GraphQLSchema, doc: string) => {
-    const outputFile = 'relative/pathTo/filename.ts'
+export const generateTypedDocumentNodes = async (schema: GraphQLSchema, outputFile: string, doc: string) => {
     const config = {
         documents: [
             {
@@ -31,5 +30,7 @@ export const generateTypedDocumentNodes = async (schema: GraphQLSchema, doc: str
     }
 
     const output = await codegen(config)
-    console.log(output)
+    fs.writeFile(path.join(outputFile), output, 'utf8', (err) => {
+        console.error(err)  
+    })
 }

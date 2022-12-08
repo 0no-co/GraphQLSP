@@ -59,13 +59,22 @@ function create(info: ts.server.PluginCreateInfo) {
     })
 
     try {
+      // TODO: we might only want to run this when there are no
+      // diagnostic issues.
       const parts = source.fileName.split('/');
       const name = parts[parts.length - 1];
       const nameParts = name.split('.');
       nameParts[nameParts.length - 1] = 'generated.ts'
       parts[parts.length - 1] = nameParts.join('.')
       generateTypedDocumentNodes(schema, parts.join('/'), texts.join('\n')).then(() => {
-        // TODO: now we should alter the document nodes to include as TypedDocumentNode
+        // TODO: we need to get the operationName to find the thing we want to import
+        // so we need to iterate over all nodes --> get operation-name --> suffix
+        // "Document" behind it and add that to the template-literal.
+        const imp = `as import('./${nameParts.join('.')}').PokemonsDocument`;
+
+        // TODO: this is currently not working, we need to figure out how the compiler works.
+        const newSource = source.update(imp, { span: { length: 1, start: nodes[0].end }, newLength: imp.length })
+        info.languageServiceHost.writeFile!(source.fileName, newSource.getText());
       });
     } catch (e) {
       console.error(e)

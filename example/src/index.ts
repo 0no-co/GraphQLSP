@@ -10,4 +10,4 @@ const query = gql`
   }
 
   ${PokemonFields}
-`
+` as typeof import('./index.generated').PokemonsDocument

@@ -67,17 +67,22 @@ function create(info: ts.server.PluginCreateInfo) {
       nameParts[nameParts.length - 1] = 'generated.ts'
       parts[parts.length - 1] = nameParts.join('.')
       generateTypedDocumentNodes(schema, parts.join('/'), texts.join('\n')).then(() => {
+        // TODO: should handle all nodes
+        const node = nodes[0]
+        const parentChildren = node.parent.getChildren();
+        if (parentChildren.find(x => x.kind === 200)) {
+            return;
+        }
         // TODO: we need to get the operationName to find the thing we want to import
         // so we need to iterate over all nodes --> get operation-name --> suffix
         // "Document" behind it and add that to the template-literal.
-        const imp = `as import('./${nameParts.join('.')}').PokemonsDocument`;
+        const imp = ` as typeof import('./${nameParts.join('.').replace('.ts', '')}').PokemonsDocument`;
 
-        const span = { length: 1, start: nodes[0].end };
+        const span = { length: 1, start: node.end };
         const prefix = source.text.substring(0, span.start);
         const suffix = source.text.substring(span.start + span.length, source.text.length);
         const text = prefix + imp + suffix;
 
-        source.update(text, { span, newLength: imp.length })
         info.languageServiceHost.writeFile!(source.fileName, text);
       });
     } catch (e) {

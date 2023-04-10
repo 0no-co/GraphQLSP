@@ -1,4 +1,4 @@
-import { isIdentifier, isNoSubstitutionTemplateLiteral, isTaggedTemplateExpression, NoSubstitutionTemplateLiteral, TaggedTemplateExpression, TemplateExpression, TemplateLiteral } from "typescript";
+import { isAsExpression, isIdentifier, isNoSubstitutionTemplateLiteral, isTaggedTemplateExpression, NoSubstitutionTemplateLiteral, TaggedTemplateExpression, TemplateExpression, TemplateLiteral } from "typescript";
 import ts from "typescript/lib/tsserverlibrary";
 import { findNode, getSource } from "./utils";
 
@@ -22,6 +22,9 @@ export function resolveTemplate(node: TaggedTemplateExpression, filename: string
       if (ts.isVariableDeclaration(parent)) {
         if (parent.initializer && isTaggedTemplateExpression(parent.initializer)) {
           const text = resolveTemplate(parent.initializer, def.fileName, info)
+          templateText = templateText.replace('${' + span.expression.escapedText + '}', text)
+        } else if (parent.initializer && isAsExpression(parent.initializer) && isTaggedTemplateExpression(parent.initializer.expression)) {
+          const text = resolveTemplate(parent.initializer.expression, def.fileName, info)
           templateText = templateText.replace('${' + span.expression.escapedText + '}', text)
         }
       }

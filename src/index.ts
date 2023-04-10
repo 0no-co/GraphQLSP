@@ -1,5 +1,5 @@
 import ts from "typescript/lib/tsserverlibrary";
-import { isNoSubstitutionTemplateLiteral, ScriptElementKind, isIdentifier, isTaggedTemplateExpression, isToken, isTemplateExpression} from "typescript";
+import { isNoSubstitutionTemplateLiteral, ScriptElementKind, isIdentifier, isTaggedTemplateExpression, isToken, isTemplateExpression, isImportTypeNode, ImportTypeNode } from "typescript";
 import { getHoverInformation, getAutocompleteSuggestions, getDiagnostics, Diagnostic } from 'graphql-language-service'
 import { GraphQLSchema, parse, Kind, FragmentDefinitionNode, OperationDefinitionNode } from 'graphql'
 
@@ -63,61 +63,6 @@ function create(info: ts.server.PluginCreateInfo) {
       return resolveTemplate(node, filename, info)
     })
 
-    try {
-      // TODO: we might only want to run this when there are no
-      // diagnostic issues.
-      // TODO: we might need to issue warnings for docuemnts without an operationName
-      // TODO: we will need to check for renamed operations that _do contain_ a type definition
-      const parts = source.fileName.split('/');
-      const name = parts[parts.length - 1];
-      const nameParts = name.split('.');
-      nameParts[nameParts.length - 1] = 'generated.ts'
-      parts[parts.length - 1] = nameParts.join('.')
-      generateTypedDocumentNodes(schema, parts.join('/'), texts.join('\n')).then(() => {
-        nodes.forEach((node, i) => {
-          const queryText = texts[i] || '';
-          const parsed = parse(queryText);
-          const isFragment = parsed.definitions.every(x => x.kind === Kind.FRAGMENT_DEFINITION);
-          let name = '';
-          if (isFragment) {
-            const fragmentNode = parsed.definitions[0] as FragmentDefinitionNode;
-            name = fragmentNode.name.value;
-          } else {
-            const operationNode = parsed.definitions[0] as OperationDefinitionNode;
-            name = operationNode.name!.value;
-          }
-  
-          name = name.charAt(0).toUpperCase() + name.slice(1);
-          const parentChildren = node.parent.getChildren();
-          if (parentChildren.find(x => x.kind === 200)) {
-            return;
-          }
-  
-          // TODO: we'll have to combine writing multiple exports when we are dealing with more than
-          // one tagged template in a file
-          const exportName = isFragment ? `${name}FragmentDoc` : `${name}Document`;
-          const imp = ` as typeof import('./${nameParts.join('.').replace('.ts', '')}').${exportName}`;
-  
-          const span = { length: 1, start: node.end };
-          const prefix = source.text.substring(0, span.start);
-          const suffix = source.text.substring(span.start + span.length, source.text.length);
-          const text = prefix + imp + suffix;
-  
-          const scriptInfo = info.project.projectService.getScriptInfo(filename);
-          const snapshot = scriptInfo!.getSnapshot();
-          const length = snapshot.getLength();
-  
-          source.update(text, { span, newLength: imp.length })
-          scriptInfo!.editContent(0, length, text);
-          info.languageServiceHost.writeFile!(source.fileName, text);
-          scriptInfo!.registerFileUpdate();
-        })
-      });
-    } catch (e) {
-      console.error(e)
-      throw e
-    }
-
     const diagnostics = nodes.map(x => {
       let node = x;
       if (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node)) {
@@ -167,6 +112,60 @@ function create(info: ts.server.PluginCreateInfo) {
 
       return result;
     })
+
+    if (!newDiagnostics.length) {
+      try {
+        // TODO: we might need to issue warnings for documents without an operationName
+        // as we can't generate types for those
+        const parts = source.fileName.split('/');
+        const name = parts[parts.length - 1];
+        const nameParts = name.split('.');
+        nameParts[nameParts.length - 1] = 'generated.ts'
+        parts[parts.length - 1] = nameParts.join('.')
+  
+        // TODO: we might only want to run this onSave/when file isn't dirty
+        generateTypedDocumentNodes(schema, parts.join('/'), texts.join('\n')).then(() => {
+          nodes.forEach((node, i) => {
+            const queryText = texts[i] || '';
+            const parsed = parse(queryText);
+            const isFragment = parsed.definitions.every(x => x.kind === Kind.FRAGMENT_DEFINITION);
+            let name = '';
+            if (isFragment) {
+              const fragmentNode = parsed.definitions[0] as FragmentDefinitionNode;
+              name = fragmentNode.name.value;
+            } else {
+              const operationNode = parsed.definitions[0] as OperationDefinitionNode;
+              name = operationNode.name?.value || '';
+            }
+  
+            if (!name) return;
+    
+            name = name.charAt(0).toUpperCase() + name.slice(1);
+            const parentChildren = node.parent.getChildren();
+
+            const exportName = isFragment ? `${name}FragmentDoc` : `${name}Document`;
+            const imp = ` as typeof import('./${nameParts.join('.').replace('.ts', '')}').${exportName}`;
+  
+            // This checks whether one of the children is an import-type
+            // which is a short-circuit if there is no as
+            const typeImport = parentChildren.find(x => isImportTypeNode(x)) as ImportTypeNode
+            if (typeImport && typeImport.getText() === exportName) return;
+    
+            const span = { length: 1, start: node.end };
+            const text = source.text.substring(0, span.start) + imp + source.text.substring(span.start + span.length, source.text.length);
+    
+            const scriptInfo = info.project.projectService.getScriptInfo(filename);
+            const snapshot = scriptInfo!.getSnapshot();
+    
+            // TODO: potential optimisation is to write only one script-update
+            source.update(text, { span, newLength: imp.length })
+            scriptInfo!.editContent(0, snapshot.getLength(), text);
+            info.languageServiceHost.writeFile!(source.fileName, text);
+            scriptInfo!.registerFileUpdate();
+          })
+        });
+      } catch (e) {}
+    }
 
     return [
       ...newDiagnostics,
@@ -271,10 +270,6 @@ function create(info: ts.server.PluginCreateInfo) {
       return originalInfo
     }
   }
-
-  // to research:
-  // proxy.getTypeDefinitionAtPosition
-  // proxy.getCompletionEntryDetails
 
   logger('proxy: ' + JSON.stringify(proxy));
 

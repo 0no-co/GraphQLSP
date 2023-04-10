@@ -5,8 +5,7 @@ export const PokemonFields = gql`
     id
     name
   }
-`
-
+` as typeof import('./fragment.generated').PokemonFieldsFragmentDoc
 // TODO: how to type
 // export const PokemonFields = gql`
 //   fragment pokemonFields on Pokemon {

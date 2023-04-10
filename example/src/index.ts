@@ -1,7 +1,7 @@
 import { gql } from '@urql/core'
 import { PokemonFields } from './fragment'
 
-const query = gql`
+const Pokemons = gql`
   query Pokemons {
     pokemons {
       id
@@ -11,3 +11,13 @@ const query = gql`
 
   ${PokemonFields}
 ` as typeof import('./index.generated').PokemonsDocument
+const Pokemon = gql`
+  query Pokemon {
+    pokemon(id: "1") {
+      id
+      name
+    }
+  }
+
+  ${PokemonFields}
+`

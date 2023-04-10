@@ -1,7 +1,7 @@
 import ts from "typescript/lib/tsserverlibrary";
 import { isNoSubstitutionTemplateLiteral, ScriptElementKind, isIdentifier, isTaggedTemplateExpression, isToken, isTemplateExpression} from "typescript";
 import { getHoverInformation, getAutocompleteSuggestions, getDiagnostics, Diagnostic } from 'graphql-language-service'
-import { GraphQLSchema } from 'graphql'
+import { GraphQLSchema, parse, Kind, FragmentDefinitionNode, OperationDefinitionNode } from 'graphql'
 
 import { Cursor } from "./cursor";
 import { loadSchema } from "./getSchema";
@@ -66,88 +66,52 @@ function create(info: ts.server.PluginCreateInfo) {
     try {
       // TODO: we might only want to run this when there are no
       // diagnostic issues.
+      // TODO: we might need to issue warnings for docuemnts without an operationName
+      // TODO: we will need to check for renamed operations that _do contain_ a type definition
       const parts = source.fileName.split('/');
       const name = parts[parts.length - 1];
       const nameParts = name.split('.');
       nameParts[nameParts.length - 1] = 'generated.ts'
       parts[parts.length - 1] = nameParts.join('.')
       generateTypedDocumentNodes(schema, parts.join('/'), texts.join('\n')).then(() => {
-        // TODO: should handle all nodes
-        const node = nodes[0]
-        const parentChildren = node.parent.getChildren();
-        if (parentChildren.find(x => x.kind === 200)) {
+        nodes.forEach((node, i) => {
+          const queryText = texts[i] || '';
+          const parsed = parse(queryText);
+          const isFragment = parsed.definitions.every(x => x.kind === Kind.FRAGMENT_DEFINITION);
+          let name = '';
+          if (isFragment) {
+            const fragmentNode = parsed.definitions[0] as FragmentDefinitionNode;
+            name = fragmentNode.name.value;
+          } else {
+            const operationNode = parsed.definitions[0] as OperationDefinitionNode;
+            name = operationNode.name!.value;
+          }
+  
+          name = name.charAt(0).toUpperCase() + name.slice(1);
+          const parentChildren = node.parent.getChildren();
+          if (parentChildren.find(x => x.kind === 200)) {
             return;
-        }
-        // TODO: we need to get the operationName to find the thing we want to import
-        // so we need to iterate over all nodes --> get operation-name --> suffix
-        // "Document" behind it and add that to the template-literal.
-        const imp = ` as typeof import('./${nameParts.join('.').replace('.ts', '')}').PokemonsDocument`;
-
-        const span = { length: 1, start: node.end };
-        const prefix = source.text.substring(0, span.start);
-        const suffix = source.text.substring(span.start + span.length, source.text.length);
-        const text = prefix + imp + suffix;
-
-        const scriptInfo = info.project.projectService.getScriptInfo(filename);
-        const snapshot = scriptInfo!.getSnapshot();
-        const length = snapshot.getLength();
-
-        // scriptInfo!.editContent(0, length, text);
-        // info.languageServiceHost.writeFile!(source.fileName, text);
-        // scriptInfo!.registerFileUpdate();
-
-        /*
-        info.session!.send({
-          seq: 0,
-          type: 'request',
-          command: 'window/showMessage',
-          arguments: {
-            type: 1,
-            message: 'GraphQL Type Annotation',
-          },
-        } as any);
-        */
-
-        info.session!.event({
-          file: filename,
-          diagnostics: [
-            {
-              start: { line: 0, offset: 0 },
-              end: { line: 5, offset: 0 },
-              text: 'Shit is fucked',
-              category: 'warning',
-            },
-          ],
-        }, 'suggestionDiag');
-
-        /*
-        info.session!.send({
-          seq: 0,
-          type: 'response',
-          command: 'workspace/applyEdit',
-          arguments: {
-            label: 'GraphQL Type Annotation',
-            edit: {
-              documentChanges: [{
-                range: {
-                  start: {
-                    line: 1,
-                    character: 1,
-                  },
-                  end: {
-                    line: 1,
-                    character: 2,
-                  },
-                },
-                newText: 'x',
-              }],
-            },
-          },
-        } as any);
-        */
-
-        // source.update(text, { span, newLength: imp.length })
-        // info.languageServiceHost.writeFile!(source.fileName, text);
+          }
+  
+          // TODO: we'll have to combine writing multiple exports when we are dealing with more than
+          // one tagged template in a file
+          const exportName = isFragment ? `${name}FragmentDoc` : `${name}Document`;
+          const imp = ` as typeof import('./${nameParts.join('.').replace('.ts', '')}').${exportName}`;
+  
+          const span = { length: 1, start: node.end };
+          const prefix = source.text.substring(0, span.start);
+          const suffix = source.text.substring(span.start + span.length, source.text.length);
+          const text = prefix + imp + suffix;
+  
+          const scriptInfo = info.project.projectService.getScriptInfo(filename);
+          const snapshot = scriptInfo!.getSnapshot();
+          const length = snapshot.getLength();
+  
+          source.update(text, { span, newLength: imp.length })
+          scriptInfo!.editContent(0, length, text);
+          info.languageServiceHost.writeFile!(source.fileName, text);
+          scriptInfo!.registerFileUpdate();
+        })
       });
     } catch (e) {
       console.error(e)

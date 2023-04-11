@@ -1,6 +1,8 @@
 import { createClient, gql } from '@urql/core'
 import { PokemonFields } from './fragment'
 
+// testing stuffzzzzzzzz
+
 const Pokemons = gql`
   query Pokemons {
     pokemons {
@@ -17,6 +19,7 @@ const Pokemon = gql`
     pokemon(id: "1") {
       id
       name
+      ...pokemonFields
     }
   }
 
@@ -24,7 +27,8 @@ const Pokemon = gql`
 ` as typeof import('./index.generated').PokemonDocument
 
 const urqlClient = createClient({
-  url: 'http://localhost:3000/api'
+  url: '',
+  exchanges: []
 });
 
 urqlClient.query(Pokemons).toPromise().then(result => {

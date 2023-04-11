@@ -31,8 +31,7 @@ function create(info: ts.server.PluginCreateInfo) {
   info.project.projectService.logger.info(
     "Setting up the GraphQL Plugin"
   );
-  // TODO: our config most likely needs to support
-  // a scalars config as well
+
   const tagTemplate = info.config.template || 'gql';
 
   const proxy = createBasicDecorator(info);
@@ -75,8 +74,6 @@ function create(info: ts.server.PluginCreateInfo) {
       const lines = text.split('\n')
 
       let startingPosition = node.pos + (tagTemplate.length + 1)
-      // TODO: roll our own diagnostic here for operations without an operationName
-      // we can't generate typedDocumentNodes for those hence we will warn our user
       return getDiagnostics(text, schema.current).map(x => {
         const { start, end } = x.range;
 
@@ -120,8 +117,6 @@ function create(info: ts.server.PluginCreateInfo) {
         nameParts[nameParts.length - 1] = 'generated.ts'
         parts[parts.length - 1] = nameParts.join('.')
   
-        // TODO: we might only want to run this onSave/when file isn't dirty
-        // alternatively we could set up a watcher to react to saves
         generateTypedDocumentNodes(schema.current, parts.join('/'), texts.join('\n')).then(() => {
           nodes.forEach((node, i) => {
             const queryText = texts[i] || '';
@@ -147,11 +142,10 @@ function create(info: ts.server.PluginCreateInfo) {
             // This checks whether one of the children is an import-type
             // which is a short-circuit if there is no as
             const typeImport = parentChildren.find(x => isImportTypeNode(x)) as ImportTypeNode
-            if (typeImport && typeImport.getText() === exportName) return;
+            if (typeImport && typeImport.getText().includes(exportName)) return;
     
             const span = { length: 1, start: node.end };
             const text = source.text.substring(0, span.start) + imp + source.text.substring(span.start + span.length, source.text.length);
-    
             const scriptInfo = info.project.projectService.getScriptInfo(filename);
             const snapshot = scriptInfo!.getSnapshot();
     
@@ -211,8 +205,10 @@ function create(info: ts.server.PluginCreateInfo) {
 
       if (!foundToken || !schema.current) return originalCompletions
 
-      // TODO: this does not include fragmentSpread suggestions
       const suggestions = getAutocompleteSuggestions(schema.current, text, new Cursor(foundToken.line, foundToken.start))
+
+      const parsed = parse(text);
+      const fragments = parsed.definitions.filter(x => x.kind === Kind.FRAGMENT_DEFINITION) as Array<FragmentDefinitionNode>
 
       const result: ts.WithMetadata<ts.CompletionInfo> = {
         isGlobalCompletion: false,
@@ -221,6 +217,12 @@ function create(info: ts.server.PluginCreateInfo) {
         entries: [...suggestions.map(suggestion => ({
           kind: ScriptElementKind.variableElement,
           name: suggestion.label,
+          kindModifiers: 'declare',
+          sortText: suggestion.sortText || '0',
+        })), ...fragments.map(fragment => ({
+          kind: ScriptElementKind.variableElement,
+          name: fragment.name.value,
+          insertText: '...' + fragment.name.value,
           kindModifiers: 'declare',
           sortText: '0',
         })), ...originalCompletions.entries],
@@ -247,7 +249,6 @@ function create(info: ts.server.PluginCreateInfo) {
       node = node.parent
     }
 
-    // TODO: visualize fragment-data
     if (isTaggedTemplateExpression(node)) {
       const { template, tag } = node;
       if (!isIdentifier(tag) || tag.text !== tagTemplate) return originalInfo;

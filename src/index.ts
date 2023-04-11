@@ -75,7 +75,7 @@ function create(info: ts.server.PluginCreateInfo) {
       const lines = text.split('\n')
 
       let startingPosition = node.pos + (tagTemplate.length + 1)
-      return getDiagnostics(text, schema.current).map(x => {
+      const graphQLDiagnostics = getDiagnostics(text, schema.current).map(x => {
         const { start, end } = x.range;
 
         // We add the start.line to account for newline characters which are
@@ -95,6 +95,23 @@ function create(info: ts.server.PluginCreateInfo) {
         // We add 1 to the start because the range is exclusive of start.character
         return { ...x, start: startChar + 1, length: endChar - startChar }
       })
+
+      const parsed = parse(text);
+
+      if (parsed.definitions.some(x => x.kind === Kind.OPERATION_DEFINITION)) {
+        const op = parsed.definitions.find(x => x.kind === Kind.OPERATION_DEFINITION) as OperationDefinitionNode
+        if (!op.name) {
+          graphQLDiagnostics.push({
+            message: 'Operation needs a name for types to be generated.',
+            start: node.pos,
+            length: x.getText().length,
+            range: {} as any,
+            severity: 2,
+          } as any)
+        }
+      }
+
+      return graphQLDiagnostics;
     }).flat().filter(Boolean) as Array<Diagnostic & { length: number; start: number }>
 
     const newDiagnostics = diagnostics.map(diag => {

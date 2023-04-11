@@ -18,19 +18,15 @@
   },
   "homepage": "https://github.com/JoviDeCroock/GraphQLSP#readme",
   "devDependencies": {
+    "@types/node": "^18.15.11",
     "graphql": "^16.5.0",
-    "typescript": "^4.7.4"
+    "typescript": "^5.0.0"
   },
   "dependencies": {
     "@graphql-codegen/core": "^2.6.8",
     "@graphql-codegen/typed-document-node": "^2.3.10",
     "@graphql-codegen/typescript": "^2.8.5",
     "@graphql-codegen/typescript-operations": "^2.5.10",
-    "@graphql-tools/code-file-loader": "^7.3.3",
-    "@graphql-tools/graphql-file-loader": "^7.5.2",
-    "@graphql-tools/json-file-loader": "^7.4.3",
-    "@graphql-tools/load": "^7.7.4",
-    "@graphql-tools/url-loader": "^7.13.5",
     "graphql-language-service": "^5.0.6"
   }
 }

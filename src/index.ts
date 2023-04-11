@@ -34,6 +34,7 @@ function create(info: ts.server.PluginCreateInfo) {
   );
 
   const tagTemplate = info.config.template || 'gql';
+  const scalars = info.config.scalars || {};
 
   const proxy = createBasicDecorator(info);
 
@@ -144,7 +145,7 @@ function create(info: ts.server.PluginCreateInfo) {
           ]
         }
 
-        generateTypedDocumentNodes(schema.current, parts.join('/'), texts.join('\n')).then(() => {
+        generateTypedDocumentNodes(schema.current, parts.join('/'), texts.join('\n'), scalars).then(() => {
           nodes.forEach((node, i) => {
             const queryText = texts[i] || '';
             const parsed = parse(queryText);

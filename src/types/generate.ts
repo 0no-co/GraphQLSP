@@ -6,7 +6,7 @@ import * as typescriptPlugin from '@graphql-codegen/typescript'
 import * as typescriptOperationsPlugin from '@graphql-codegen/typescript-operations'
 import * as typedDocumentNodePlugin from '@graphql-codegen/typed-document-node'
 
-export const generateTypedDocumentNodes = async (schema: GraphQLSchema | null, outputFile: string, doc: string) => {
+export const generateTypedDocumentNodes = async (schema: GraphQLSchema | null, outputFile: string, doc: string, scalars: Record<string, unknown>) => {
     if (!schema) return;
 
     const config = {
@@ -16,7 +16,14 @@ export const generateTypedDocumentNodes = async (schema: GraphQLSchema | null, o
                 document: parse(doc),
             },
         ],
-        config: {},
+        config: {
+            scalars,
+            // nonOptionalTypename: true,
+            // avoidOptionals, worth looking into
+            enumsAsTypes: true,
+            dedupeOperationSuffix: true,
+            dedupeFragments: true,
+        },
         // used by a plugin internally, although the 'typescript' plugin currently
         // returns the string output, rather than writing to a file
         filename: outputFile,

@@ -7,7 +7,7 @@ const Pokemons = gql`
   query Pokemons {
     pokemons {
       id
-      name
+      name            
     }
   }
 
@@ -26,6 +26,13 @@ const Pokemon = gql`
   ${PokemonFields}
 ` as typeof import('./index.generated').PokemonDocument
 
+const Donkemon = gql`
+  query Donkemon ($id: ID!) {
+    pokemon(id: $id) {
+      id
+    }
+  }
+` as typeof import('./index.generated').DonkemonDocument
 const urqlClient = createClient({
   url: '',
   exchanges: []

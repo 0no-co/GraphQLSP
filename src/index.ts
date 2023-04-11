@@ -2,6 +2,7 @@ import ts from "typescript/lib/tsserverlibrary";
 import { isNoSubstitutionTemplateLiteral, ScriptElementKind, isIdentifier, isTaggedTemplateExpression, isToken, isTemplateExpression, isImportTypeNode, ImportTypeNode } from "typescript";
 import { getHoverInformation, getAutocompleteSuggestions, getDiagnostics, Diagnostic } from 'graphql-language-service'
 import { parse, Kind, FragmentDefinitionNode, OperationDefinitionNode } from 'graphql'
+import fs from 'fs';
 
 import { Cursor } from "./cursor";
 import { loadSchema } from "./getSchema";
@@ -116,13 +117,23 @@ function create(info: ts.server.PluginCreateInfo) {
         const nameParts = name.split('.');
         nameParts[nameParts.length - 1] = 'generated.ts'
         parts[parts.length - 1] = nameParts.join('.')
+        const contents = fs.readFileSync(filename, 'utf-8');
+        const currentText = source.getFullText();
   
+        if (contents !== currentText) {
+          return [
+            ...newDiagnostics,
+            ...originalDiagnostics
+          ]
+        }
+
         generateTypedDocumentNodes(schema.current, parts.join('/'), texts.join('\n')).then(() => {
           nodes.forEach((node, i) => {
             const queryText = texts[i] || '';
             const parsed = parse(queryText);
             const isFragment = parsed.definitions.every(x => x.kind === Kind.FRAGMENT_DEFINITION);
             let name = '';
+
             if (isFragment) {
               const fragmentNode = parsed.definitions[0] as FragmentDefinitionNode;
               name = fragmentNode.name.value;
@@ -214,6 +225,7 @@ function create(info: ts.server.PluginCreateInfo) {
         isGlobalCompletion: false,
         isMemberCompletion: false,
         isNewIdentifierLocation: false,
+        // TODO: check whether we can add descriptions to the entries
         entries: [...suggestions.map(suggestion => ({
           kind: ScriptElementKind.variableElement,
           name: suggestion.label,

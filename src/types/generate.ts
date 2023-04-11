@@ -6,7 +6,9 @@ import * as typescriptPlugin from '@graphql-codegen/typescript'
 import * as typescriptOperationsPlugin from '@graphql-codegen/typescript-operations'
 import * as typedDocumentNodePlugin from '@graphql-codegen/typed-document-node'
 
-export const generateTypedDocumentNodes = async (schema: GraphQLSchema, outputFile: string, doc: string) => {
+export const generateTypedDocumentNodes = async (schema: GraphQLSchema | null, outputFile: string, doc: string) => {
+    if (!schema) return;
+
     const config = {
         documents: [
             {
@@ -20,6 +22,8 @@ export const generateTypedDocumentNodes = async (schema: GraphQLSchema, outputFi
         filename: outputFile,
         schema: parse(printSchema(schema)),
         plugins: [
+            // TODO: there's optimisations to be had here where we move the typescript and typescript-operations
+            // to a global __generated__ folder and import from it.
             { 'typescript': {} },
             { 'typescript-operations': {} },
             { 'typed-document-node': {} },

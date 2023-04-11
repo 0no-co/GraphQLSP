@@ -31,11 +31,12 @@ function create(info: ts.server.PluginCreateInfo) {
   info.project.projectService.logger.info(
     "Setting up the GraphQL Plugin"
   );
+  // TODO: our config most likely needs to support
+  // a scalars config as well
   const tagTemplate = info.config.template || 'gql';
 
   const proxy = createBasicDecorator(info);
 
-  // TODO: we have to initialize a watcher for schema changes
   const schema = loadSchema(info.project.getProjectName(), info.config.schema);
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
@@ -73,7 +74,7 @@ function create(info: ts.server.PluginCreateInfo) {
 
       // This assumes a prefix of gql`
       let startingPosition = node.pos + 4
-      return getDiagnostics(text, schema).map(x => {
+      return getDiagnostics(text, schema.current).map(x => {
         const { start, end } = x.range;
 
         // We add the start.line to account for newline characters which are
@@ -119,7 +120,8 @@ function create(info: ts.server.PluginCreateInfo) {
         parts[parts.length - 1] = nameParts.join('.')
   
         // TODO: we might only want to run this onSave/when file isn't dirty
-        generateTypedDocumentNodes(schema, parts.join('/'), texts.join('\n')).then(() => {
+        // alternatively we could set up a watcher to react to saves
+        generateTypedDocumentNodes(schema.current, parts.join('/'), texts.join('\n')).then(() => {
           nodes.forEach((node, i) => {
             const queryText = texts[i] || '';
             const parsed = parse(queryText);
@@ -201,10 +203,10 @@ function create(info: ts.server.PluginCreateInfo) {
       const text = resolveTemplate(node, filename, info)
       const foundToken = getToken(template, cursorPosition)
 
-      if (!foundToken) return originalCompletions
+      if (!foundToken || !schema.current) return originalCompletions
 
       // TODO: this does not include fragmentSpread suggestions
-      const suggestions = getAutocompleteSuggestions(schema, text, new Cursor(foundToken.line, foundToken.start))
+      const suggestions = getAutocompleteSuggestions(schema.current, text, new Cursor(foundToken.line, foundToken.start))
 
       const result: ts.WithMetadata<ts.CompletionInfo> = {
         isGlobalCompletion: false,
@@ -247,9 +249,9 @@ function create(info: ts.server.PluginCreateInfo) {
       const text = resolveTemplate(node, filename, info)
       const foundToken = getToken(template, cursorPosition)
 
-      if (!foundToken) return originalInfo
+      if (!foundToken || !schema.current) return originalInfo
 
-      const hoverInfo = getHoverInformation(schema as GraphQLSchema, text, new Cursor(foundToken.line, foundToken.start))
+      const hoverInfo = getHoverInformation(schema.current, text, new Cursor(foundToken.line, foundToken.start))
       const result: ts.QuickInfo = {
         kind: ts.ScriptElementKind.string,
         textSpan: {

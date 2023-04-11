@@ -38,11 +38,6 @@ function create(info: ts.server.PluginCreateInfo) {
   // TODO: we have to initialize a watcher for schema changes
   const schema = loadSchema(info.project.getProjectName(), info.config.schema);
 
-  proxy.getProgram = (): ts.Program | undefined => {
-    console.log('getProgram');
-    return info.languageService.getProgram();
-  };
-
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics = info.languageService.getSemanticDiagnostics(filename)
     const source = getSource(info, filename)

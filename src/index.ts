@@ -1,7 +1,7 @@
 import ts from "typescript/lib/tsserverlibrary";
 import { isNoSubstitutionTemplateLiteral, ScriptElementKind, isIdentifier, isTaggedTemplateExpression, isToken, isTemplateExpression, isImportTypeNode, ImportTypeNode } from "typescript";
 import { getHoverInformation, getAutocompleteSuggestions, getDiagnostics, Diagnostic } from 'graphql-language-service'
-import { GraphQLSchema, parse, Kind, FragmentDefinitionNode, OperationDefinitionNode } from 'graphql'
+import { parse, Kind, FragmentDefinitionNode, OperationDefinitionNode } from 'graphql'
 
 import { Cursor } from "./cursor";
 import { loadSchema } from "./getSchema";
@@ -36,6 +36,8 @@ function create(info: ts.server.PluginCreateInfo) {
   const tagTemplate = info.config.template || 'gql';
 
   const proxy = createBasicDecorator(info);
+
+  // TODO: check out interesting stuff on ts.factory
 
   const schema = loadSchema(info.project.getProjectName(), info.config.schema);
 
@@ -72,8 +74,9 @@ function create(info: ts.server.PluginCreateInfo) {
       const text = resolveTemplate(node, filename, info)
       const lines = text.split('\n')
 
-      // This assumes a prefix of gql`
-      let startingPosition = node.pos + 4
+      let startingPosition = node.pos + (tagTemplate.length + 1)
+      // TODO: roll our own diagnostic here for operations without an operationName
+      // we can't generate typedDocumentNodes for those hence we will warn our user
       return getDiagnostics(text, schema.current).map(x => {
         const { start, end } = x.range;
 
@@ -111,8 +114,6 @@ function create(info: ts.server.PluginCreateInfo) {
 
     if (!newDiagnostics.length) {
       try {
-        // TODO: we might need to issue warnings for documents without an operationName
-        // as we can't generate types for those
         const parts = source.fileName.split('/');
         const name = parts[parts.length - 1];
         const nameParts = name.split('.');
@@ -159,6 +160,11 @@ function create(info: ts.server.PluginCreateInfo) {
             scriptInfo!.editContent(0, snapshot.getLength(), text);
             info.languageServiceHost.writeFile!(source.fileName, text);
             scriptInfo!.registerFileUpdate();
+            // script info contains a lot of utils that might come in handy here
+            // to save even if the user has local changes, if we could make that work
+            // that would be a win. If not we should check if we can figure it out through
+            // the script-info whether there are unsaved changes and not run this
+            // scriptInfo!.open(text);
           })
         });
       } catch (e) {}

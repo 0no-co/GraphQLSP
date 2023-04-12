@@ -1,0 +1,10 @@
+src
+node_modules
+scripts
+example
+.vscode
+.husky
+.github
+.changeset
+pnpm-lock.yaml
+tsconfig.json

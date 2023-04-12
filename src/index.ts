@@ -389,7 +389,7 @@ function create(info: ts.server.PluginCreateInfo) {
   return proxy;
 }
 
-export const init: ts.server.PluginModuleFactory = () => {
+const init: ts.server.PluginModuleFactory = () => {
   return { create };
 };
 

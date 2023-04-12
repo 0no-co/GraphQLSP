@@ -1,43 +1,37 @@
-import { createClient, gql } from '@urql/core'
-import { PokemonFields } from './fragment'
+import { gql, createClient } from '@urql/core';
+import { PokemonFields } from './Pokemon';
 
-// testing stuffzzzzzzzz
-
-const Pokemons = gql`
+const PokemonsQuery = gql`
   query Pokemons {
     pokemons {
       id
-      name            
+      name
+      ...pokemonFields
+      __typename
     }
   }
 
   ${PokemonFields}
 ` as typeof import('./index.generated').PokemonsDocument
 
-const Pokemon = gql`
-  query Pokemon {
-    pokemon(id: "1") {
-      id
-      name
-      ...pokemonFields
-    }
-  }
+const client = createClient({
+  url: '',
+})
 
-  ${PokemonFields}
-` as typeof import('./index.generated').PokemonDocument
+client.query(PokemonsQuery).toPromise().then(result => {
+  result.data?.pokemons;
+})
 
-const Donkemon = gql`
-  query Donkemon ($id: ID!) {
+const PokemonQuery = gql`
+  query Pokemon($id: ID!) {
     pokemon(id: $id) {
       id
+      name
+      __typename
     }
   }
-` as typeof import('./index.generated').DonkemonDocument
-const urqlClient = createClient({
-  url: '',
-  exchanges: []
-});
+` as typeof import('./index.generated').PokemonDocument
 
-urqlClient.query(Pokemons).toPromise().then(result => {
-  result.data?.pokemons;
-});
+client.query(PokemonQuery, { id: '' }).toPromise().then(result => {
+  result.data?.pokemon;
+})

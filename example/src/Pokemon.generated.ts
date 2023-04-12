@@ -62,26 +62,25 @@ export type PokemonDimension = {
 };
 
 /** Elemental property associated with either a Pokémon or one of their moves. */
-export enum PokemonType {
-  Bug = 'Bug',
-  Dark = 'Dark',
-  Dragon = 'Dragon',
-  Electric = 'Electric',
-  Fairy = 'Fairy',
-  Fighting = 'Fighting',
-  Fire = 'Fire',
-  Flying = 'Flying',
-  Ghost = 'Ghost',
-  Grass = 'Grass',
-  Ground = 'Ground',
-  Ice = 'Ice',
-  Normal = 'Normal',
-  Poison = 'Poison',
-  Psychic = 'Psychic',
-  Rock = 'Rock',
-  Steel = 'Steel',
-  Water = 'Water'
-}
+export type PokemonType =
+  | 'Bug'
+  | 'Dark'
+  | 'Dragon'
+  | 'Electric'
+  | 'Fairy'
+  | 'Fighting'
+  | 'Fire'
+  | 'Flying'
+  | 'Ghost'
+  | 'Grass'
+  | 'Ground'
+  | 'Ice'
+  | 'Normal'
+  | 'Poison'
+  | 'Psychic'
+  | 'Rock'
+  | 'Steel'
+  | 'Water';
 
 export type Query = {
   __typename?: 'Query';

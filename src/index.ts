@@ -236,8 +236,11 @@ function create(info: ts.server.PluginCreateInfo) {
 
       const suggestions = getAutocompleteSuggestions(schema.current, text, new Cursor(foundToken.line, foundToken.start))
 
-      const parsed = parse(text);
-      const fragments = parsed.definitions.filter(x => x.kind === Kind.FRAGMENT_DEFINITION) as Array<FragmentDefinitionNode>
+      let fragments: Array<FragmentDefinitionNode> = []
+      try {
+        const parsed = parse(text);
+        fragments = parsed.definitions.filter(x => x.kind === Kind.FRAGMENT_DEFINITION) as Array<FragmentDefinitionNode>
+      } catch (e) {}
 
       const result: ts.WithMetadata<ts.CompletionInfo> = {
         isGlobalCompletion: false,

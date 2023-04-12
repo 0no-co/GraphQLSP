@@ -24,7 +24,7 @@
     "trailingComma": "es5"
   },
   "lint-staged": {
-    "*.{ts,json,md}": "prettier --write"
+    "*.{js,ts,json,md}": "prettier --write"
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.1",

@@ -389,8 +389,8 @@ function create(info: ts.server.PluginCreateInfo) {
   return proxy;
 }
 
-const init: ts.server.PluginModuleFactory = () => {
+export const init: ts.server.PluginModuleFactory = () => {
   return { create };
 };
 
-export = init;
+export default init;

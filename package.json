@@ -2,9 +2,10 @@
   "name": "graphqlsp",
   "version": "1.0.0",
   "description": "https://github.com/microsoft/TypeScript/wiki/Writing-a-Language-Service-Plugin",
-  "main": "src/index.js",
+  "main": "./dist/index.js",
+  "module": "./dist/index.module.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "rollup -c ./scripts/build.mjs",
     "prepare": "husky install"
   },
   "repository": {
@@ -29,12 +30,15 @@
   "devDependencies": {
     "@changesets/cli": "^2.26.1",
     "@changesets/get-github-info": "^0.5.2",
+    "@rollup/plugin-terser": "^0.4.1",
+    "@rollup/plugin-typescript": "^11.1.0",
     "@types/node": "^18.15.11",
     "dotenv": "^16.0.3",
     "graphql": "^16.5.0",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.1",
     "prettier": "^2.8.7",
+    "rollup": "^3.20.2",
     "typescript": "^5.0.0"
   },
   "dependencies": {

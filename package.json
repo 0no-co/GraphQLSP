@@ -19,6 +19,9 @@
   "homepage": "https://github.com/JoviDeCroock/GraphQLSP#readme",
   "devDependencies": {
     "@types/node": "^18.15.11",
+    "@changesets/cli": "^2.26.1",
+    "@changesets/get-github-info": "^0.5.2",
+    "dotenv": "^16.0.3",
     "graphql": "^16.5.0",
     "typescript": "^5.0.0"
   },

@@ -12,9 +12,14 @@
     "type": "git",
     "url": "git+https://github.com/JoviDeCroock/GraphQLSP.git"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "GraphQL",
+    "TypeScript",
+    "LSP",
+    "Typed-document-node"
+  ],
+  "author": "0no.co <hi@0no.co>",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/JoviDeCroock/GraphQLSP/issues"
   },

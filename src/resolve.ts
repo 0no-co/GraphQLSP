@@ -3,10 +3,7 @@ import {
   isIdentifier,
   isNoSubstitutionTemplateLiteral,
   isTaggedTemplateExpression,
-  NoSubstitutionTemplateLiteral,
   TaggedTemplateExpression,
-  TemplateExpression,
-  TemplateLiteral,
 } from 'typescript';
 import ts from 'typescript/lib/tsserverlibrary';
 import { findNode, getSource } from './utils';

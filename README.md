@@ -1,6 +1,15 @@
 # GraphQLSP
 
-https://github.com/microsoft/TypeScript/wiki/Writing-a-Language-Service-Plugin
+This is a TypeScript LSP Plugin that will recognise documents in your
+TypeScript code and help you out with hover-information, diagnostics,
+auto-complete and automatically generating [Typed-Document-nodes](https://the-guild.dev/graphql/codegen/plugins/typescript/typed-document-node)
+
+## Features
+
+- Hover information showing the decriptions of fields
+- Diagnostics for adding fields that don't exist, are deprecated, missmatched argument types, ...
+- Auto-complete inside your editor for fields
+- When you save it will generate `typed-document-nodes` for your documents and cast them to the correct type
 
 ## Installation
 

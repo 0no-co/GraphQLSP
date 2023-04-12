@@ -21,9 +21,9 @@ export const getToken = (
   let cPos = template.pos + 1;
 
   let foundToken: Token | undefined = undefined;
-  for (let i = 0; i < input.length; i++) {
-    const lPos = cPos;
-    const stream = new CharacterStream(input[i]);
+  for (let line = 0; line < input.length; line++) {
+    const lPos = cPos - 1;
+    const stream = new CharacterStream(input[line]);
     while (!stream.eol()) {
       const token = parser.token(stream, state);
       const string = stream.current();
@@ -34,7 +34,7 @@ export const getToken = (
         lPos + stream.getCurrentPosition() >= cursorPosition
       ) {
         foundToken = {
-          line: i,
+          line,
           start: stream.getStartOfToken() + 1,
           end: stream.getCurrentPosition(),
           string,
@@ -45,7 +45,7 @@ export const getToken = (
       }
     }
 
-    cPos += input[i].length + 1;
+    cPos += input[line].length + 1;
   }
 
   return foundToken;

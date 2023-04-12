@@ -5,7 +5,7 @@ https://github.com/microsoft/TypeScript/wiki/Writing-a-Language-Service-Plugin
 ## Installation
 
 ```sh
-npm install -D graphqlsp
+npm install -D @0no-co/graphqlsp
 ```
 
 ## Usage
@@ -15,10 +15,12 @@ Go to your `tsconfig.json` and add
 ```json
 {
   "compilerOptions": {
-    "plugins": [{
-      "name": "graphqlsp",
-      "schema": "./schema.graphql"
-    }]
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "./schema.graphql"
+      }
+    ]
   }
 }
 ```

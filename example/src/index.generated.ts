@@ -37,6 +37,7 @@ export type EvolutionRequirement = {
 export type Pokemon = {
   __typename?: 'Pokemon';
   attacks?: Maybe<AttacksConnection>;
+  /** @deprecated And this is the reason why */
   classification?: Maybe<Scalars['String']>;
   evolutionRequirements?: Maybe<Array<Maybe<EvolutionRequirement>>>;
   evolutions?: Maybe<Array<Maybe<Pokemon>>>;

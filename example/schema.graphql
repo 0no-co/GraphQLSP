@@ -25,7 +25,7 @@ type EvolutionRequirement {
 
 type Pokemon {
   attacks: AttacksConnection
-  classification: String
+  classification: String @deprecated(reason: "And this is the reason why")
   evolutionRequirements: [EvolutionRequirement]
   evolutions: [Pokemon]
 

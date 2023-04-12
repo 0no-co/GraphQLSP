@@ -10,7 +10,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/JoviDeCroock/GraphQLSP.git"
+    "url": "git+https://github.com/0no-co/GraphQLSP.git"
   },
   "keywords": [
     "GraphQL",
@@ -21,9 +21,9 @@
   "author": "0no.co <hi@0no.co>",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/JoviDeCroock/GraphQLSP/issues"
+    "url": "https://github.com/0no-co/GraphQLSP/issues"
   },
-  "homepage": "https://github.com/JoviDeCroock/GraphQLSP#readme",
+  "homepage": "https://github.com/0no-co/GraphQLSP#readme",
   "prettier": {
     "singleQuote": true,
     "arrowParens": "avoid",

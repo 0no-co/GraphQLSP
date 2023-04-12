@@ -1,7 +1,13 @@
-import ts from "typescript/lib/tsserverlibrary";
-import { isNoSubstitutionTemplateLiteral, isTaggedTemplateExpression } from "typescript";
+import ts from 'typescript/lib/tsserverlibrary';
+import {
+  isNoSubstitutionTemplateLiteral,
+  isTaggedTemplateExpression,
+} from 'typescript';
 
-export function findNode(sourceFile: ts.SourceFile, position: number): ts.Node | undefined {
+export function findNode(
+  sourceFile: ts.SourceFile,
+  position: number
+): ts.Node | undefined {
   function find(node: ts.Node): ts.Node | undefined {
     if (position >= node.getStart() && position < node.getEnd()) {
       return ts.forEachChild(node, find) || node;
@@ -10,10 +16,17 @@ export function findNode(sourceFile: ts.SourceFile, position: number): ts.Node |
   return find(sourceFile);
 }
 
-export function findAllTaggedTemplateNodes(sourceFile: ts.SourceFile): Array<ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral> {
-  const result: Array<ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral> = [];
+export function findAllTaggedTemplateNodes(
+  sourceFile: ts.SourceFile
+): Array<ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral> {
+  const result: Array<
+    ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral
+  > = [];
   function find(node: ts.Node) {
-    if (isTaggedTemplateExpression(node) || isNoSubstitutionTemplateLiteral(node)) {
+    if (
+      isTaggedTemplateExpression(node) ||
+      isNoSubstitutionTemplateLiteral(node)
+    ) {
       result.push(node);
       return;
     } else {
@@ -26,10 +39,10 @@ export function findAllTaggedTemplateNodes(sourceFile: ts.SourceFile): Array<ts.
 
 export function getSource(info: ts.server.PluginCreateInfo, filename: string) {
   const program = info.languageService.getProgram();
-  if (!program) return undefined
+  if (!program) return undefined;
 
-  const source = program.getSourceFile(filename)
-  if (!source) return undefined
+  const source = program.getSourceFile(filename);
+  if (!source) return undefined;
 
-  return source
+  return source;
 }

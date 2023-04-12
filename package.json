@@ -4,7 +4,8 @@
   "description": "https://github.com/microsoft/TypeScript/wiki/Writing-a-Language-Service-Plugin",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "prepare": "husky install"
   },
   "repository": {
     "type": "git",
@@ -17,12 +18,23 @@
     "url": "https://github.com/JoviDeCroock/GraphQLSP/issues"
   },
   "homepage": "https://github.com/JoviDeCroock/GraphQLSP#readme",
+  "prettier": {
+    "singleQuote": true,
+    "arrowParens": "avoid",
+    "trailingComma": "es5"
+  },
+  "lint-staged": {
+    "*.{ts,json,md}": "prettier --write"
+  },
   "devDependencies": {
-    "@types/node": "^18.15.11",
     "@changesets/cli": "^2.26.1",
     "@changesets/get-github-info": "^0.5.2",
+    "@types/node": "^18.15.11",
     "dotenv": "^16.0.3",
     "graphql": "^16.5.0",
+    "husky": "^8.0.3",
+    "lint-staged": "^13.2.1",
+    "prettier": "^2.8.7",
     "typescript": "^5.0.0"
   },
   "dependencies": {

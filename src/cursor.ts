@@ -1,4 +1,4 @@
-import { IPosition } from "graphql-language-service";
+import { IPosition } from 'graphql-language-service';
 
 export class Cursor implements IPosition {
   line: number;
@@ -18,7 +18,9 @@ export class Cursor implements IPosition {
   }
 
   lessThanOrEqualTo(position: IPosition) {
-    return this.line < position.line ||
-      (this.line === position.line && this.character <= position.character);
+    return (
+      this.line < position.line ||
+      (this.line === position.line && this.character <= position.character)
+    );
   }
 }

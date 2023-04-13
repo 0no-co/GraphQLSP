@@ -8,7 +8,8 @@
     "build": "rollup -c ./scripts/build.mjs",
     "prepare": "husky install",
     "dev": "pnpm --filter @0no-co/graphqlsp dev",
-    "launch-debug": "./scripts/launch-debug.sh"
+    "launch-debug": "./scripts/launch-debug.sh",
+    "test:e2e": "cd test/e2e && pnpm test"
   },
   "prettier": {
     "singleQuote": true,

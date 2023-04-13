@@ -47,6 +47,6 @@ Run `TSS_DEBUG_BRK=9559 code example` and ensure that the TypeScript used is the
 the `.vscode` folder should ensure that but sometimes it fails. When we use `TSS_DEBUG_BRK` the plugin
 won't run until we attach the debugger from our main editor.
 
-After makiing changes you'll have to re-open said editor or restart the TypeScript server and re-attach the
+After making changes you'll have to re-open said editor or restart the TypeScript server and re-attach the
 debugger. Breakpoints have to be set in the transpiled JS-code hence using `tsc` currently so the code is a
 bit easier to navigate.

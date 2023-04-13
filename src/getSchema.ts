@@ -13,13 +13,9 @@ export const loadSchema = (
 
   fs.watchFile(resolvedPath, () => {
     const contents = fs.readFileSync(resolvedPath, 'utf-8');
-    const parsedSchema = isJson
-      ? buildClientSchema(JSON.parse(contents))
-      : buildSchema(contents);
     ref.current = isJson
       ? buildClientSchema(JSON.parse(contents))
       : buildSchema(contents);
-    return ref;
   });
 
   ref.current = isJson

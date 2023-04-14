@@ -2,9 +2,12 @@ import { expect, afterEach, afterAll, beforeEach, it } from 'vitest';
 import { TSServer } from './server';
 import path from 'node:path';
 import fs from 'node:fs';
+import url from 'node:url';
 import ts from 'typescript/lib/tsserverlibrary';
 
-const projectPath = path.resolve('./fixture-project');
+const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
+
+const projectPath = path.resolve(__dirname, 'fixture-project');
 
 let server: TSServer;
 beforeEach(() => {

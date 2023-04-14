@@ -9,7 +9,7 @@
     "prepare": "husky install",
     "dev": "pnpm --filter @0no-co/graphqlsp dev",
     "launch-debug": "./scripts/launch-debug.sh",
-    "test:e2e": "pnpm --filter e2e-tests test"
+    "test:e2e": "vitest run"
   },
   "prettier": {
     "singleQuote": true,
@@ -29,6 +29,7 @@
     "lint-staged": "^13.2.1",
     "prettier": "^2.8.7",
     "rollup": "^3.20.2",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "vitest": "^0.30.1"
   }
 }

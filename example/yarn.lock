@@ -1209,6 +1209,13 @@ node-fetch@2.6.7:
   dependencies:
     whatwg-url "^5.0.0"
 
+node-fetch@^2.0.0:
+  version "2.6.9"
+  resolved "https://registry.yarnpkg.com/node-fetch/-/node-fetch-2.6.9.tgz#7c7f744b5cc6eb5fd404e0c7a9fec630a55657e6"
+  integrity sha512-DJm/CJkZkRjKKj4Zi4BsKVZh3ValV5IR5s7LVZnW+6YMh0W1BfNA8XSs6DLMGYlId5F3KnA70uu2qepcR08Qqg==
+  dependencies:
+    whatwg-url "^5.0.0"
+
 node-int64@^0.4.0:
   version "0.4.0"
   resolved "https://registry.yarnpkg.com/node-int64/-/node-int64-0.4.0.tgz#87a9065cdb355d3182d8f94ce11188b825c68a3b"
@@ -1316,13 +1323,14 @@ picocolors@^1.0.0:
   integrity sha512-1fygroTLlHu66zi26VoTDv8yRgm0Fccecssto+MhsZ0D/DGW2sm8E8AjW7NU5VVTRt5GxbeZ5qBuJr+HyLYkjQ==
 
 "plugin@file:..":
-  version "1.0.0"
+  version "0.1.0"
   dependencies:
     "@graphql-codegen/core" "^2.6.8"
     "@graphql-codegen/typed-document-node" "^2.3.10"
     "@graphql-codegen/typescript" "^2.8.5"
     "@graphql-codegen/typescript-operations" "^2.5.10"
     graphql-language-service "^5.0.6"
+    node-fetch "^2.0.0"
 
 promise@^7.1.1:
   version "7.3.1"

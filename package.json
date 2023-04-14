@@ -38,6 +38,7 @@
     "@rollup/plugin-terser": "^0.4.1",
     "@rollup/plugin-typescript": "^11.1.0",
     "@types/node": "^18.15.11",
+    "@types/node-fetch": "^2.6.3",
     "dotenv": "^16.0.3",
     "graphql": "^16.5.0",
     "husky": "^8.0.3",
@@ -51,6 +52,7 @@
     "@graphql-codegen/typed-document-node": "^2.3.10",
     "@graphql-codegen/typescript": "^2.8.5",
     "@graphql-codegen/typescript-operations": "^2.5.10",
-    "graphql-language-service": "^5.0.6"
+    "graphql-language-service": "^5.0.6",
+    "node-fetch": "^2.0.0"
   }
 }

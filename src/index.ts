@@ -43,24 +43,28 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   return proxy;
 }
 
+export type Logger = (msg: string) => void;
+
 function create(info: ts.server.PluginCreateInfo) {
-  const logger = (msg: string) =>
+  const logger: Logger = (msg: string) =>
     info.project.projectService.logger.info(`[ts-graphql-plugin] ${msg}`);
   logger('config: ' + JSON.stringify(info.config));
   if (!info.config.schema) {
     throw new Error('Please provide a GraphQL Schema!');
   }
 
-  info.project.projectService.logger.info('Setting up the GraphQL Plugin');
+  logger('Setting up the GraphQL Plugin');
 
   const tagTemplate = info.config.template || 'gql';
   const scalars = info.config.scalars || {};
 
   const proxy = createBasicDecorator(info);
 
-  // TODO: check out interesting stuff on ts.factory
-
-  const schema = loadSchema(info.project.getProjectName(), info.config.schema);
+  const schema = loadSchema(
+    info.project.getProjectName(),
+    info.config.schema,
+    logger
+  );
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics =

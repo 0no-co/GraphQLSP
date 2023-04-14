@@ -1,4 +1,4 @@
-import gql from 'graphql-tag';
+import { gql } from '@urql/core';
 
 const PostsQuery = gql`
   query AllPosts {

@@ -11,7 +11,9 @@ export default {
     { file: './dist/index.js', format: 'cjs' },
   ],
   plugins: [
-    typescript(),
+    typescript({
+      exclude: ['test/**'],
+    }),
     !isDev &&
       terser({
         warnings: true,

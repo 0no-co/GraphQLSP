@@ -2,7 +2,7 @@
   "private": true,
   "dependencies": {
     "@0no-co/graphqlsp": "file:../../..",
-    "graphql-tag": "^2.12.6"
+    "@urql/core": "^4.0.4"
   },
   "devDependencies": {
     "typescript": "^5.0.4"

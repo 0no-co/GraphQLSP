@@ -5,6 +5,8 @@
   "main": "./dist/index.js",
   "module": "./dist/index.module.js",
   "scripts": {
+    "build": "rollup -c ./scripts/build.mjs",
+    "dev": "NODE_ENV=development pnpm build --watch",
     "prepare": "husky install"
   },
   "prettier": {

@@ -26,7 +26,12 @@ import fs from 'fs';
 import { Cursor } from './cursor';
 import { loadSchema } from './getSchema';
 import { getToken } from './token';
-import { findAllTaggedTemplateNodes, findNode, getSource } from './utils';
+import {
+  findAllTaggedTemplateNodes,
+  findNode,
+  getSource,
+  isFileDirty,
+} from './utils';
 import { resolveTemplate } from './resolve';
 import { generateTypedDocumentNodes } from './types/generate';
 
@@ -174,10 +179,8 @@ function create(info: ts.server.PluginCreateInfo) {
         const nameParts = name.split('.');
         nameParts[nameParts.length - 1] = 'generated.ts';
         parts[parts.length - 1] = nameParts.join('.');
-        const contents = fs.readFileSync(filename, 'utf-8');
-        const currentText = source.getFullText();
 
-        if (contents !== currentText) {
+        if (isFileDirty(filename, source)) {
           return [...newDiagnostics, ...originalDiagnostics];
         }
 
@@ -187,6 +190,10 @@ function create(info: ts.server.PluginCreateInfo) {
           texts.join('\n'),
           scalars
         ).then(() => {
+          if (isFileDirty(filename, source)) {
+            return;
+          }
+
           nodes.forEach((node, i) => {
             const queryText = texts[i] || '';
             const parsed = parse(queryText);
@@ -222,9 +229,13 @@ function create(info: ts.server.PluginCreateInfo) {
             const typeImport = parentChildren.find(x =>
               isImportTypeNode(x)
             ) as ImportTypeNode;
+
             if (typeImport && typeImport.getText().includes(exportName)) return;
 
             const span = { length: 1, start: node.end };
+
+            // TODO: if we have a typeImport but the name has been updated/is wrong
+            // we need to leave the "as x" typecast
             const text =
               source.text.substring(0, span.start) +
               imp +

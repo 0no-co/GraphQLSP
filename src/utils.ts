@@ -3,6 +3,14 @@ import {
   isNoSubstitutionTemplateLiteral,
   isTaggedTemplateExpression,
 } from 'typescript';
+import fs from 'fs';
+
+export function isFileDirty(fileName: string, source: ts.SourceFile) {
+  const contents = fs.readFileSync(fileName, 'utf-8');
+  const currentText = source.getFullText();
+
+  return currentText !== contents;
+}
 
 export function findNode(
   sourceFile: ts.SourceFile,

@@ -6,8 +6,9 @@
   "module": "./dist/index.module.js",
   "scripts": {
     "build": "rollup -c ./scripts/build.mjs",
+    "prepare": "husky install",
     "dev": "NODE_ENV=development pnpm build --watch",
-    "prepare": "husky install"
+    "launch-debug": "./scripts/launch-debug.sh"
   },
   "prettier": {
     "singleQuote": true,

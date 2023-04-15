@@ -52,7 +52,7 @@ export type Logger = (msg: string) => void;
 
 function create(info: ts.server.PluginCreateInfo) {
   const logger: Logger = (msg: string) =>
-    info.project.projectService.logger.info(`[ts-graphql-plugin] ${msg}`);
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   logger('config: ' + JSON.stringify(info.config));
   if (!info.config.schema) {
     throw new Error('Please provide a GraphQL Schema!');

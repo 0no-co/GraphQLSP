@@ -4,5 +4,5 @@
   "commit": false,
   "access": "public",
   "baseBranch": "main",
-  "ignore": ["example"]
+  "ignore": ["example", "fixtures"]
 }

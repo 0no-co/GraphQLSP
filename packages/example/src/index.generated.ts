@@ -113,6 +113,7 @@ export type PokemonsQuery = {
     __typename: 'Pokemon';
     id: string;
     name: string;
+    fleeRate?: number | null;
   } | null> | null;
 };
 
@@ -128,7 +129,12 @@ export type PokemonQueryVariables = Exact<{
 
 export type PokemonQuery = {
   __typename?: 'Query';
-  pokemon?: { __typename: 'Pokemon'; id: string; name: string } | null;
+  pokemon?: {
+    __typename: 'Pokemon';
+    id: string;
+    fleeRate?: number | null;
+    name: string;
+  } | null;
 };
 
 export const PokemonFieldsFragmentDoc = {
@@ -170,6 +176,7 @@ export const PokemonsDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'fleeRate' } },
                 {
                   kind: 'FragmentSpread',
                   name: { kind: 'Name', value: 'pokemonFields' },
@@ -180,7 +187,21 @@ export const PokemonsDocument = {
         ],
       },
     },
-    ...PokemonFieldsFragmentDoc.definitions,
+    {
+      kind: 'FragmentDefinition',
+      name: { kind: 'Name', value: 'pokemonFields' },
+      typeCondition: {
+        kind: 'NamedType',
+        name: { kind: 'Name', value: 'Pokemon' },
+      },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+        ],
+      },
+    },
   ],
 } as unknown as DocumentNode<PokemonsQuery, PokemonsQueryVariables>;
 export const PokemonDocument = {
@@ -220,11 +241,30 @@ export const PokemonDocument = {
               kind: 'SelectionSet',
               selections: [
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'fleeRate' } },
+                {
+                  kind: 'FragmentSpread',
+                  name: { kind: 'Name', value: 'pokemonFields' },
+                },
                 { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
               ],
             },
           },
+        ],
+      },
+    },
+    {
+      kind: 'FragmentDefinition',
+      name: { kind: 'Name', value: 'pokemonFields' },
+      typeCondition: {
+        kind: 'NamedType',
+        name: { kind: 'Name', value: 'Pokemon' },
+      },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'name' } },
         ],
       },
     },

@@ -6,6 +6,7 @@
   "module": "./dist/index.module.js",
   "scripts": {
     "build": "rollup -c ../../scripts/build.mjs",
+    "dev": "NODE_ENV=development pnpm build --watch",
     "prepublishOnly": "pnpm build"
   },
   "repository": {

@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env sh
 
 # Check if code is in PATH
 
@@ -9,4 +9,4 @@ then
     exit
 fi
 
-TSS_DEBUG=9559 code --user-data-dir ~/.vscode-debug/ example
+TSS_DEBUG=9559 code --user-data-dir ~/.vscode-debug/ packages/example

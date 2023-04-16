@@ -7,7 +7,7 @@
   "scripts": {
     "build": "rollup -c ./scripts/build.mjs",
     "prepare": "husky install",
-    "dev": "NODE_ENV=development pnpm build --watch",
+    "dev": "pnpm --filter @0no-co/graphqlsp dev",
     "launch-debug": "./scripts/launch-debug.sh"
   },
   "prettier": {

@@ -108,6 +108,7 @@ export type QueryPokemonArgs = {
 export type FieldsFragment = {
   __typename?: 'Pokemon';
   classification?: string | null;
+  id: string;
 };
 
 export type PokemonFieldsFragment = {
@@ -130,6 +131,7 @@ export const FieldsFragmentDoc = {
         kind: 'SelectionSet',
         selections: [
           { kind: 'Field', name: { kind: 'Name', value: 'classification' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
         ],
       },
     },

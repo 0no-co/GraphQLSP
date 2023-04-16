@@ -7,7 +7,7 @@ const PokemonsQuery = gql`
       id
       name
       __typename
-
+      fleeRate
       ...pokemonFields
     }
   }
@@ -30,10 +30,13 @@ const PokemonQuery = gql`
   query Pokemon($id: ID!) {
     pokemon(id: $id) {
       id
-      name
+      fleeRate
+      ...pokemonFields
       __typename
     }
   }
+
+  ${PokemonFields}
 ` as typeof import('./index.generated').PokemonDocument;
 
 client

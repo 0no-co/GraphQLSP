@@ -4,6 +4,7 @@ const PostsQuery = gql`
   query AllPosts {
     posts {
       title
+      
     }
   }
 `;

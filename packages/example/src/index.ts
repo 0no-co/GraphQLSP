@@ -7,6 +7,7 @@ const PokemonsQuery = gql`
       id
       name
       __typename
+
       ...pokemonFields
     }
   }
@@ -19,7 +20,7 @@ const client = createClient({
 });
 
 client
-  .query(PokemonsQuery)
+  .query(PokemonsQuery, {})
   .toPromise()
   .then(result => {
     result.data?.pokemons;

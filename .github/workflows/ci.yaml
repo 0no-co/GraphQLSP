@@ -1,13 +1,15 @@
-name: Release
+name: CI
+
 on:
+  pull_request:
   push:
-    branches:
-      - main
+    branches: main
+
 jobs:
-  release:
-    name: Release
-    runs-on: ubuntu-20.04
-    timeout-minutes: 20
+  check:
+    name: Checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
@@ -17,7 +19,7 @@ jobs:
       - name: Setup Node
         uses: actions/setup-node@v3
         with:
-          node-version: 18
+          node-version: '18'
 
       - name: Setup pnpm
         uses: pnpm/action-setup@v2.2.4
@@ -41,9 +43,5 @@ jobs:
       - name: Install Dependencies
         run: pnpm install --frozen-lockfile --prefer-offline
 
-      - name: PR or Publish
-        id: changesets
-        uses: changesets/action@v1.4.1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+      - name: Build
+        run: pnpm --filter @0no-co/graphqlsp run build

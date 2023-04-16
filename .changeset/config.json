@@ -3,5 +3,6 @@
   "changelog": "../scripts/changelog.js",
   "commit": false,
   "access": "public",
-  "baseBranch": "main"
+  "baseBranch": "main",
+  "ignore": ["example"]
 }

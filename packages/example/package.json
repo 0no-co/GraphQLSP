@@ -1,5 +1,6 @@
 {
   "name": "example",
+  "private": true,
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -9,11 +10,11 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@urql/core": "^2.6.1",
-    "graphql": "^16.5.0"
+    "@urql/core": "^3.0.0",
+    "graphql": "^16.6.0"
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "plugin": "file:.."
+    "@0no-co/graphqlsp": "file:../graphqlsp"
   }
 }

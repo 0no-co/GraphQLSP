@@ -1,30 +1,12 @@
 {
-  "name": "@0no-co/graphqlsp",
+  "name": "graphqlsp",
   "version": "0.2.0",
   "description": "TypeScript LSP plugin that finds GraphQL documents in your code and provides hints and auto-generates types.",
   "main": "./dist/index.js",
   "module": "./dist/index.module.js",
   "scripts": {
-    "build": "rollup -c ./scripts/build.mjs",
-    "prepare": "husky install",
-    "prepublishOnly": "pnpm build"
+    "prepare": "husky install"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/0no-co/GraphQLSP.git"
-  },
-  "keywords": [
-    "GraphQL",
-    "TypeScript",
-    "LSP",
-    "Typed-document-node"
-  ],
-  "author": "0no.co <hi@0no.co>",
-  "license": "MIT",
-  "bugs": {
-    "url": "https://github.com/0no-co/GraphQLSP/issues"
-  },
-  "homepage": "https://github.com/0no-co/GraphQLSP#readme",
   "prettier": {
     "singleQuote": true,
     "arrowParens": "avoid",
@@ -38,22 +20,11 @@
     "@changesets/get-github-info": "^0.5.2",
     "@rollup/plugin-terser": "^0.4.1",
     "@rollup/plugin-typescript": "^11.1.0",
-    "@types/node": "^18.15.11",
-    "@types/node-fetch": "^2.6.3",
     "dotenv": "^16.0.3",
-    "graphql": "^16.5.0",
     "husky": "^8.0.3",
     "lint-staged": "^13.2.1",
     "prettier": "^2.8.7",
     "rollup": "^3.20.2",
     "typescript": "^5.0.0"
-  },
-  "dependencies": {
-    "@graphql-codegen/core": "^2.6.8",
-    "@graphql-codegen/typed-document-node": "^2.3.10",
-    "@graphql-codegen/typescript": "^2.8.5",
-    "@graphql-codegen/typescript-operations": "^2.5.10",
-    "graphql-language-service": "^5.0.6",
-    "node-fetch": "^2.0.0"
   }
 }

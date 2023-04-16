@@ -4,11 +4,11 @@ export const fields = gql`
   fragment fields on Pokemon {
     classification
   }
-` as typeof import('./Pokemon.generated').FieldsFragmentDoc
+` as typeof import('./Pokemon.generated').FieldsFragmentDoc;
 
 export const PokemonFields = gql`
   fragment pokemonFields on Pokemon {
     id
     name
   }
-` as typeof import('./Pokemon.generated').PokemonFieldsFragmentDoc
+` as typeof import('./Pokemon.generated').PokemonFieldsFragmentDoc;

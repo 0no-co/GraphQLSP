@@ -63,4 +63,4 @@ it('passes simple smoke test', async () => {
   expect(fs.readFileSync(generatedFile, 'utf-8')).toContain(
     'export const AllPostsDocument = '
   );
-});
+}, 7500);

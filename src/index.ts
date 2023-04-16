@@ -15,12 +15,22 @@ import {
   getAutocompleteSuggestions,
   getDiagnostics,
   Diagnostic,
+  getTokenAtPosition,
+  getTypeInfo,
+  getDefinitionState,
+  getFragmentDefinitions,
+  ContextToken,
+  RuleKinds,
 } from 'graphql-language-service';
 import {
   parse,
   Kind,
   FragmentDefinitionNode,
   OperationDefinitionNode,
+  GraphQLSchema,
+  doTypesOverlap,
+  isCompositeType,
+  GraphQLCompositeType,
 } from 'graphql';
 import fs from 'fs';
 
@@ -35,6 +45,12 @@ import {
 } from './utils';
 import { resolveTemplate } from './resolve';
 import { generateTypedDocumentNodes } from './types/generate';
+import {
+  AllTypeInfo,
+  CompletionItem,
+  CompletionItemKind,
+} from 'graphql-language-service/dist/types';
+import { hintList } from 'graphql-language-service/dist/interface';
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -314,11 +330,19 @@ function create(info: ts.server.PluginCreateInfo) {
         ) as Array<FragmentDefinitionNode>;
       } catch (e) {}
 
+      const cursor = new Cursor(foundToken.line, foundToken.start);
       const suggestions = getAutocompleteSuggestions(
         schema.current,
         text,
-        new Cursor(foundToken.line, foundToken.start),
-        undefined,
+        cursor,
+      );
+
+      const token = getTokenAtPosition(text, cursor);
+      const spreadSuggestions = getSuggestionsForFragmentSpread(
+        token,
+        getTypeInfo(schema.current, token.state),
+        schema.current,
+        text,
         fragments
       );
 
@@ -327,33 +351,32 @@ function create(info: ts.server.PluginCreateInfo) {
         isMemberCompletion: false,
         isNewIdentifierLocation: false,
         entries: [
-          ...suggestions.map(
-            suggestion =>
-              ({
-                kind: ScriptElementKind.variableElement,
-                name: suggestion.label,
-                kindModifiers: 'declare',
-                sortText: suggestion.sortText || '0',
-                labelDetails: {
-                  detail:
-                    ' ' + suggestion.documentation ||
-                    suggestion.labelDetails?.detail ||
-                    suggestion.type,
-                  description:
-                    ' ' + suggestion.labelDetails?.description ||
-                    suggestion.documentation,
-                },
-              } as CompletionEntry)
-          ),
-          ...fragments.map(fragment => ({
+          ...suggestions.map(suggestion => ({
+            ...suggestion,
             kind: ScriptElementKind.variableElement,
-            name: fragment.name.value,
-            insertText: '...' + fragment.name.value,
+            name: suggestion.label,
+            kindModifiers: 'declare',
+            sortText: suggestion.sortText || '0',
+            labelDetails: {
+              detail:
+                ' ' + suggestion.documentation ||
+                suggestion.labelDetails?.detail ||
+                suggestion.type?.toString(),
+              description:
+                ' ' + suggestion.labelDetails?.description ||
+                suggestion.documentation,
+            },
+          })),
+          ...spreadSuggestions.map(suggestion => ({
+            ...suggestion,
+            kind: ScriptElementKind.variableElement,
+            name: suggestion.label,
+            insertText: '...' + suggestion.label,
             kindModifiers: 'declare',
             sortText: '0',
             labelDetails: {
-              detail: ' on type ' + fragment.typeCondition.name.value,
-              description: ' on type ' + fragment.typeCondition.name.value,
+              detail: suggestion.documentation,
+              description: suggestion.documentation,
             },
           })),
           ...originalCompletions.entries,
@@ -427,3 +450,50 @@ const init: ts.server.PluginModuleFactory = () => {
 };
 
 export default init;
+
+function getSuggestionsForFragmentSpread(
+  token: ContextToken,
+  typeInfo: AllTypeInfo,
+  schema: GraphQLSchema,
+  queryText: string,
+  fragments: FragmentDefinitionNode[]
+): Array<CompletionItem> {
+  if (!queryText) {
+    return [];
+  }
+
+  const typeMap = schema.getTypeMap();
+  const defState = getDefinitionState(token.state);
+
+  // Filter down to only the fragments which may exist here.
+  const relevantFrags = fragments.filter(
+    frag =>
+      // Only include fragments with known types.
+      typeMap[frag.typeCondition.name.value] &&
+      // Only include fragments which are not cyclic.
+      !(
+        defState &&
+        defState.kind === RuleKinds.FRAGMENT_DEFINITION &&
+        defState.name === frag.name.value
+      ) &&
+      // Only include fragments which could possibly be spread here.
+      isCompositeType(typeInfo.parentType) &&
+      isCompositeType(typeMap[frag.typeCondition.name.value]) &&
+      doTypesOverlap(
+        schema,
+        typeInfo.parentType,
+        typeMap[frag.typeCondition.name.value] as GraphQLCompositeType
+      )
+  );
+
+  return hintList(
+    token,
+    relevantFrags.map(frag => ({
+      label: frag.name.value,
+      detail: String(typeMap[frag.typeCondition.name.value]),
+      documentation: `fragment ${frag.name.value} on ${frag.typeCondition.name.value}`,
+      kind: CompletionItemKind.Field,
+      type: typeMap[frag.typeCondition.name.value],
+    }))
+  );
+}

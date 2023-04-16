@@ -169,11 +169,11 @@ export const PokemonsDocument = {
               selections: [
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
                 {
                   kind: 'FragmentSpread',
                   name: { kind: 'Name', value: 'pokemonFields' },
                 },
-                { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
               ],
             },
           },

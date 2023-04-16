@@ -7,6 +7,7 @@ const PokemonsQuery = gql`
       id
       name
       __typename
+
       ...pokemonFields
     }
   }

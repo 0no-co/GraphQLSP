@@ -344,13 +344,10 @@ function create(info: ts.server.PluginCreateInfo) {
             kindModifiers: 'declare',
             sortText: suggestion.sortText || '0',
             labelDetails: {
-              detail:
-                suggestion.documentation ||
-                suggestion.labelDetails?.detail ||
-                suggestion.type?.toString(),
-              description:
-                suggestion.labelDetails?.description ||
-                suggestion.documentation,
+              detail: suggestion.type
+                ? ' ' + suggestion.type?.toString()
+                : undefined,
+              description: suggestion.documentation,
             },
           })),
           ...spreadSuggestions.map(suggestion => ({
@@ -361,7 +358,6 @@ function create(info: ts.server.PluginCreateInfo) {
             kindModifiers: 'declare',
             sortText: '0',
             labelDetails: {
-              detail: suggestion.documentation,
               description: suggestion.documentation,
             },
           })),

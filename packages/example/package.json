@@ -15,6 +15,6 @@
   },
   "devDependencies": {
     "typescript": "^5.0.0",
-    "@0no-co/graphqlsp": "workspace:*"
+    "@0no-co/graphqlsp": "file:../graphqlsp"
   }
 }

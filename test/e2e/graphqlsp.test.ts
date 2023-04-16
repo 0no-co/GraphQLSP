@@ -89,7 +89,7 @@ describe('simple', () => {
       .find(
         resp => resp.type === 'response' && resp.command === 'completionInfo'
       );
-    console.log(res, server.responses);
+
     expect(res).toBeDefined();
     expect(typeof res?.body.entries).toEqual('object');
     const defaultAttrs = { kind: 'var', kindModifiers: 'declare' };

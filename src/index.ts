@@ -8,6 +8,7 @@ import {
   isTemplateExpression,
   isImportTypeNode,
   ImportTypeNode,
+  CompletionEntry,
 } from 'typescript';
 import {
   getHoverInformation,
@@ -305,12 +306,6 @@ function create(info: ts.server.PluginCreateInfo) {
 
       if (!foundToken || !schema.current) return originalCompletions;
 
-      const suggestions = getAutocompleteSuggestions(
-        schema.current,
-        text,
-        new Cursor(foundToken.line, foundToken.start)
-      );
-
       let fragments: Array<FragmentDefinitionNode> = [];
       try {
         const parsed = parse(text);
@@ -319,24 +314,47 @@ function create(info: ts.server.PluginCreateInfo) {
         ) as Array<FragmentDefinitionNode>;
       } catch (e) {}
 
+      const suggestions = getAutocompleteSuggestions(
+        schema.current,
+        text,
+        new Cursor(foundToken.line, foundToken.start),
+        undefined,
+        fragments
+      );
+
       const result: ts.WithMetadata<ts.CompletionInfo> = {
         isGlobalCompletion: false,
         isMemberCompletion: false,
         isNewIdentifierLocation: false,
-        // TODO: check whether we can add descriptions to the entries
         entries: [
-          ...suggestions.map(suggestion => ({
-            kind: ScriptElementKind.variableElement,
-            name: suggestion.label,
-            kindModifiers: 'declare',
-            sortText: suggestion.sortText || '0',
-          })),
+          ...suggestions.map(
+            suggestion =>
+              ({
+                kind: ScriptElementKind.variableElement,
+                name: suggestion.label,
+                kindModifiers: 'declare',
+                sortText: suggestion.sortText || '0',
+                labelDetails: {
+                  detail:
+                    ' ' + suggestion.documentation ||
+                    suggestion.labelDetails?.detail ||
+                    suggestion.type,
+                  description:
+                    ' ' + suggestion.labelDetails?.description ||
+                    suggestion.documentation,
+                },
+              } as CompletionEntry)
+          ),
           ...fragments.map(fragment => ({
             kind: ScriptElementKind.variableElement,
             name: fragment.name.value,
             insertText: '...' + fragment.name.value,
             kindModifiers: 'declare',
             sortText: '0',
+            labelDetails: {
+              detail: ' on type ' + fragment.typeCondition.name.value,
+              description: ' on type ' + fragment.typeCondition.name.value,
+            },
           })),
           ...originalCompletions.entries,
         ],

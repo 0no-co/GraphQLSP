@@ -38,15 +38,8 @@ now restart your TS-server and you should be good to go
 
 ## Local development
 
-Run `yarn` in both `/` as well as `/example`.
+Run `pnpm i` at the root. Open `packages/example` by running `code packages/example` or if you want to leverage
+breakpoints do it with the `TSS_DEBUG_BRK=9559` prefix. When you make changes in `packages/graphqlsp` all you need
+to do is run `pnpm i` in your other editor and restart the `TypeScript server` for the changes to apply.
 
-Open two terminal tabs, one where you run the build command which is `yarn tsc` and one
-intended to open our `/example`, most of the debugging will happen through setting breakpoints.
-
-Run `TSS_DEBUG_BRK=9559 code example` and ensure that the TypeScript used is the one from the workspace
-the `.vscode` folder should ensure that but sometimes it fails. When we use `TSS_DEBUG_BRK` the plugin
-won't run until we attach the debugger from our main editor.
-
-After making changes you'll have to re-open said editor or restart the TypeScript server and re-attach the
-debugger. Breakpoints have to be set in the transpiled JS-code hence using `tsc` currently so the code is a
-bit easier to navigate.
+> Ensure that both instances of your editor are using the Workspace Version of TypeScript

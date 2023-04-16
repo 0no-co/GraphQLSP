@@ -38,8 +38,24 @@ now restart your TS-server and you should be good to go
 
 ## Local development
 
-Run `pnpm i` at the root. Open `packages/example` by running `code packages/example` or if you want to leverage
-breakpoints do it with the `TSS_DEBUG_BRK=9559` prefix. When you make changes in `packages/graphqlsp` all you need
-to do is run `pnpm i` in your other editor and restart the `TypeScript server` for the changes to apply.
+1. Run `pnpm i` at the root
+1. Run `pnpm launch-debug` to run a VS Code instance with debugging enabled This will run a sandboxed version of VS Code
+1. Go to "Run and Debug" (⌘⇧D) and run "Attach to VS Code TS Server via Port"
+1. Run `pnpm dev` to produce unminified source code for easier debugging
+1. Now you can select breakpoints in the built code in `packages/example/node_modules/@0no-co/graphqlsp/dist/index.js`
+1. After you've made changes you have to restart the TS server in the extension VS Code instance (Command Palette -> "Restart TS Server")
+1. You also need to reconnect the debugger (🔄 point 4)
 
-> Ensure that both instances of your editor are using the Workspace Version of TypeScript
+<details>
+  <summary><b>TL;DR video</b></summary>
+
+https://user-images.githubusercontent.com/571589/232340571-4fcf0c97-6817-497f-bee9-7be07baeb10e.mp4
+
+</details>
+  
+### Troubleshooting
+
+- If the debugger doesn't attach:
+  - Open some `.ts` file, otherwise the TS Server won't start
+  - Make sure that you've selected the correct TypeScript instance (for both VS Codes)
+    <img src="https://user-images.githubusercontent.com/571589/232340638-1ba61c96-7aed-46ae-a192-0d2c070d18fb.png" height=500 />

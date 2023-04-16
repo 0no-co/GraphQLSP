@@ -6,7 +6,8 @@
   "module": "./dist/index.module.js",
   "scripts": {
     "build": "rollup -c ./scripts/build.mjs",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "prepublishOnly": "pnpm build"
   },
   "repository": {
     "type": "git",

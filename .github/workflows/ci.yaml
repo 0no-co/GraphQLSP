@@ -45,3 +45,6 @@ jobs:
 
       - name: Build
         run: pnpm --filter @0no-co/graphqlsp run build
+
+      - name: Test
+        run: pnpm run test:e2e

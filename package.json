@@ -1,6 +1,6 @@
 {
   "name": "graphqlsp",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "TypeScript LSP plugin that finds GraphQL documents in your code and provides hints and auto-generates types.",
   "main": "./dist/index.js",
   "module": "./dist/index.module.js",

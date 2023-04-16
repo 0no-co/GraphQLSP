@@ -1,4 +1,4 @@
-import { expect, afterEach, afterAll, beforeEach, it } from 'vitest';
+import { expect, afterAll, beforeAll, it, describe } from 'vitest';
 import { TSServer } from './server';
 import path from 'node:path';
 import fs from 'node:fs';
@@ -10,57 +10,145 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const projectPath = path.resolve(__dirname, 'fixture-project');
 
 let server: TSServer;
-beforeEach(() => {
-  server = new TSServer(projectPath, { debugLog: false });
+
+describe('simple', () => {
+  const testFile = path.join(projectPath, 'simple.ts');
+  const generatedFile = path.join(projectPath, 'simple.generated.ts');
+
+  beforeAll(async () => {
+    server = new TSServer(projectPath, { debugLog: false });
+    const fixtureFileContent = fs.readFileSync(
+      path.resolve(testFile, '../fixtures/simple.ts'),
+      'utf-8'
+    );
+
+    server.sendCommand('open', {
+      file: testFile,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+
+    server.sendCommand('updateOpen', {
+      openFiles: [{ file: testFile, fileContent: fixtureFileContent }],
+    } satisfies ts.server.protocol.UpdateOpenRequestArgs);
+
+    server.sendCommand('saveto', {
+      file: testFile,
+      tmpfile: testFile,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+
+    await server.waitForResponse(
+      response => response.type === 'event' && response.event === 'setTypings'
+    );
+  });
+
+  afterAll(() => {
+    try {
+      fs.unlinkSync(testFile);
+      fs.unlinkSync(generatedFile);
+    } catch {}
+    server.close();
+  });
+
+  it('Generates types for a given query', async () => {
+    expect(() => {
+      fs.lstatSync(testFile);
+      fs.lstatSync(generatedFile);
+    }).not.toThrow();
+
+    expect(fs.readFileSync(testFile, 'utf-8')).toContain(
+      `as typeof import('./simple.generated').AllPostsDocument`
+    );
+    expect(fs.readFileSync(generatedFile, 'utf-8')).toContain(
+      'export const AllPostsDocument = '
+    );
+  }, 7500);
+
+  it('Proposes suggestions for a selection-set', async () => {
+    server.send({
+      seq: 8,
+      type: 'request',
+      command: 'completionInfo',
+      arguments: {
+        file: testFile,
+        line: 7,
+        offset: 7,
+        includeExternalModuleExports: true,
+        includeInsertTextCompletions: true,
+        triggerKind: 1,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'completionInfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(
+        resp => resp.type === 'response' && resp.command === 'completionInfo'
+      );
+    console.log(res, server.responses);
+    expect(res).toBeDefined();
+    expect(typeof res?.body.entries).toEqual('object');
+    const defaultAttrs = { kind: 'var', kindModifiers: 'declare' };
+    expect(res?.body.entries).toEqual([
+      {
+        ...defaultAttrs,
+        name: 'id',
+        sortText: '0id',
+        labelDetails: { detail: ' ID!' },
+      },
+      {
+        ...defaultAttrs,
+        name: 'title',
+        sortText: '1title',
+        labelDetails: { detail: ' String!' },
+      },
+      {
+        ...defaultAttrs,
+        name: 'content',
+        sortText: '2content',
+        labelDetails: { detail: ' String!' },
+      },
+      {
+        ...defaultAttrs,
+        name: '__typename',
+        sortText: '3__typename',
+        labelDetails: {
+          detail: ' String!',
+          description: 'The name of the current Object type at runtime.',
+        },
+      },
+    ]);
+  }, 7500);
+
+  it('Gives quick-info when hovering', async () => {
+    server.send({
+      seq: 9,
+      type: 'request',
+      command: 'quickinfo',
+      arguments: {
+        file: testFile,
+        line: 5,
+        offset: 7,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'quickinfo'
+    );
+
+    //{"seq":0,"type":"response","command":"quickinfo","request_seq":236,"success":true,"body":{"kind":"string","kindModifiers":"","start":{"line":6,"offset":9},"end":{"line":6,"offset":10},"displayString":"Query.pokemons: [Pokemon]\n\nList out all Pokémon, optionally in pages","documentation":[],"tags":[]}}
+    const res = server.responses
+      .reverse()
+      .find(resp => resp.type === 'response' && resp.command === 'quickinfo');
+    expect(res).toBeDefined();
+    expect(typeof res?.body).toEqual('object');
+    expect(res?.body.displayString).toEqual(`Query.posts: [Post]
+
+List out all posts`);
+  }, 7500);
 });
-afterEach(() => {
-  server.close();
-});
-
-const testFile = path.join(projectPath, 'simple.ts');
-const generatedFile = path.join(projectPath, 'simple.generated.ts');
-
-afterAll(() => {
-  try {
-    fs.unlinkSync(testFile);
-    fs.unlinkSync(generatedFile);
-  } catch {}
-});
-
-it('passes simple smoke test', async () => {
-  const fixtureFileContent = fs.readFileSync(
-    path.resolve(testFile, '../fixtures/simple.ts'),
-    'utf-8'
-  );
-
-  server.sendCommand('open', {
-    file: testFile,
-    fileContent: '// empty',
-    scriptKindName: 'TS',
-  } satisfies ts.server.protocol.OpenRequestArgs);
-
-  server.sendCommand('updateOpen', {
-    openFiles: [{ file: testFile, fileContent: fixtureFileContent }],
-  } satisfies ts.server.protocol.UpdateOpenRequestArgs);
-
-  server.sendCommand('saveto', {
-    file: testFile,
-    tmpfile: testFile,
-  } satisfies ts.server.protocol.SavetoRequestArgs);
-
-  await server.waitForResponse(
-    response => response.type === 'event' && response.event === 'setTypings'
-  );
-
-  expect(() => {
-    fs.lstatSync(testFile);
-    fs.lstatSync(generatedFile);
-  }).not.toThrow();
-
-  expect(fs.readFileSync(testFile, 'utf-8')).toContain(
-    `as typeof import('./simple.generated').AllPostsDocument`
-  );
-  expect(fs.readFileSync(generatedFile, 'utf-8')).toContain(
-    'export const AllPostsDocument = '
-  );
-}, 7500);

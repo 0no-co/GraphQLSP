@@ -1,5 +1,8 @@
 type Query {
   post(id: ID!): Post
+  """
+  List out all posts
+  """
   posts: [Post]
 }
 

@@ -15,6 +15,8 @@ import {
   getAutocompleteSuggestions,
   getDiagnostics,
   Diagnostic,
+  getTokenAtPosition,
+  getTypeInfo,
 } from 'graphql-language-service';
 import {
   parse,
@@ -22,7 +24,6 @@ import {
   FragmentDefinitionNode,
   OperationDefinitionNode,
 } from 'graphql';
-import fs from 'fs';
 
 import { Cursor } from './cursor';
 import { loadSchema } from './getSchema';
@@ -31,6 +32,7 @@ import {
   findAllTaggedTemplateNodes,
   findNode,
   getSource,
+  getSuggestionsForFragmentSpread,
   isFileDirty,
 } from './utils';
 import { resolveTemplate } from './resolve';
@@ -314,11 +316,19 @@ function create(info: ts.server.PluginCreateInfo) {
         ) as Array<FragmentDefinitionNode>;
       } catch (e) {}
 
+      const cursor = new Cursor(foundToken.line, foundToken.start);
       const suggestions = getAutocompleteSuggestions(
         schema.current,
         text,
-        new Cursor(foundToken.line, foundToken.start),
-        undefined,
+        cursor
+      );
+
+      const token = getTokenAtPosition(text, cursor);
+      const spreadSuggestions = getSuggestionsForFragmentSpread(
+        token,
+        getTypeInfo(schema.current, token.state),
+        schema.current,
+        text,
         fragments
       );
 
@@ -327,33 +337,32 @@ function create(info: ts.server.PluginCreateInfo) {
         isMemberCompletion: false,
         isNewIdentifierLocation: false,
         entries: [
-          ...suggestions.map(
-            suggestion =>
-              ({
-                kind: ScriptElementKind.variableElement,
-                name: suggestion.label,
-                kindModifiers: 'declare',
-                sortText: suggestion.sortText || '0',
-                labelDetails: {
-                  detail:
-                    ' ' + suggestion.documentation ||
-                    suggestion.labelDetails?.detail ||
-                    suggestion.type,
-                  description:
-                    ' ' + suggestion.labelDetails?.description ||
-                    suggestion.documentation,
-                },
-              } as CompletionEntry)
-          ),
-          ...fragments.map(fragment => ({
+          ...suggestions.map(suggestion => ({
+            ...suggestion,
             kind: ScriptElementKind.variableElement,
-            name: fragment.name.value,
-            insertText: '...' + fragment.name.value,
+            name: suggestion.label,
+            kindModifiers: 'declare',
+            sortText: suggestion.sortText || '0',
+            labelDetails: {
+              detail:
+                suggestion.documentation ||
+                suggestion.labelDetails?.detail ||
+                suggestion.type?.toString(),
+              description:
+                suggestion.labelDetails?.description ||
+                suggestion.documentation,
+            },
+          })),
+          ...spreadSuggestions.map(suggestion => ({
+            ...suggestion,
+            kind: ScriptElementKind.variableElement,
+            name: suggestion.label,
+            insertText: '...' + suggestion.label,
             kindModifiers: 'declare',
             sortText: '0',
             labelDetails: {
-              detail: ' on type ' + fragment.typeCondition.name.value,
-              description: ' on type ' + fragment.typeCondition.name.value,
+              detail: suggestion.documentation,
+              description: suggestion.documentation,
             },
           })),
           ...originalCompletions.entries,

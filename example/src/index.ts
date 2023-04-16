@@ -6,21 +6,24 @@ const PokemonsQuery = gql`
     pokemons {
       id
       name
-      ...pokemonFields
       __typename
+      ...pokemonFields
     }
   }
 
   ${PokemonFields}
-` as typeof import('./index.generated').PokemonsDocument
+` as typeof import('./index.generated').PokemonsDocument;
 
 const client = createClient({
   url: '',
-})
+});
 
-client.query(PokemonsQuery).toPromise().then(result => {
-  result.data?.pokemons;
-})
+client
+  .query(PokemonsQuery)
+  .toPromise()
+  .then(result => {
+    result.data?.pokemons;
+  });
 
 const PokemonQuery = gql`
   query Pokemon($id: ID!) {
@@ -30,8 +33,11 @@ const PokemonQuery = gql`
       __typename
     }
   }
-` as typeof import('./index.generated').PokemonDocument
+` as typeof import('./index.generated').PokemonDocument;
 
-client.query(PokemonQuery, { id: '' }).toPromise().then(result => {
-  result.data?.pokemon;
-})
+client
+  .query(PokemonQuery, { id: '' })
+  .toPromise()
+  .then(result => {
+    result.data?.pokemon;
+  });

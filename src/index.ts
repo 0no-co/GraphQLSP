@@ -320,7 +320,7 @@ function create(info: ts.server.PluginCreateInfo) {
       const suggestions = getAutocompleteSuggestions(
         schema.current,
         text,
-        cursor,
+        cursor
       );
 
       const token = getTokenAtPosition(text, cursor);
@@ -345,11 +345,11 @@ function create(info: ts.server.PluginCreateInfo) {
             sortText: suggestion.sortText || '0',
             labelDetails: {
               detail:
-                ' ' + suggestion.documentation ||
+                suggestion.documentation ||
                 suggestion.labelDetails?.detail ||
                 suggestion.type?.toString(),
               description:
-                ' ' + suggestion.labelDetails?.description ||
+                suggestion.labelDetails?.description ||
                 suggestion.documentation,
             },
           })),

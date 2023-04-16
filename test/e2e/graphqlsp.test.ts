@@ -141,7 +141,6 @@ describe('simple', () => {
         response.type === 'response' && response.command === 'quickinfo'
     );
 
-    //{"seq":0,"type":"response","command":"quickinfo","request_seq":236,"success":true,"body":{"kind":"string","kindModifiers":"","start":{"line":6,"offset":9},"end":{"line":6,"offset":10},"displayString":"Query.pokemons: [Pokemon]\n\nList out all Pokémon, optionally in pages","documentation":[],"tags":[]}}
     const res = server.responses
       .reverse()
       .find(resp => resp.type === 'response' && resp.command === 'quickinfo');

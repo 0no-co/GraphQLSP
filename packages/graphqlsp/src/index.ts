@@ -223,7 +223,7 @@ function create(info: ts.server.PluginCreateInfo) {
             const exportName = isFragment
               ? `${name}FragmentDoc`
               : `${name}Document`;
-            const imp = ` as typeof import('./${nameParts
+            let imp = ` as typeof import('./${nameParts
               .join('.')
               .replace('.ts', '')}').${exportName}`;
 
@@ -237,15 +237,32 @@ function create(info: ts.server.PluginCreateInfo) {
 
             const span = { length: 1, start: node.end };
 
-            // TODO: if we have a typeImport but the name has been updated/is wrong
-            // we need to leave the "as x" typecast
-            const text =
-              source.text.substring(0, span.start) +
-              imp +
-              source.text.substring(
-                span.start + span.length,
-                source.text.length
-              );
+            let isTypeImportReplaced = false;
+            let text = '';
+            if (typeImport) {
+              const oldName = typeImport
+                .getText()
+                .split('.')
+                .pop()!
+                .replace(/(FragmentDoc|Document)$/, '');
+
+              const lengthDifference = oldName.length - name.length;
+              // Remove ` as ` from the beginning
+              imp = imp.slice(4);
+              text = source.text.replace(typeImport.getText(), imp);
+              span.start = span.start - lengthDifference;
+              span.length = imp.length + lengthDifference;
+              isTypeImportReplaced = true;
+            } else {
+              text =
+                source.text.substring(0, span.start) +
+                imp +
+                source.text.substring(
+                  span.start + span.length,
+                  source.text.length
+                );
+            }
+
             const scriptInfo =
               info.project.projectService.getScriptInfo(filename);
             const snapshot = scriptInfo!.getSnapshot();
@@ -254,6 +271,10 @@ function create(info: ts.server.PluginCreateInfo) {
             source.update(text, { span, newLength: imp.length });
             scriptInfo!.editContent(0, snapshot.getLength(), text);
             info.languageServiceHost.writeFile!(source.fileName, text);
+            if (isTypeImportReplaced) {
+              // To update the types, otherwise data is stale
+              scriptInfo!.reloadFromFile();
+            }
             scriptInfo!.registerFileUpdate();
             // script info contains a lot of utils that might come in handy here
             // to save even if the user has local changes, if we could make that work

@@ -237,22 +237,22 @@ function create(info: ts.server.PluginCreateInfo) {
 
             const span = { length: 1, start: node.end };
 
-            let isTypeImportReplaced = false;
             let text = '';
             if (typeImport) {
-              const oldName = typeImport
+              // We only want the oldExportName here to be present
+              // that way we can diff its length vs the new one
+              const oldExportName = typeImport
                 .getText()
                 .split('.')
-                .pop()!
-                .replace(/(FragmentDoc|Document)$/, '');
+                .pop()
 
-              const lengthDifference = oldName.length - name.length;
-              // Remove ` as ` from the beginning
+              // Remove ` as ` from the beginning,
+              // this because getText() gives us everything
+              // but ` as ` meaning we need to keep that part
+              // around.
               imp = imp.slice(4);
               text = source.text.replace(typeImport.getText(), imp);
-              span.start = span.start - lengthDifference;
-              span.length = imp.length + lengthDifference;
-              isTypeImportReplaced = true;
+              span.length = imp.length + ((oldExportName || '').length - exportName.length);
             } else {
               text =
                 source.text.substring(0, span.start) +
@@ -271,7 +271,7 @@ function create(info: ts.server.PluginCreateInfo) {
             source.update(text, { span, newLength: imp.length });
             scriptInfo!.editContent(0, snapshot.getLength(), text);
             info.languageServiceHost.writeFile!(source.fileName, text);
-            if (isTypeImportReplaced) {
+            if (!!typeImport) {
               // To update the types, otherwise data is stale
               scriptInfo!.reloadFromFile();
             }

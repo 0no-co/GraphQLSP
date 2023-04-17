@@ -10,11 +10,14 @@ import path from 'path';
 import fs from 'fs';
 
 import { Logger } from './index';
+import { generateBaseTypes } from './types/generate';
 
 export const loadSchema = (
   root: string,
   schema: string,
-  logger: Logger
+  logger: Logger,
+  baseTypesPath: string,
+  scalars: Record<string, unknown>
 ): { current: GraphQLSchema | null } => {
   const ref: { current: GraphQLSchema | null } = { current: null };
   let url: URL | undefined;
@@ -54,6 +57,7 @@ export const loadSchema = (
               (result as { data: IntrospectionQuery }).data
             );
             logger(`Got schema for ${url!.toString()}`);
+            generateBaseTypes(ref.current, baseTypesPath, scalars);
           } catch (e: any) {
             logger(`Got schema error for ${e.message}`);
           }

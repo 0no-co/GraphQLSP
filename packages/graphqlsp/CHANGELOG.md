@@ -1,5 +1,13 @@
 # @0no-co/graphqlsp
 
+## 0.3.0
+
+### Minor Changes
+
+- only run the `typescript` plugin once to generate a set of types that we'll reference from our
+  `typescript-operations`, this to reduce lengthy generated files
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#39](https://github.com/0no-co/GraphQLSP/pull/39))
+
 ## 0.2.1
 
 ### Patch Changes

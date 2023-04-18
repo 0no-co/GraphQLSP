@@ -74,11 +74,13 @@ export const loadSchema = (
       ref.current = isJson
         ? buildClientSchema(JSON.parse(contents))
         : buildSchema(contents);
+      generateBaseTypes(ref.current, baseTypesPath, scalars);
     });
 
     ref.current = isJson
       ? buildClientSchema(JSON.parse(contents))
       : buildSchema(contents);
+    generateBaseTypes(ref.current, baseTypesPath, scalars);
     logger(`Got schema and initialized watcher for ${schema}`);
   }
 

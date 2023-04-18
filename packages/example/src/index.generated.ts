@@ -1,5 +1,6 @@
+import * as Types from '../__generated__/baseGraphQLSP';
 import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
-export type PokemonsQueryVariables = Exact<{ [key: string]: never }>;
+export type PokemonsQueryVariables = Types.Exact<{ [key: string]: never }>;
 
 export type PokemonsQuery = {
   __typename?: 'Query';
@@ -17,8 +18,8 @@ export type PokemonFieldsFragment = {
   name: string;
 };
 
-export type PokemonQueryVariables = Exact<{
-  id: Scalars['ID'];
+export type PokemonQueryVariables = Types.Exact<{
+  id: Types.Scalars['ID'];
 }>;
 
 export type PokemonQuery = {

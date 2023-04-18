@@ -1,10 +1,12 @@
 import fs from 'fs';
-import path from 'path';
+import { posix as path } from 'path';
 import { printSchema, parse, GraphQLSchema } from 'graphql';
 import { codegen } from '@graphql-codegen/core';
 import * as typescriptPlugin from '@graphql-codegen/typescript';
 import * as typescriptOperationsPlugin from '@graphql-codegen/typescript-operations';
 import * as typedDocumentNodePlugin from '@graphql-codegen/typed-document-node';
+import * as addPlugin from '@graphql-codegen/add';
+import { Logger } from '..';
 
 export const generateBaseTypes = async (
   schema: GraphQLSchema | null,
@@ -52,6 +54,16 @@ export const generateTypedDocumentNodes = async (
 ) => {
   if (!schema) return;
 
+  const parts = outputFile.split('/');
+  parts.pop();
+  let basePath = path
+    .relative(parts.join('/'), baseTypesPath)
+    .replace('.ts', '');
+  // case where files are declared globally, we need to prefix with ./
+  if (basePath === '__generated__/baseGraphQLSP') {
+    basePath = './' + basePath;
+  }
+
   const config = {
     documents: [
       {
@@ -59,28 +71,26 @@ export const generateTypedDocumentNodes = async (
         document: parse(doc),
       },
     ],
-    baseTypesPath,
-    presetConfig: {
-      baseTypesPath,
-    },
     config: {
+      namespacedImportName: 'Types',
       scalars,
       // nonOptionalTypename: true,
       // avoidOptionals, worth looking into
       enumsAsTypes: true,
       dedupeOperationSuffix: true,
       dedupeFragments: true,
-      baseTypesPath,
     },
     filename: outputFile,
     schema: parse(printSchema(schema)),
     plugins: [
-      { 'typescript-operations': { baseTypesPath } },
-      { 'typed-document-node': { baseTypesPath } },
+      { 'typescript-operations': {} },
+      { 'typed-document-node': {} },
+      { add: { content: `import * as Types from "${basePath}"` } },
     ],
     pluginMap: {
       'typescript-operations': typescriptOperationsPlugin,
       'typed-document-node': typedDocumentNodePlugin,
+      add: addPlugin,
     },
   };
 

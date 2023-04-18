@@ -14,6 +14,10 @@ let server: TSServer;
 describe('simple', () => {
   const testFile = path.join(projectPath, 'simple.ts');
   const generatedFile = path.join(projectPath, 'simple.generated.ts');
+  const baseGeneratedFile = path.join(
+    projectPath,
+    '__generated__/baseGraphQLSP.ts'
+  );
 
   beforeAll(async () => {
     server = new TSServer(projectPath, { debugLog: false });
@@ -46,6 +50,7 @@ describe('simple', () => {
     try {
       fs.unlinkSync(testFile);
       fs.unlinkSync(generatedFile);
+      fs.unlinkSync(baseGeneratedFile);
     } catch {}
     server.close();
   });
@@ -54,13 +59,18 @@ describe('simple', () => {
     expect(() => {
       fs.lstatSync(testFile);
       fs.lstatSync(generatedFile);
+      fs.lstatSync(baseGeneratedFile);
     }).not.toThrow();
 
-    expect(fs.readFileSync(testFile, 'utf-8')).toContain(
+    const testFileContents = fs.readFileSync(testFile, 'utf-8');
+    const generatedFileContents = fs.readFileSync(generatedFile, 'utf-8');
+
+    expect(testFileContents).toContain(
       `as typeof import('./simple.generated').AllPostsDocument`
     );
-    expect(fs.readFileSync(generatedFile, 'utf-8')).toContain(
-      'export const AllPostsDocument = '
+    expect(generatedFileContents).toContain('export const AllPostsDocument = ');
+    expect(generatedFileContents).toContain(
+      'import * as Types from "./__generated__/baseGraphQLSP"'
     );
   }, 7500);
 

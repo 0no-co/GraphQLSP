@@ -68,10 +68,14 @@ function create(info: ts.server.PluginCreateInfo) {
 
   const proxy = createBasicDecorator(info);
 
+  const baseTypesPath =
+    info.project.getCurrentDirectory() + '/__generated__/baseGraphQLSP.ts';
   const schema = loadSchema(
     info.project.getProjectName(),
     info.config.schema,
-    logger
+    logger,
+    baseTypesPath,
+    scalars
   );
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
@@ -191,7 +195,8 @@ function create(info: ts.server.PluginCreateInfo) {
           schema.current,
           parts.join('/'),
           texts.join('\n'),
-          scalars
+          scalars,
+          baseTypesPath
         ).then(() => {
           if (isFileDirty(filename, source)) {
             return;

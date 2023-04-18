@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.2.1
+
+### Patch Changes
+
+- Bump the graphql-code-generator and graphiql-utils dependencies
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#35](https://github.com/0no-co/GraphQLSP/pull/35))
+
 ## 0.2.0
 
 ### Minor Changes

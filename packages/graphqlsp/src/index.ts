@@ -260,6 +260,8 @@ function create(info: ts.server.PluginCreateInfo) {
           .filter(Boolean);
 
         if (missingImports.length) {
+          // TODO: we could use getCodeFixesAtPosition
+          // to build on this
           newDiagnostics.push({
             file: source,
             length: imp.getText().length,

@@ -4,6 +4,7 @@ import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
 import ts from 'typescript/lib/tsserverlibrary';
+import { waitForExpect } from './util';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
@@ -48,17 +49,12 @@ describe('Operation name', () => {
       tmpfile: outFile,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
-    await server.waitForResponse(
-      response => response.type === 'event' && response.event === 'setTypings'
-    );
-    await server.waitForResponse(
-      response =>
-        response.type === 'event' && response.event === 'suggestionDiag'
-    );
+    await waitForExpect(() => {
+      expect(fs.readFileSync(outFile, 'utf-8')).toContain(
+        `as typeof import('./rename.generated').PostsDocument`
+      );
+    });
 
-    expect(fs.readFileSync(outFile, 'utf-8')).toContain(
-      `as typeof import('./rename.generated').PostsDocument`
-    );
     server.sendCommand('updateOpen', {
       openFiles: [
         {
@@ -75,16 +71,13 @@ describe('Operation name', () => {
       tmpfile: outFile,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
-    await server.waitForResponse(
-      response =>
-        response.type === 'event' && response.event === 'suggestionDiag'
-    );
-
-    expect(fs.readFileSync(outFile, 'utf-8')).toContain(
-      `as typeof import('./rename.generated').PostListDocument`
-    );
-    expect(fs.readFileSync(genFile, 'utf-8')).toContain(
-      'export const PostListDocument ='
-    );
+    await waitForExpect(() => {
+      expect(fs.readFileSync(outFile, 'utf-8')).toContain(
+        `as typeof import('./rename.generated').PostListDocument`
+      );
+      expect(fs.readFileSync(genFile, 'utf-8')).toContain(
+        'export const PostListDocument ='
+      );
+    });
   }, 12500);
 });

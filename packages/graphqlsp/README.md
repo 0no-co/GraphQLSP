@@ -36,6 +36,13 @@ Go to your `tsconfig.json` and add
 
 now restart your TS-server and you should be good to go
 
+### Configuration
+
+- `schema` allows you to specify a url, `.json` or `.graphql` file as your schema
+- `scalars` allows you to pass an object of scalars that we'll feed into `graphql-code-generator`
+- `shouldCheckForColocatedFragments` when turned on (default), this will scan your imports to find
+  unused fragments and provide a message notifying you about them
+
 ## Local development
 
 Run `pnpm i` at the root. Open `packages/example` by running `code packages/example` or if you want to leverage

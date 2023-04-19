@@ -51,7 +51,14 @@ describe('Operation name', () => {
     await server.waitForResponse(
       response => response.type === 'event' && response.event === 'setTypings'
     );
+    await server.waitForResponse(
+      response =>
+        response.type === 'event' && response.event === 'suggestionDiag'
+    );
 
+    expect(fs.readFileSync(outFile, 'utf-8')).toContain(
+      `as typeof import('./rename.generated').PostsDocument`
+    );
     server.sendCommand('updateOpen', {
       openFiles: [
         {

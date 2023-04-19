@@ -8,6 +8,8 @@ import {
   isTemplateExpression,
   isImportTypeNode,
   ImportTypeNode,
+  isNamespaceImport,
+  isNamedImportBindings,
 } from 'typescript';
 import {
   getHoverInformation,
@@ -183,6 +185,28 @@ function create(info: ts.server.PluginCreateInfo) {
     if (imports.length && shouldCheckForColocatedFragments) {
       const typeChecker = info.languageService.getProgram()?.getTypeChecker();
       imports.forEach(imp => {
+        if (!imp.importClause) return;
+
+        const importedNames: string[] = [];
+        if (imp.importClause.name) {
+          importedNames.push(imp.importClause?.name.text);
+        }
+
+        if (
+          imp.importClause.namedBindings &&
+          isNamespaceImport(imp.importClause.namedBindings)
+        ) {
+          // TODO: we might need to warn here when the fragment is unused as a namespace import
+          return;
+        } else if (
+          imp.importClause.namedBindings &&
+          isNamedImportBindings(imp.importClause.namedBindings)
+        ) {
+          imp.importClause.namedBindings.elements.forEach(el => {
+            importedNames.push(el.name.text);
+          });
+        }
+
         const symbol = typeChecker?.getSymbolAtLocation(imp.moduleSpecifier);
         if (!symbol) return;
 
@@ -191,6 +215,10 @@ function create(info: ts.server.PluginCreateInfo) {
 
         const missingImports = moduleExports
           .map(exp => {
+            if (importedNames.includes(exp.name)) {
+              return;
+            }
+
             const declarations = exp.getDeclarations();
             const declaration = declarations?.find(x => {
               // TODO: check whether the sourceFile.fileName resembles the module

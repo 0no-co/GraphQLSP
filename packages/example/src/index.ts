@@ -1,5 +1,5 @@
 import { gql, createClient } from '@urql/core';
-import { Pokemon } from './Pokemon';
+import { Pokemon, PokemonFields } from './Pokemon';
 
 const PokemonsQuery = gql`
   query Pokemons {

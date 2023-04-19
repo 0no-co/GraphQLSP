@@ -10,6 +10,7 @@ auto-complete and automatically generating [Typed-Document-nodes](https://the-gu
 - Diagnostics for adding fields that don't exist, are deprecated, missmatched argument types, ...
 - Auto-complete inside your editor for fields
 - When you save it will generate `typed-document-nodes` for your documents and cast them to the correct type
+- Will warn you when you are importing from a file that is exporting fragments that you're not using
 
 ## Installation
 

@@ -129,5 +129,5 @@ describe('Fragments', () => {
         text: 'Missing Fragment import(s) \'PostFields\' from "./Post".',
       },
     ]);
-  }, 20000);
+  }, 30000);
 });

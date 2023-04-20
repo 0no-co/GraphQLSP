@@ -3,7 +3,7 @@
     "plugins": [
       {
         "name": "@0no-co/graphqlsp",
-        "schema": "https://trygql.formidable.dev/graphql/basic-pokedex"
+        "schema": "./schema.graphql"
       }
     ],
     /* Language and Environment */

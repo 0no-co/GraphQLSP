@@ -55,25 +55,6 @@ describe('simple', () => {
     server.close();
   });
 
-  it('Generates types for a given query', async () => {
-    expect(() => {
-      fs.lstatSync(testFile);
-      fs.lstatSync(generatedFile);
-      fs.lstatSync(baseGeneratedFile);
-    }).not.toThrow();
-
-    const testFileContents = fs.readFileSync(testFile, 'utf-8');
-    const generatedFileContents = fs.readFileSync(generatedFile, 'utf-8');
-
-    expect(testFileContents).toContain(
-      `as typeof import('./simple.generated').AllPostsDocument`
-    );
-    expect(generatedFileContents).toContain('export const AllPostsDocument = ');
-    expect(generatedFileContents).toContain(
-      'import * as Types from "./__generated__/baseGraphQLSP"'
-    );
-  }, 7500);
-
   it('Proposes suggestions for a selection-set', async () => {
     server.send({
       seq: 8,

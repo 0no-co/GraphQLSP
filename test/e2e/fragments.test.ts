@@ -9,7 +9,7 @@ import { waitForExpect } from './util';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 const projectPath = path.resolve(__dirname, 'fixture-project');
-describe('Operation name', () => {
+describe('Fragments', () => {
   const outFilePost = path.join(projectPath, 'Post.ts');
   const outFilePosts = path.join(projectPath, 'Posts.ts');
   const genFilePost = path.join(projectPath, 'Post.generated.ts');
@@ -31,7 +31,7 @@ describe('Operation name', () => {
     } catch {}
   });
 
-  it('gets renamed correctly', async () => {
+  it('should send a message for missing fragment import', async () => {
     server.sendCommand('open', {
       file: outFilePost,
       fileContent: '// empty',
@@ -47,16 +47,16 @@ describe('Operation name', () => {
     server.sendCommand('updateOpen', {
       openFiles: [
         {
-          file: outFilePost,
+          file: outFilePosts,
           fileContent: fs.readFileSync(
-            path.join(projectPath, 'fixtures/Post.ts'),
+            path.join(projectPath, 'fixtures/Posts.ts'),
             'utf-8'
           ),
         },
         {
-          file: outFilePosts,
+          file: outFilePost,
           fileContent: fs.readFileSync(
-            path.join(projectPath, 'fixtures/Posts.ts'),
+            path.join(projectPath, 'fixtures/Post.ts'),
             'utf-8'
           ),
         },
@@ -75,7 +75,7 @@ describe('Operation name', () => {
 
     await waitForExpect(() => {
       expect(fs.readFileSync(outFilePosts, 'utf-8')).toContain(
-        `as typeof import('./rename.generated').PostsListDocument`
+        `as typeof import('./Posts.generated').PostsListDocument`
       );
       const generatedPostsFileContents = fs.readFileSync(genFilePosts, 'utf-8');
       expect(generatedPostsFileContents).toContain(
@@ -85,11 +85,11 @@ describe('Operation name', () => {
         'import * as Types from "./__generated__/baseGraphQLSP"'
       );
       expect(fs.readFileSync(outFilePost, 'utf-8')).toContain(
-        `as typeof import('./rename.generated').PostsListDocument`
+        `as typeof import('./Post.generated').PostFieldsFragmentDoc`
       );
       const generatedPostFileContents = fs.readFileSync(genFilePost, 'utf-8');
       expect(generatedPostFileContents).toContain(
-        'export const PostsFieldsFragment = '
+        'export const PostFieldsFragmentDoc = '
       );
       expect(generatedPostFileContents).toContain(
         'import * as Types from "./__generated__/baseGraphQLSP"'
@@ -98,7 +98,27 @@ describe('Operation name', () => {
 
     const res = server.responses
       .reverse()
-      .find(resp => resp.type === 'event' && resp.event === 'suggestionDiag');
-    console.log(res);
+      .find(
+        resp =>
+          resp.type === 'event' &&
+          resp.event === 'semanticDiag' &&
+          resp.body.file === outFilePosts
+      );
+
+    expect(res?.body.diagnostics).toEqual([
+      {
+        category: 'message',
+        code: 51001,
+        end: {
+          line: 2,
+          offset: 31,
+        },
+        start: {
+          line: 2,
+          offset: 1,
+        },
+        text: 'Missing Fragment import(s) \'PostFields\' from "./Post".',
+      },
+    ]);
   }, 20000);
 });

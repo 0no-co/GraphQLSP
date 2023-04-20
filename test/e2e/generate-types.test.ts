@@ -9,7 +9,7 @@ import { waitForExpect } from './util';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 const projectPath = path.resolve(__dirname, 'fixture-project');
-describe('Operation name', () => {
+describe('Type-generation', () => {
   const outFile = path.join(projectPath, 'rename.ts');
   const genFile = path.join(projectPath, 'rename.generated.ts');
   const baseGenFile = path.join(projectPath, '__generated__/baseGraphQLSP.ts');

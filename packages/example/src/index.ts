@@ -1,5 +1,5 @@
 import { gql, createClient } from '@urql/core';
-import { PokemonFields } from './Pokemon';
+import { Pokemon, PokemonFields } from './Pokemon';
 
 const PokemonsQuery = gql`
   query Pokemons {
@@ -8,11 +8,8 @@ const PokemonsQuery = gql`
       name
       __typename
       fleeRate
-      ...pokemonFields
     }
   }
-
-  ${PokemonFields}
 ` as typeof import('./index.generated').PokemonsDocument;
 
 const client = createClient({
@@ -31,12 +28,9 @@ const PokemonQuery = gql`
     pokemon(id: $id) {
       id
       fleeRate
-      ...pokemonFields
       __typename
     }
   }
-
-  ${PokemonFields}
 ` as typeof import('./index.generated').PokemonDocument;
 
 client

@@ -10,6 +10,7 @@ auto-complete and automatically generating [Typed-Document-nodes](https://the-gu
 - Diagnostics for adding fields that don't exist, are deprecated, missmatched argument types, ...
 - Auto-complete inside your editor for fields
 - When you save it will generate `typed-document-nodes` for your documents and cast them to the correct type
+- Will warn you when you are importing from a file that is exporting fragments that you're not using
 
 ## Installation
 
@@ -35,6 +36,13 @@ Go to your `tsconfig.json` and add
 ```
 
 now restart your TS-server and you should be good to go
+
+### Configuration
+
+- `schema` allows you to specify a url, `.json` or `.graphql` file as your schema
+- `scalars` allows you to pass an object of scalars that we'll feed into `graphql-code-generator`
+- `shouldCheckForColocatedFragments` when turned on (default), this will scan your imports to find
+  unused fragments and provide a message notifying you about them
 
 ## Local development
 

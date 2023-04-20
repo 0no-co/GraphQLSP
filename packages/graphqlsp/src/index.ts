@@ -8,7 +8,8 @@ import {
   isTemplateExpression,
   isImportTypeNode,
   ImportTypeNode,
-  CompletionEntry,
+  isNamespaceImport,
+  isNamedImportBindings,
 } from 'typescript';
 import {
   getHoverInformation,
@@ -25,12 +26,11 @@ import {
   OperationDefinitionNode,
 } from 'graphql';
 
+import { findAllImports, findAllTaggedTemplateNodes, findNode } from './ast';
 import { Cursor } from './cursor';
 import { loadSchema } from './getSchema';
 import { getToken } from './token';
 import {
-  findAllTaggedTemplateNodes,
-  findNode,
   getSource,
   getSuggestionsForFragmentSpread,
   isFileDirty,
@@ -65,6 +65,8 @@ function create(info: ts.server.PluginCreateInfo) {
 
   const tagTemplate = info.config.template || 'gql';
   const scalars = info.config.scalars || {};
+  const shouldCheckForColocatedFragments =
+    info.config.shouldCheckForColocatedFragments || true;
 
   const proxy = createBasicDecorator(info);
 
@@ -179,7 +181,108 @@ function create(info: ts.server.PluginCreateInfo) {
       return result;
     });
 
-    if (!newDiagnostics.length) {
+    const imports = findAllImports(source);
+    if (imports.length && shouldCheckForColocatedFragments) {
+      const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+      imports.forEach(imp => {
+        if (!imp.importClause) return;
+
+        const importedNames: string[] = [];
+        if (imp.importClause.name) {
+          importedNames.push(imp.importClause?.name.text);
+        }
+
+        if (
+          imp.importClause.namedBindings &&
+          isNamespaceImport(imp.importClause.namedBindings)
+        ) {
+          // TODO: we might need to warn here when the fragment is unused as a namespace import
+          return;
+        } else if (
+          imp.importClause.namedBindings &&
+          isNamedImportBindings(imp.importClause.namedBindings)
+        ) {
+          imp.importClause.namedBindings.elements.forEach(el => {
+            importedNames.push(el.name.text);
+          });
+        }
+
+        const symbol = typeChecker?.getSymbolAtLocation(imp.moduleSpecifier);
+        if (!symbol) return;
+
+        const moduleExports = typeChecker?.getExportsOfModule(symbol);
+        if (!moduleExports) return;
+
+        const missingImports = moduleExports
+          .map(exp => {
+            if (importedNames.includes(exp.name)) {
+              return;
+            }
+
+            const declarations = exp.getDeclarations();
+            const declaration = declarations?.find(x => {
+              // TODO: check whether the sourceFile.fileName resembles the module
+              // specifier
+              return true;
+            });
+
+            if (!declaration) return;
+
+            const [template] = findAllTaggedTemplateNodes(declaration);
+            if (template) {
+              let node = template;
+              if (
+                isNoSubstitutionTemplateLiteral(node) ||
+                isTemplateExpression(node)
+              ) {
+                if (isTaggedTemplateExpression(node.parent)) {
+                  node = node.parent;
+                } else {
+                  return;
+                }
+              }
+
+              const text = resolveTemplate(
+                node,
+                node.getSourceFile().fileName,
+                info
+              );
+              const parsed = parse(text);
+              if (
+                parsed.definitions.every(
+                  x => x.kind === Kind.FRAGMENT_DEFINITION
+                )
+              ) {
+                return `'${exp.name}'`;
+              }
+            }
+          })
+          .filter(Boolean);
+
+        if (missingImports.length) {
+          // TODO: we could use getCodeFixesAtPosition
+          // to build on this
+          newDiagnostics.push({
+            file: source,
+            length: imp.getText().length,
+            start: imp.getStart(),
+            category: ts.DiagnosticCategory.Message,
+            code: 51001,
+            messageText: `Missing Fragment import(s) ${missingImports.join(
+              ', '
+            )} from ${imp.moduleSpecifier.getText()}.`,
+          });
+        }
+      });
+    }
+
+    if (
+      !newDiagnostics.filter(
+        x =>
+          x.category === ts.DiagnosticCategory.Error ||
+          x.category === ts.DiagnosticCategory.Warning
+      ).length
+    ) {
       try {
         const parts = source.fileName.split('/');
         const name = parts[parts.length - 1];
@@ -246,10 +349,7 @@ function create(info: ts.server.PluginCreateInfo) {
             if (typeImport) {
               // We only want the oldExportName here to be present
               // that way we can diff its length vs the new one
-              const oldExportName = typeImport
-                .getText()
-                .split('.')
-                .pop()
+              const oldExportName = typeImport.getText().split('.').pop();
 
               // Remove ` as ` from the beginning,
               // this because getText() gives us everything
@@ -257,7 +357,8 @@ function create(info: ts.server.PluginCreateInfo) {
               // around.
               imp = imp.slice(4);
               text = source.text.replace(typeImport.getText(), imp);
-              span.length = imp.length + ((oldExportName || '').length - exportName.length);
+              span.length =
+                imp.length + ((oldExportName || '').length - exportName.length);
             } else {
               text =
                 source.text.substring(0, span.start) +

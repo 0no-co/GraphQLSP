@@ -12,12 +12,6 @@ export type PokemonsQuery = {
   } | null> | null;
 };
 
-export type PokemonFieldsFragment = {
-  __typename?: 'Pokemon';
-  id: string;
-  name: string;
-};
-
 export type PokemonQueryVariables = Types.Exact<{
   id: Types.Scalars['ID'];
 }>;
@@ -28,30 +22,9 @@ export type PokemonQuery = {
     __typename: 'Pokemon';
     id: string;
     fleeRate?: number | null;
-    name: string;
   } | null;
 };
 
-export const PokemonFieldsFragmentDoc = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'FragmentDefinition',
-      name: { kind: 'Name', value: 'pokemonFields' },
-      typeCondition: {
-        kind: 'NamedType',
-        name: { kind: 'Name', value: 'Pokemon' },
-      },
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-          { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<PokemonFieldsFragment, unknown>;
 export const PokemonsDocument = {
   kind: 'Document',
   definitions: [
@@ -72,28 +45,9 @@ export const PokemonsDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'fleeRate' } },
-                {
-                  kind: 'FragmentSpread',
-                  name: { kind: 'Name', value: 'pokemonFields' },
-                },
               ],
             },
           },
-        ],
-      },
-    },
-    {
-      kind: 'FragmentDefinition',
-      name: { kind: 'Name', value: 'pokemonFields' },
-      typeCondition: {
-        kind: 'NamedType',
-        name: { kind: 'Name', value: 'Pokemon' },
-      },
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-          { kind: 'Field', name: { kind: 'Name', value: 'name' } },
         ],
       },
     },
@@ -137,29 +91,10 @@ export const PokemonDocument = {
               selections: [
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'fleeRate' } },
-                {
-                  kind: 'FragmentSpread',
-                  name: { kind: 'Name', value: 'pokemonFields' },
-                },
                 { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
               ],
             },
           },
-        ],
-      },
-    },
-    {
-      kind: 'FragmentDefinition',
-      name: { kind: 'Name', value: 'pokemonFields' },
-      typeCondition: {
-        kind: 'NamedType',
-        name: { kind: 'Name', value: 'Pokemon' },
-      },
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-          { kind: 'Field', name: { kind: 'Name', value: 'name' } },
         ],
       },
     },

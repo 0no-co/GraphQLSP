@@ -6,7 +6,8 @@ import {
   TaggedTemplateExpression,
 } from 'typescript';
 import ts from 'typescript/lib/tsserverlibrary';
-import { findNode, getSource } from './utils';
+import { findNode } from './ast';
+import { getSource } from './utils';
 
 export function resolveTemplate(
   node: TaggedTemplateExpression,

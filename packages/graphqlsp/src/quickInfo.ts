@@ -1,15 +1,9 @@
 import ts from 'typescript/lib/tsserverlibrary';
-import {
-  isIdentifier,
-  isNoSubstitutionTemplateLiteral,
-  isTaggedTemplateExpression,
-  isTemplateExpression,
-  isToken,
-} from 'typescript';
+import { isIdentifier, isTaggedTemplateExpression } from 'typescript';
 import { getHoverInformation } from 'graphql-language-service';
 import { GraphQLSchema } from 'graphql';
 
-import { findNode, getSource } from './ast';
+import { bubbleUpTemplate, findNode, getSource } from './ast';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
@@ -28,26 +22,19 @@ export function getGraphQLQuickInfo(
   let node = findNode(source, cursorPosition);
   if (!node) return undefined;
 
-  while (
-    isNoSubstitutionTemplateLiteral(node) ||
-    isToken(node) ||
-    isTemplateExpression(node)
-  ) {
-    node = node.parent;
-  }
+  node = bubbleUpTemplate(node);
 
   if (isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
     if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
 
-    const text = resolveTemplate(node, filename, info);
     const foundToken = getToken(template, cursorPosition);
 
     if (!foundToken || !schema.current) return undefined;
 
     const hoverInfo = getHoverInformation(
       schema.current,
-      text,
+      resolveTemplate(node, filename, info),
       new Cursor(foundToken.line, foundToken.start)
     );
 

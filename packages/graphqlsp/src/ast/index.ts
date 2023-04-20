@@ -3,6 +3,8 @@ import {
   isImportDeclaration,
   isNoSubstitutionTemplateLiteral,
   isTaggedTemplateExpression,
+  isTemplateExpression,
+  isToken,
 } from 'typescript';
 import fs from 'fs';
 
@@ -60,4 +62,16 @@ export function findAllImports(
   sourceFile: ts.SourceFile
 ): Array<ts.ImportDeclaration> {
   return sourceFile.statements.filter(isImportDeclaration);
+}
+
+export function bubbleUpTemplate(node: ts.Node): ts.Node {
+  while (
+    isNoSubstitutionTemplateLiteral(node) ||
+    isToken(node) ||
+    isTemplateExpression(node)
+  ) {
+    node = node.parent;
+  }
+
+  return node;
 }

@@ -38,6 +38,7 @@ import {
 import { resolveTemplate } from './resolve';
 import { generateTypedDocumentNodes } from './types/generate';
 import { getGraphQLCompletions } from './autoComplete';
+import { getGraphQLQuickInfo } from './quickInfo';
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -435,50 +436,14 @@ function create(info: ts.server.PluginCreateInfo) {
       cursorPosition
     );
 
-    const source = getSource(info, filename);
-    if (!source) return originalInfo;
+    const quickInfo = getGraphQLQuickInfo(
+      filename,
+      cursorPosition,
+      schema,
+      info
+    );
 
-    let node = findNode(source, cursorPosition);
-    if (!node) return originalInfo;
-
-    while (
-      isNoSubstitutionTemplateLiteral(node) ||
-      isToken(node) ||
-      isTemplateExpression(node)
-    ) {
-      node = node.parent;
-    }
-
-    if (isTaggedTemplateExpression(node)) {
-      const { template, tag } = node;
-      if (!isIdentifier(tag) || tag.text !== tagTemplate) return originalInfo;
-
-      const text = resolveTemplate(node, filename, info);
-      const foundToken = getToken(template, cursorPosition);
-
-      if (!foundToken || !schema.current) return originalInfo;
-
-      const hoverInfo = getHoverInformation(
-        schema.current,
-        text,
-        new Cursor(foundToken.line, foundToken.start)
-      );
-      const result: ts.QuickInfo = {
-        kind: ts.ScriptElementKind.string,
-        textSpan: {
-          start: cursorPosition,
-          length: 1,
-        },
-        kindModifiers: '',
-        displayParts: Array.isArray(hoverInfo)
-          ? hoverInfo.map(item => ({ kind: '', text: item as string }))
-          : [{ kind: '', text: hoverInfo as string }],
-      };
-
-      return result;
-    } else {
-      return originalInfo;
-    }
+    return quickInfo || originalInfo;
   };
 
   logger('proxy: ' + JSON.stringify(proxy));

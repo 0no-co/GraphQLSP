@@ -75,7 +75,7 @@ export function getGraphQLCompletions(
       fragments
     );
 
-    const result: ts.WithMetadata<ts.CompletionInfo> = {
+    return {
       isGlobalCompletion: false,
       isMemberCompletion: false,
       isNewIdentifierLocation: false,
@@ -106,7 +106,6 @@ export function getGraphQLCompletions(
         })),
       ],
     };
-    return result;
   } else {
     return undefined;
   }

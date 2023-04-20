@@ -45,13 +45,13 @@ export function getSource(info: ts.server.PluginCreateInfo, filename: string) {
 /**
  * This part is vendored from https://github.com/graphql/graphiql/blob/main/packages/graphql-language-service/src/interface/autocompleteUtils.ts#L97
  */
-export type CompletionItemBase = {
+type CompletionItemBase = {
   label: string;
   isDeprecated?: boolean;
 };
 
 // Create the expected hint response given a possible list and a token
-export function hintList<T extends CompletionItemBase>(
+function hintList<T extends CompletionItemBase>(
   token: ContextTokenUnion,
   list: Array<T>
 ): Array<T> {

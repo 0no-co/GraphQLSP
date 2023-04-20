@@ -26,6 +26,8 @@ import {
 import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './graphql/generateTypes';
 
+export const SEMANTIC_DIAGNOSTIC_CODE = 51001;
+
 export function getGraphQLDiagnostics(
   filename: string,
   baseTypesPath: string,
@@ -55,8 +57,8 @@ export function getGraphQLDiagnostics(
   });
 
   const diagnostics = nodes
-    .map(x => {
-      let node = x;
+    .map(originalNode => {
+      let node = originalNode;
       if (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node)) {
         if (isTaggedTemplateExpression(node.parent)) {
           node = node.parent;
@@ -103,7 +105,7 @@ export function getGraphQLDiagnostics(
             graphQLDiagnostics.push({
               message: 'Operation needs a name for types to be generated.',
               start: node.pos,
-              length: x.getText().length,
+              length: originalNode.getText().length,
               range: {} as any,
               severity: 2,
             } as any);
@@ -116,21 +118,17 @@ export function getGraphQLDiagnostics(
     .flat()
     .filter(Boolean) as Array<Diagnostic & { length: number; start: number }>;
 
-  const newDiagnostics = diagnostics.map(diag => {
-    const result: ts.Diagnostic = {
-      file: source,
-      length: diag.length,
-      start: diag.start,
-      category:
-        diag.severity === 2
-          ? ts.DiagnosticCategory.Warning
-          : ts.DiagnosticCategory.Error,
-      code: 51001,
-      messageText: diag.message.split('\n')[0],
-    };
-
-    return result;
-  });
+  const tsDiagnostics: ts.Diagnostic[] = diagnostics.map(diag => ({
+    file: source,
+    length: diag.length,
+    start: diag.start,
+    category:
+      diag.severity === 2
+        ? ts.DiagnosticCategory.Warning
+        : ts.DiagnosticCategory.Error,
+    code: SEMANTIC_DIAGNOSTIC_CODE,
+    messageText: diag.message.split('\n')[0],
+  }));
 
   const imports = findAllImports(source);
   if (imports.length && shouldCheckForColocatedFragments) {
@@ -211,12 +209,12 @@ export function getGraphQLDiagnostics(
       if (missingImports.length) {
         // TODO: we could use getCodeFixesAtPosition
         // to build on this
-        newDiagnostics.push({
+        tsDiagnostics.push({
           file: source,
           length: imp.getText().length,
           start: imp.getStart(),
           category: ts.DiagnosticCategory.Message,
-          code: 51001,
+          code: SEMANTIC_DIAGNOSTIC_CODE,
           messageText: `Missing Fragment import(s) ${missingImports.join(
             ', '
           )} from ${imp.moduleSpecifier.getText()}.`,
@@ -226,22 +224,22 @@ export function getGraphQLDiagnostics(
   }
 
   if (
-    !newDiagnostics.filter(
+    !tsDiagnostics.filter(
       x =>
         x.category === ts.DiagnosticCategory.Error ||
         x.category === ts.DiagnosticCategory.Warning
     ).length
   ) {
     try {
+      if (isFileDirty(filename, source)) {
+        return tsDiagnostics;
+      }
+
       const parts = source.fileName.split('/');
       const name = parts[parts.length - 1];
       const nameParts = name.split('.');
       nameParts[nameParts.length - 1] = 'generated.ts';
       parts[parts.length - 1] = nameParts.join('.');
-
-      if (isFileDirty(filename, source)) {
-        return newDiagnostics;
-      }
 
       generateTypedDocumentNodes(
         schema.current,
@@ -335,5 +333,5 @@ export function getGraphQLDiagnostics(
     } catch (e) {}
   }
 
-  return newDiagnostics;
+  return tsDiagnostics;
 }

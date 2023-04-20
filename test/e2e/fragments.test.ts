@@ -77,6 +77,9 @@ describe('Fragments', () => {
       expect(fs.readFileSync(outFilePosts, 'utf-8')).toContain(
         `as typeof import('./Posts.generated').PostsListDocument`
       );
+    });
+
+    await waitForExpect(() => {
       const generatedPostsFileContents = fs.readFileSync(genFilePosts, 'utf-8');
       expect(generatedPostsFileContents).toContain(
         'export const PostsListDocument = '
@@ -84,9 +87,15 @@ describe('Fragments', () => {
       expect(generatedPostsFileContents).toContain(
         'import * as Types from "./__generated__/baseGraphQLSP"'
       );
+    });
+
+    await waitForExpect(() => {
       expect(fs.readFileSync(outFilePost, 'utf-8')).toContain(
         `as typeof import('./Post.generated').PostFieldsFragmentDoc`
       );
+    });
+
+    await waitForExpect(() => {
       const generatedPostFileContents = fs.readFileSync(genFilePost, 'utf-8');
       expect(generatedPostFileContents).toContain(
         'export const PostFieldsFragmentDoc = '

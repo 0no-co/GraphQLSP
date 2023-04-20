@@ -11,8 +11,8 @@ import { GraphQLSchema } from 'graphql';
 
 import { getSource } from './utils';
 import { findNode } from './ast';
-import { resolveTemplate } from './resolve';
-import { getToken } from './token';
+import { resolveTemplate } from './ast/resolve';
+import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
 
 export function getGraphQLQuickInfo(

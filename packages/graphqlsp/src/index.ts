@@ -1,24 +1,14 @@
 import ts from 'typescript/lib/tsserverlibrary';
 import {
   isNoSubstitutionTemplateLiteral,
-  ScriptElementKind,
-  isIdentifier,
   isTaggedTemplateExpression,
-  isToken,
   isTemplateExpression,
   isImportTypeNode,
   ImportTypeNode,
   isNamespaceImport,
   isNamedImportBindings,
 } from 'typescript';
-import {
-  getHoverInformation,
-  getAutocompleteSuggestions,
-  getDiagnostics,
-  Diagnostic,
-  getTokenAtPosition,
-  getTypeInfo,
-} from 'graphql-language-service';
+import { getDiagnostics, Diagnostic } from 'graphql-language-service';
 import {
   parse,
   Kind,
@@ -27,15 +17,9 @@ import {
 } from 'graphql';
 
 import { findAllImports, findAllTaggedTemplateNodes, findNode } from './ast';
-import { Cursor } from './ast/cursor';
 import { loadSchema } from './getSchema';
-import { getToken } from './token';
-import {
-  getSource,
-  getSuggestionsForFragmentSpread,
-  isFileDirty,
-} from './utils';
-import { resolveTemplate } from './resolve';
+import { getSource, isFileDirty } from './utils';
+import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './types/generate';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';

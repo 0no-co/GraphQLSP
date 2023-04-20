@@ -9,8 +9,7 @@ import {
 import { getHoverInformation } from 'graphql-language-service';
 import { GraphQLSchema } from 'graphql';
 
-import { getSource } from './utils';
-import { findNode } from './ast';
+import { findNode, getSource } from './ast';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
@@ -29,7 +28,6 @@ export function getGraphQLQuickInfo(
   let node = findNode(source, cursorPosition);
   if (!node) return undefined;
 
-  // TODO: can be abstracted
   while (
     isNoSubstitutionTemplateLiteral(node) ||
     isToken(node) ||

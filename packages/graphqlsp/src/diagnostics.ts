@@ -17,8 +17,12 @@ import {
   parse,
 } from 'graphql';
 
-import { getSource, isFileDirty } from './utils';
-import { findAllImports, findAllTaggedTemplateNodes } from './ast';
+import {
+  findAllImports,
+  findAllTaggedTemplateNodes,
+  getSource,
+  isFileDirty,
+} from './ast';
 import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './graphql/generateTypes';
 
@@ -318,7 +322,6 @@ export function getGraphQLDiagnostics(
             info.project.projectService.getScriptInfo(filename);
           const snapshot = scriptInfo!.getSnapshot();
 
-          // TODO: potential optimisation is to write only one script-update
           source.update(text, { span, newLength: imp.length });
           scriptInfo!.editContent(0, snapshot.getLength(), text);
           info.languageServiceHost.writeFile!(source.fileName, text);
@@ -327,11 +330,6 @@ export function getGraphQLDiagnostics(
             scriptInfo!.reloadFromFile();
           }
           scriptInfo!.registerFileUpdate();
-          // script info contains a lot of utils that might come in handy here
-          // to save even if the user has local changes, if we could make that work
-          // that would be a win. If not we should check if we can figure it out through
-          // the script-info whether there are unsaved changes and not run this
-          // scriptInfo!.open(text);
         });
       });
     } catch (e) {}

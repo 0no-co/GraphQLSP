@@ -14,11 +14,11 @@ import {
 } from 'graphql-language-service';
 import { FragmentDefinitionNode, GraphQLSchema, Kind, parse } from 'graphql';
 
-import { findNode } from './ast';
-import { getSource, getSuggestionsForFragmentSpread } from './utils';
+import { findNode, getSource } from './ast';
 import { Cursor } from './ast/cursor';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
+import { getSuggestionsForFragmentSpread } from './graphql/getFragmentSpreadSuggestions';
 
 export function getGraphQLCompletions(
   filename: string,

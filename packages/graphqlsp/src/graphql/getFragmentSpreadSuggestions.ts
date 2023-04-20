@@ -1,5 +1,3 @@
-import ts from 'typescript/lib/tsserverlibrary';
-import fs from 'fs';
 import {
   CompletionItem,
   CompletionItemKind,
@@ -25,33 +23,16 @@ import {
   isCompositeType,
 } from 'graphql';
 
-export function isFileDirty(fileName: string, source: ts.SourceFile) {
-  const contents = fs.readFileSync(fileName, 'utf-8');
-  const currentText = source.getFullText();
-
-  return currentText !== contents;
-}
-
-export function getSource(info: ts.server.PluginCreateInfo, filename: string) {
-  const program = info.languageService.getProgram();
-  if (!program) return undefined;
-
-  const source = program.getSourceFile(filename);
-  if (!source) return undefined;
-
-  return source;
-}
-
 /**
  * This part is vendored from https://github.com/graphql/graphiql/blob/main/packages/graphql-language-service/src/interface/autocompleteUtils.ts#L97
  */
-export type CompletionItemBase = {
+type CompletionItemBase = {
   label: string;
   isDeprecated?: boolean;
 };
 
 // Create the expected hint response given a possible list and a token
-export function hintList<T extends CompletionItemBase>(
+function hintList<T extends CompletionItemBase>(
   token: ContextTokenUnion,
   list: Array<T>
 ): Array<T> {

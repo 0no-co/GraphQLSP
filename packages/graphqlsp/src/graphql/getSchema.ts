@@ -9,8 +9,8 @@ import fetch from 'node-fetch';
 import path from 'path';
 import fs from 'fs';
 
-import { Logger } from './index';
-import { generateBaseTypes } from './types/generate';
+import { Logger } from '../index';
+import { generateBaseTypes } from './generateTypes';
 
 export const loadSchema = (
   root: string,

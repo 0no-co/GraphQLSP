@@ -3,7 +3,27 @@ import {
   isImportDeclaration,
   isNoSubstitutionTemplateLiteral,
   isTaggedTemplateExpression,
+  isTemplateExpression,
+  isToken,
 } from 'typescript';
+import fs from 'fs';
+
+export function isFileDirty(fileName: string, source: ts.SourceFile) {
+  const contents = fs.readFileSync(fileName, 'utf-8');
+  const currentText = source.getFullText();
+
+  return currentText !== contents;
+}
+
+export function getSource(info: ts.server.PluginCreateInfo, filename: string) {
+  const program = info.languageService.getProgram();
+  if (!program) return undefined;
+
+  const source = program.getSourceFile(filename);
+  if (!source) return undefined;
+
+  return source;
+}
 
 export function findNode(
   sourceFile: ts.SourceFile,
@@ -42,4 +62,16 @@ export function findAllImports(
   sourceFile: ts.SourceFile
 ): Array<ts.ImportDeclaration> {
   return sourceFile.statements.filter(isImportDeclaration);
+}
+
+export function bubbleUpTemplate(node: ts.Node): ts.Node {
+  while (
+    isNoSubstitutionTemplateLiteral(node) ||
+    isToken(node) ||
+    isTemplateExpression(node)
+  ) {
+    node = node.parent;
+  }
+
+  return node;
 }

@@ -9,9 +9,10 @@ import { waitForExpect } from './util';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 const projectPath = path.resolve(__dirname, 'fixture-project');
-describe('Operation name', () => {
+describe('Type-generation', () => {
   const outFile = path.join(projectPath, 'rename.ts');
   const genFile = path.join(projectPath, 'rename.generated.ts');
+  const baseGenFile = path.join(projectPath, '__generated__/baseGraphQLSP.ts');
 
   let server: TSServer;
   beforeAll(async () => {
@@ -22,6 +23,7 @@ describe('Operation name', () => {
     try {
       fs.unlinkSync(outFile);
       fs.unlinkSync(genFile);
+      fs.unlinkSync(baseGenFile);
     } catch {}
   });
 
@@ -53,7 +55,18 @@ describe('Operation name', () => {
       expect(fs.readFileSync(outFile, 'utf-8')).toContain(
         `as typeof import('./rename.generated').PostsDocument`
       );
+      const generatedFileContents = fs.readFileSync(genFile, 'utf-8');
+      expect(generatedFileContents).toContain('export const PostsDocument = ');
+      expect(generatedFileContents).toContain(
+        'import * as Types from "./__generated__/baseGraphQLSP"'
+      );
     });
+
+    expect(() => {
+      fs.lstatSync(outFile);
+      fs.lstatSync(genFile);
+      fs.lstatSync(baseGenFile);
+    }).not.toThrow();
 
     server.sendCommand('updateOpen', {
       openFiles: [
@@ -79,5 +92,5 @@ describe('Operation name', () => {
         'export const PostListDocument ='
       );
     });
-  }, 12500);
+  }, 20000);
 });

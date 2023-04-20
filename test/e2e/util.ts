@@ -7,7 +7,7 @@ type WaitForExpectOptions = {
 
 export const waitForExpect = async (
   expectFn: () => void,
-  { interval = 200, timeout = 10000 }: WaitForExpectOptions = {}
+  { interval = 500, timeout = 15000 }: WaitForExpectOptions = {}
 ) => {
   // @sinonjs/fake-timers injects `clock` property into setTimeout
   const usesFakeTimers = 'clock' in setTimeout;

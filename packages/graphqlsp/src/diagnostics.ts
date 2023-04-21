@@ -96,7 +96,7 @@ export function getGraphQLDiagnostics(
       });
 
       try {
-        const parsed = parse(text);
+        const parsed = parse(text, { noLocation: true });
 
         if (
           parsed.definitions.some(x => x.kind === Kind.OPERATION_DEFINITION)
@@ -205,11 +205,17 @@ export function getGraphQLDiagnostics(
               node.getSourceFile().fileName,
               info
             );
-            const parsed = parse(text);
-            if (
-              parsed.definitions.every(x => x.kind === Kind.FRAGMENT_DEFINITION)
-            ) {
-              return `'${exp.name}'`;
+            try {
+              const parsed = parse(text, { noLocation: true });
+              if (
+                parsed.definitions.every(
+                  x => x.kind === Kind.FRAGMENT_DEFINITION
+                )
+              ) {
+                return `'${exp.name}'`;
+              }
+            } catch (e) {
+              return;
             }
           }
         })
@@ -263,7 +269,7 @@ export function getGraphQLDiagnostics(
 
         nodes.forEach((node, i) => {
           const queryText = texts[i] || '';
-          const parsed = parse(queryText);
+          const parsed = parse(queryText, { noLocation: true });
           const isFragment = parsed.definitions.every(
             x => x.kind === Kind.FRAGMENT_DEFINITION
           );

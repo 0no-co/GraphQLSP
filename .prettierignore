@@ -1,1 +1,2 @@
 test/e2e/fixture-project/fixtures/**/*
+./**/*.generated.ts

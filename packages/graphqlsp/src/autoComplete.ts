@@ -44,7 +44,7 @@ export function getGraphQLCompletions(
     const text = resolveTemplate(node, filename, info);
     let fragments: Array<FragmentDefinitionNode> = [];
     try {
-      const parsed = parse(text);
+      const parsed = parse(text, { noLocation: true });
       fragments = parsed.definitions.filter(
         x => x.kind === Kind.FRAGMENT_DEFINITION
       ) as Array<FragmentDefinitionNode>;

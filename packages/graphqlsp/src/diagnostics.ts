@@ -29,7 +29,7 @@ import { generateTypedDocumentNodes } from './graphql/generateTypes';
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const MISSING_OPERATION_NAME_CODE = 52002;
 export const MISSING_FRAGMENT_CODE = 52003;
-export const USING_DEPRECATED_FIELD_CODE = 52003;
+export const USING_DEPRECATED_FIELD_CODE = 52004;
 
 export function getGraphQLDiagnostics(
   filename: string,

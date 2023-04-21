@@ -117,7 +117,7 @@ describe('Fragments', () => {
     expect(res?.body.diagnostics).toEqual([
       {
         category: 'message',
-        code: 51001,
+        code: 52003,
         end: {
           line: 2,
           offset: 31,

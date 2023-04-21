@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 0.4.1
+
+### Patch Changes
+
+- Optimise parse performance by omitting location information
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [`660235e`](https://github.com/0no-co/GraphQLSP/commit/660235ef782e60de29f3199c0df839db1f4dfd21))
+- Improve the error-codes so they become discernible
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [`8f3de11`](https://github.com/0no-co/GraphQLSP/commit/8f3de11a768bd92a80c4570505f5eab8d8cdb441))
+
 ## 0.4.0
 
 ### Minor Changes

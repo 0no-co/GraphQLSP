@@ -26,7 +26,10 @@ import {
 import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './graphql/generateTypes';
 
-export const SEMANTIC_DIAGNOSTIC_CODE = 51001;
+export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
+export const MISSING_OPERATION_NAME_CODE = 52002;
+export const MISSING_FRAGMENT_CODE = 52003;
+export const USING_DEPRECATED_FIELD_CODE = 52003;
 
 export function getGraphQLDiagnostics(
   filename: string,
@@ -105,6 +108,7 @@ export function getGraphQLDiagnostics(
             graphQLDiagnostics.push({
               message: 'Operation needs a name for types to be generated.',
               start: node.pos,
+              code: MISSING_OPERATION_NAME_CODE,
               length: originalNode.getText().length,
               range: {} as any,
               severity: 2,
@@ -126,7 +130,12 @@ export function getGraphQLDiagnostics(
       diag.severity === 2
         ? ts.DiagnosticCategory.Warning
         : ts.DiagnosticCategory.Error,
-    code: SEMANTIC_DIAGNOSTIC_CODE,
+    code:
+      typeof diag.code === 'number'
+        ? diag.code
+        : diag.severity === 2
+        ? USING_DEPRECATED_FIELD_CODE
+        : SEMANTIC_DIAGNOSTIC_CODE,
     messageText: diag.message.split('\n')[0],
   }));
 
@@ -214,7 +223,7 @@ export function getGraphQLDiagnostics(
           length: imp.getText().length,
           start: imp.getStart(),
           category: ts.DiagnosticCategory.Message,
-          code: SEMANTIC_DIAGNOSTIC_CODE,
+          code: MISSING_FRAGMENT_CODE,
           messageText: `Missing Fragment import(s) ${missingImports.join(
             ', '
           )} from ${imp.moduleSpecifier.getText()}.`,

@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.5.0
+
+### Minor Changes
+
+- Do not suggest fields/fragments/input vars that are already present
+  Submitted by [@TheMightyPenguin](https://github.com/TheMightyPenguin) (See [#48](https://github.com/0no-co/GraphQLSP/pull/48))
+
 ## 0.4.2
 
 ### Patch Changes

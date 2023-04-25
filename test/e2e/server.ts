@@ -24,7 +24,7 @@ export class TSServer {
   ) {
     const tsserverPath = path.resolve(
       projectPath,
-      'node_modules/typescript/lib/tsserver.js'
+      '../../../node_modules/typescript/lib/tsserver.js'
     );
 
     fs.lstatSync(tsserverPath);

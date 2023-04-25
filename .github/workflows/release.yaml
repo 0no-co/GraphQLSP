@@ -11,6 +11,9 @@ jobs:
     permissions:
       contents: read
       id-token: write
+      deployments: write
+      packages: write
+      pull-requests: write
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3

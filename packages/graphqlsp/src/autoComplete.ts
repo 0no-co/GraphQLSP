@@ -211,7 +211,7 @@ function getUsedFragments(queryText: string, parentName: string | undefined) {
 }
 
 /**
- * This is vendoref from https://github.com/graphql/graphiql/blob/aeedf7614e422c783f5cfb5e226c5effa46318fd/packages/graphql-language-service/src/interface/getAutocompleteSuggestions.ts#L831
+ * This is vendored from https://github.com/graphql/graphiql/blob/aeedf7614e422c783f5cfb5e226c5effa46318fd/packages/graphql-language-service/src/interface/getAutocompleteSuggestions.ts#L831
  */
 function getParentDefinition(state: State, kind: RuleKind) {
   if (state.prevState?.kind === kind) {

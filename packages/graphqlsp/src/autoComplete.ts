@@ -12,8 +12,10 @@ import {
   State,
   RuleKind,
   CompletionItem,
+  onlineParser,
+  CharacterStream,
+  ContextToken,
 } from 'graphql-language-service';
-import { runOnlineParser } from 'graphql-language-service/dist/interface/getAutocompleteSuggestions';
 import { FragmentDefinitionNode, GraphQLSchema, Kind, parse } from 'graphql';
 
 import { bubbleUpTemplate, findNode, getSource } from './ast';
@@ -224,4 +226,48 @@ function getParentDefinition(state: State, kind: RuleKind) {
   if (state.prevState?.prevState?.prevState?.prevState?.kind === kind) {
     return state.prevState.prevState.prevState.prevState;
   }
+}
+
+function runOnlineParser(
+  queryText: string,
+  callback: (
+    stream: CharacterStream,
+    state: State,
+    style: string,
+    index: number
+  ) => void | 'BREAK'
+): ContextToken {
+  const lines = queryText.split('\n');
+  const parser = onlineParser();
+  let state = parser.startState();
+  let style = '';
+
+  let stream: CharacterStream = new CharacterStream('');
+
+  for (let i = 0; i < lines.length; i++) {
+    stream = new CharacterStream(lines[i]);
+    while (!stream.eol()) {
+      style = parser.token(stream, state);
+      const code = callback(stream, state, style, i);
+      if (code === 'BREAK') {
+        break;
+      }
+    }
+
+    // Above while loop won't run if there is an empty line.
+    // Run the callback one more time to catch this.
+    callback(stream, state, style, i);
+
+    if (!state.kind) {
+      state = parser.startState();
+    }
+  }
+
+  return {
+    start: stream.getStartOfToken(),
+    end: stream.getCurrentPosition(),
+    string: stream.current(),
+    state,
+    style,
+  };
 }

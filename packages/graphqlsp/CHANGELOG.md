@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.4.2
+
+### Patch Changes
+
+- publish with provenance
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#49](https://github.com/0no-co/GraphQLSP/pull/49))
+
 ## 0.4.1
 
 ### Patch Changes

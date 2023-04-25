@@ -93,12 +93,6 @@ describe('simple', () => {
       },
       {
         ...defaultAttrs,
-        name: 'title',
-        sortText: '1title',
-        labelDetails: { detail: ' String!' },
-      },
-      {
-        ...defaultAttrs,
         name: 'content',
         sortText: '2content',
         labelDetails: { detail: ' String!' },

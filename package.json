@@ -5,7 +5,7 @@
   "main": "./dist/index.js",
   "module": "./dist/index.module.js",
   "scripts": {
-    "build": "rollup -c ./scripts/build.mjs",
+    "build": "pnpm --filter @0no-co/graphqlsp build",
     "prepare": "husky install",
     "dev": "pnpm --filter @0no-co/graphqlsp dev",
     "launch-debug": "./scripts/launch-debug.sh",

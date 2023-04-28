@@ -44,6 +44,37 @@ now restart your TS-server and you should be good to go
 - `shouldCheckForColocatedFragments` when turned on (default), this will scan your imports to find
   unused fragments and provide a message notifying you about them
 
+## Fragment masking
+
+When we use a `useQuery` that supports `TypedDocumentNode` it will automatically pick up the typings
+from the `query` you provide it. However for fragments this could become a bit more troublesome, the
+minimal way of providing typings for a fragment would be the following:
+
+```tsx
+import { TypedDocumentNode } from '@graphql-typed-document-node/core';
+
+export const PokemonFields = gql`
+  fragment pokemonFields on Pokemon {
+    id
+    name
+  }
+` as typeof import('./Pokemon.generated').PokemonFieldsFragmentDoc;
+
+export const Pokemon = props => {
+  const pokemon = useFragment(props.pokemon, PokemonFields);
+};
+
+export function useFragment<Type>(
+  _fragment: TypedDocumentNode<Type>,
+  data: any
+): Type {
+  return data;
+}
+```
+
+This is mainly needed in cases where this isn't supported out of the box and mainly serves as a way
+for you to case your types.
+
 ## Local development
 
 Run `pnpm i` at the root. Open `packages/example` by running `code packages/example` or if you want to leverage

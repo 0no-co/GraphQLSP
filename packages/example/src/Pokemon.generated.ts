@@ -4,6 +4,14 @@ export type PokemonFieldsFragment = {
   __typename?: 'Pokemon';
   id: string;
   name: string;
+  attacks?: {
+    __typename?: 'AttacksConnection';
+    fast?: Array<{
+      __typename?: 'Attack';
+      damage?: number | null;
+      name?: string | null;
+    } | null> | null;
+  } | null;
 };
 
 export const PokemonFieldsFragmentDoc = {
@@ -21,6 +29,29 @@ export const PokemonFieldsFragmentDoc = {
         selections: [
           { kind: 'Field', name: { kind: 'Name', value: 'id' } },
           { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'attacks' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'fast' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'damage' },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
         ],
       },
     },

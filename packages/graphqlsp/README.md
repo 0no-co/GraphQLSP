@@ -67,8 +67,8 @@ export const Pokemon = props => {
 };
 
 export function useFragment<Type>(
-  _fragment: TypedDocumentNode<Type>,
-  data: any
+  data: any,
+  _fragment: TypedDocumentNode<Type>
 ): Type {
   return data;
 }

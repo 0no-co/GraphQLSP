@@ -7,7 +7,7 @@ export type PokemonFieldsFragment = {
   attacks?: {
     __typename?: 'AttacksConnection';
     fast?: Array<{
-      __typename?: 'Attack';
+      __typename: 'Attack';
       damage?: number | null;
       name?: string | null;
     } | null> | null;
@@ -46,6 +46,10 @@ export const PokemonFieldsFragmentDoc = {
                         name: { kind: 'Name', value: 'damage' },
                       },
                       { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: '__typename' },
+                      },
                     ],
                   },
                 },

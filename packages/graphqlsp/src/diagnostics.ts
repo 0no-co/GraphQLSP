@@ -256,95 +256,86 @@ export function getGraphQLDiagnostics(
       nameParts[nameParts.length - 1] = 'generated.ts';
       parts[parts.length - 1] = nameParts.join('.');
 
+      nodes.forEach((node, i) => {
+        const queryText = texts[i] || '';
+        const parsed = parse(queryText, { noLocation: true });
+        const isFragment = parsed.definitions.every(
+          x => x.kind === Kind.FRAGMENT_DEFINITION
+        );
+        let name = '';
+
+        if (isFragment) {
+          const fragmentNode = parsed.definitions[0] as FragmentDefinitionNode;
+          name = fragmentNode.name.value;
+        } else {
+          const operationNode = parsed
+            .definitions[0] as OperationDefinitionNode;
+          name = operationNode.name?.value || '';
+        }
+
+        if (!name) return;
+
+        name = name.charAt(0).toUpperCase() + name.slice(1);
+        const parentChildren = node.parent.getChildren();
+
+        const exportName = isFragment
+          ? `${name}FragmentDoc`
+          : `${name}Document`;
+        let imp = ` as typeof import('./${nameParts
+          .join('.')
+          .replace('.ts', '')}').${exportName}`;
+
+        // This checks whether one of the children is an import-type
+        // which is a short-circuit if there is no as
+        const typeImport = parentChildren.find(x =>
+          isImportTypeNode(x)
+        ) as ImportTypeNode;
+
+        if (typeImport && typeImport.getText().includes(exportName)) return;
+
+        const span = { length: 1, start: node.end };
+
+        let text = '';
+        if (typeImport) {
+          // We only want the oldExportName here to be present
+          // that way we can diff its length vs the new one
+          const oldExportName = typeImport.getText().split('.').pop();
+
+          // Remove ` as ` from the beginning,
+          // this because getText() gives us everything
+          // but ` as ` meaning we need to keep that part
+          // around.
+          imp = imp.slice(4);
+          text = source.text.replace(typeImport.getText(), imp);
+          span.length =
+            imp.length + ((oldExportName || '').length - exportName.length);
+        } else {
+          text =
+            source.text.substring(0, span.start) +
+            imp +
+            source.text.substring(span.start + span.length, source.text.length);
+        }
+
+        const scriptInfo = info.project.projectService.getScriptInfo(filename);
+        const snapshot = scriptInfo!.getSnapshot();
+
+        source.update(text, { span, newLength: imp.length });
+        scriptInfo!.editContent(0, snapshot.getLength(), text);
+        info.languageServiceHost.writeFile!(source.fileName, text);
+        if (!!typeImport) {
+          // To update the types, otherwise data is stale
+          scriptInfo!.reloadFromFile();
+        }
+        scriptInfo!.registerFileUpdate();
+      });
+
       generateTypedDocumentNodes(
         schema.current,
         parts.join('/'),
         texts.join('\n'),
         scalars,
         baseTypesPath
-      ).then(() => {
-        if (isFileDirty(filename, source)) {
-          return;
-        }
-
-        nodes.forEach((node, i) => {
-          const queryText = texts[i] || '';
-          const parsed = parse(queryText, { noLocation: true });
-          const isFragment = parsed.definitions.every(
-            x => x.kind === Kind.FRAGMENT_DEFINITION
-          );
-          let name = '';
-
-          if (isFragment) {
-            const fragmentNode = parsed
-              .definitions[0] as FragmentDefinitionNode;
-            name = fragmentNode.name.value;
-          } else {
-            const operationNode = parsed
-              .definitions[0] as OperationDefinitionNode;
-            name = operationNode.name?.value || '';
-          }
-
-          if (!name) return;
-
-          name = name.charAt(0).toUpperCase() + name.slice(1);
-          const parentChildren = node.parent.getChildren();
-
-          const exportName = isFragment
-            ? `${name}FragmentDoc`
-            : `${name}Document`;
-          let imp = ` as typeof import('./${nameParts
-            .join('.')
-            .replace('.ts', '')}').${exportName}`;
-
-          // This checks whether one of the children is an import-type
-          // which is a short-circuit if there is no as
-          const typeImport = parentChildren.find(x =>
-            isImportTypeNode(x)
-          ) as ImportTypeNode;
-
-          if (typeImport && typeImport.getText().includes(exportName)) return;
-
-          const span = { length: 1, start: node.end };
-
-          let text = '';
-          if (typeImport) {
-            // We only want the oldExportName here to be present
-            // that way we can diff its length vs the new one
-            const oldExportName = typeImport.getText().split('.').pop();
-
-            // Remove ` as ` from the beginning,
-            // this because getText() gives us everything
-            // but ` as ` meaning we need to keep that part
-            // around.
-            imp = imp.slice(4);
-            text = source.text.replace(typeImport.getText(), imp);
-            span.length =
-              imp.length + ((oldExportName || '').length - exportName.length);
-          } else {
-            text =
-              source.text.substring(0, span.start) +
-              imp +
-              source.text.substring(
-                span.start + span.length,
-                source.text.length
-              );
-          }
-
-          const scriptInfo =
-            info.project.projectService.getScriptInfo(filename);
-          const snapshot = scriptInfo!.getSnapshot();
-
-          source.update(text, { span, newLength: imp.length });
-          scriptInfo!.editContent(0, snapshot.getLength(), text);
-          info.languageServiceHost.writeFile!(source.fileName, text);
-          if (!!typeImport) {
-            // To update the types, otherwise data is stale
-            scriptInfo!.reloadFromFile();
-          }
-          scriptInfo!.registerFileUpdate();
-        });
-      });
+      );
     } catch (e) {}
   }
 

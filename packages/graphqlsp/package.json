@@ -6,7 +6,7 @@
   "module": "./dist/index.module.js",
   "scripts": {
     "build": "rollup -c ../../scripts/build.mjs",
-    "dev": "NODE_ENV=development pnpm build --watch",
+    "dev": "cross-env NODE_ENV=development pnpm build --watch",
     "prepublishOnly": "pnpm build"
   },
   "repository": {
@@ -36,6 +36,7 @@
   "devDependencies": {
     "@types/node": "^18.15.11",
     "@types/node-fetch": "^2.6.3",
+    "cross-env": "^7.0.3",
     "graphql": "^16.6.0",
     "typescript": "^5.0.0"
   },

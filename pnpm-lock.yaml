@@ -90,6 +90,9 @@ importers:
       '@types/node-fetch':
         specifier: ^2.6.3
         version: 2.6.3
+      cross-env:
+        specifier: ^7.0.3
+        version: 7.0.3
       graphql:
         specifier: ^16.6.0
         version: 16.6.0
@@ -1054,7 +1057,6 @@ packages:
       '@graphql-codegen/plugin-helpers': 4.2.0(graphql@16.6.0)
       graphql: 16.6.0
       tslib: 2.5.0
-    dev: false
 
   /@graphql-codegen/core@3.1.0(graphql@16.6.0):
     resolution: {integrity: sha512-DH1/yaR7oJE6/B+c6ZF2Tbdh7LixF1K8L+8BoSubjNyQ8pNwR4a70mvc1sv6H7qgp6y1bPQ9tKE+aazRRshysw==}
@@ -1909,6 +1911,14 @@ packages:
 
   /convert-source-map@1.9.0:
     resolution: {integrity: sha512-ASFBup0Mz1uyiIjANan1jzLQami9z1PoYSZCiiYW2FczPbenXc45FZdBZLzOT+r6+iciuEModtmCti+hjaAk0A==}
+
+  /cross-env@7.0.3:
+    resolution: {integrity: sha512-+/HKd6EgcQCJGh2PSjZuUitQBQynKor4wrFbRg4DtAgS1aWO+gU52xpH7M9ScGgXSYmAVS9bIJ8EzuaGw0oNAw==}
+    engines: {node: '>=10.14', npm: '>=6', yarn: '>=1'}
+    hasBin: true
+    dependencies:
+      cross-spawn: 7.0.3
+    dev: true
 
   /cross-fetch@3.1.5:
     resolution: {integrity: sha512-lvb1SBsI0Z7GDwmuid+mU3kWVBwTVUbe7S0H52yaaAdQOXq2YktTCZdlAcNKFzE6QtRz0snpw9bNiPeOIkkQvw==}
@@ -4331,8 +4341,9 @@ packages:
     resolution: {directory: packages/graphqlsp, type: directory}
     id: file:packages/graphqlsp
     name: '@0no-co/graphqlsp'
-    version: 0.1.0
+    version: 0.5.1
     dependencies:
+      '@graphql-codegen/add': 4.0.1(graphql@16.6.0)
       '@graphql-codegen/core': 3.1.0(graphql@16.6.0)
       '@graphql-codegen/typed-document-node': 3.0.2(graphql@16.6.0)
       '@graphql-codegen/typescript': 3.0.3(graphql@16.6.0)

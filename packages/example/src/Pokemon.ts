@@ -9,6 +9,7 @@ export const PokemonFields = gql`
       fast {
         damage
         name
+        __typename
       }
     }
   }

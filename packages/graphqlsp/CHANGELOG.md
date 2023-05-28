@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.5.1
+
+### Patch Changes
+
+- First perform the graphqlsp operations and only after do the TypeScript ones, this to account for changed lines from semantic-diagnostics
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#53](https://github.com/0no-co/GraphQLSP/pull/53))
+
 ## 0.5.0
 
 ### Minor Changes

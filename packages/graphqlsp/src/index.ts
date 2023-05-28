@@ -46,14 +46,16 @@ function create(info: ts.server.PluginCreateInfo) {
   );
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
-    const originalDiagnostics =
-      info.languageService.getSemanticDiagnostics(filename);
     const graphQLDiagnostics = getGraphQLDiagnostics(
       filename,
       baseTypesPath,
       schema,
       info
     );
+
+    const originalDiagnostics =
+      info.languageService.getSemanticDiagnostics(filename);
+
     return graphQLDiagnostics
       ? [...graphQLDiagnostics, ...originalDiagnostics]
       : originalDiagnostics;
@@ -64,6 +66,13 @@ function create(info: ts.server.PluginCreateInfo) {
     cursorPosition: number,
     options: any
   ): ts.WithMetadata<ts.CompletionInfo> | undefined => {
+    const completions = getGraphQLCompletions(
+      filename,
+      cursorPosition,
+      schema,
+      info
+    );
+
     const originalCompletions = info.languageService.getCompletionsAtPosition(
       filename,
       cursorPosition,
@@ -74,13 +83,6 @@ function create(info: ts.server.PluginCreateInfo) {
       isNewIdentifierLocation: false,
       entries: [],
     };
-
-    const completions = getGraphQLCompletions(
-      filename,
-      cursorPosition,
-      schema,
-      info
-    );
 
     if (completions) {
       return {
@@ -93,16 +95,16 @@ function create(info: ts.server.PluginCreateInfo) {
   };
 
   proxy.getQuickInfoAtPosition = (filename: string, cursorPosition: number) => {
-    const originalInfo = info.languageService.getQuickInfoAtPosition(
-      filename,
-      cursorPosition
-    );
-
     const quickInfo = getGraphQLQuickInfo(
       filename,
       cursorPosition,
       schema,
       info
+    );
+
+    const originalInfo = info.languageService.getQuickInfoAtPosition(
+      filename,
+      cursorPosition
     );
 
     return quickInfo || originalInfo;

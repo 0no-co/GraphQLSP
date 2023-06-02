@@ -49,10 +49,6 @@ function create(info: ts.server.PluginCreateInfo) {
     const originalDiagnostics =
       info.languageService.getSemanticDiagnostics(filename);
 
-    if (originalDiagnostics.length) {
-      return originalDiagnostics;
-    }
-
     const graphQLDiagnostics = getGraphQLDiagnostics(
       originalDiagnostics.length > 0,
       filename,

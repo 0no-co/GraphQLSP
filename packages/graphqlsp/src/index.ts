@@ -46,15 +46,20 @@ function create(info: ts.server.PluginCreateInfo) {
   );
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
+    const originalDiagnostics =
+      info.languageService.getSemanticDiagnostics(filename);
+
+    if (originalDiagnostics.length) {
+      return originalDiagnostics;
+    }
+
     const graphQLDiagnostics = getGraphQLDiagnostics(
+      originalDiagnostics.length > 0,
       filename,
       baseTypesPath,
       schema,
       info
     );
-
-    const originalDiagnostics =
-      info.languageService.getSemanticDiagnostics(filename);
 
     return graphQLDiagnostics
       ? [...graphQLDiagnostics, ...originalDiagnostics]

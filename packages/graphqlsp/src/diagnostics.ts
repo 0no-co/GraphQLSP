@@ -32,6 +32,9 @@ export const MISSING_FRAGMENT_CODE = 52003;
 export const USING_DEPRECATED_FIELD_CODE = 52004;
 
 export function getGraphQLDiagnostics(
+  // This is so that we don't change offsets when there are
+  // TypeScript errors
+  hasTSErrors: Boolean,
   filename: string,
   baseTypesPath: string,
   schema: { current: GraphQLSchema | null },
@@ -263,7 +266,7 @@ export function getGraphQLDiagnostics(
         scalars,
         baseTypesPath
       ).then(() => {
-        if (isFileDirty(filename, source)) {
+        if (isFileDirty(filename, source) && !hasTSErrors) {
           return;
         }
 

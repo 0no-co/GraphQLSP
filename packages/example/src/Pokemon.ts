@@ -13,11 +13,14 @@ export const PokemonFields = gql`
     }
   }
 ` as typeof import('./Pokemon.generated').PokemonFieldsFragmentDoc;
-
 export const Pokemon = (data: any) => {
   const pokemon = useFragment(PokemonFields, data);
   return `hi ${pokemon.name}`;
 };
+
+type X = { hello: string };
+
+const x: X = { hello: '' };
 
 export function useFragment<Type>(
   _fragment: TypedDocumentNode<Type>,

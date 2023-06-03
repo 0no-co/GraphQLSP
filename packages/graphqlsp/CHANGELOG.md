@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.5.2
+
+### Patch Changes
+
+- dont perform file additions when we have ts-errors
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#56](https://github.com/0no-co/GraphQLSP/pull/56))
+
 ## 0.5.1
 
 ### Patch Changes

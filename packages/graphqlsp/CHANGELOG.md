@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.7.0
+
+### Minor Changes
+
+- Add option to disable type-generation
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#64](https://github.com/0no-co/GraphQLSP/pull/64))
+
 ## 0.6.2
 
 ### Patch Changes

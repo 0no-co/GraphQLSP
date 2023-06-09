@@ -1,9 +1,9 @@
 import * as Types from '../__generated__/baseGraphQLSP';
 import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
-export type PokemonsQueryVariables = Types.Exact<{ [key: string]: never }>;
+export type PokQueryVariables = Types.Exact<{ [key: string]: never }>;
 
-export type PokemonsQuery = {
-  __typename?: 'Query';
+export type PokQuery = {
+  __typename: 'Query';
   pokemons?: Array<{
     __typename: 'Pokemon';
     id: string;
@@ -12,12 +12,12 @@ export type PokemonsQuery = {
   } | null> | null;
 };
 
-export type PokemonQueryVariables = Types.Exact<{
+export type PoQueryVariables = Types.Exact<{
   id: Types.Scalars['ID'];
 }>;
 
-export type PokemonQuery = {
-  __typename?: 'Query';
+export type PoQuery = {
+  __typename: 'Query';
   pokemon?: {
     __typename: 'Pokemon';
     id: string;
@@ -25,13 +25,13 @@ export type PokemonQuery = {
   } | null;
 };
 
-export const PokemonsDocument = {
+export const PokDocument = {
   kind: 'Document',
   definitions: [
     {
       kind: 'OperationDefinition',
       operation: 'query',
-      name: { kind: 'Name', value: 'Pokemons' },
+      name: { kind: 'Name', value: 'Pok' },
       selectionSet: {
         kind: 'SelectionSet',
         selections: [
@@ -52,14 +52,14 @@ export const PokemonsDocument = {
       },
     },
   ],
-} as unknown as DocumentNode<PokemonsQuery, PokemonsQueryVariables>;
-export const PokemonDocument = {
+} as unknown as DocumentNode<PokQuery, PokQueryVariables>;
+export const PoDocument = {
   kind: 'Document',
   definitions: [
     {
       kind: 'OperationDefinition',
       operation: 'query',
-      name: { kind: 'Name', value: 'Pokemon' },
+      name: { kind: 'Name', value: 'Po' },
       variableDefinitions: [
         {
           kind: 'VariableDefinition',
@@ -99,4 +99,4 @@ export const PokemonDocument = {
       },
     },
   ],
-} as unknown as DocumentNode<PokemonQuery, PokemonQueryVariables>;
+} as unknown as DocumentNode<PoQuery, PoQueryVariables>;

@@ -360,7 +360,10 @@ export function getGraphQLDiagnostics(
         scriptInfo!.reloadFromFile();
         scriptInfo!.registerFileUpdate();
       });
-    } catch (e) {}
+    } catch (e) {
+      const scriptInfo = info.project.projectService.getScriptInfo(filename);
+      scriptInfo!.reloadFromFile();
+    }
   }
 
   return tsDiagnostics;

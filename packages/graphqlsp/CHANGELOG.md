@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.6.1
+
+### Patch Changes
+
+- Add `nonOptionalTypename: true` as this allows for easier type matching
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#60](https://github.com/0no-co/GraphQLSP/pull/60))
+
 ## 0.6.0
 
 ### Minor Changes

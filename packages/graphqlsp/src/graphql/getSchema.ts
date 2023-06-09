@@ -18,7 +18,7 @@ export const loadSchema = (
   logger: Logger,
   baseTypesPath: string,
   scalars: Record<string, unknown>,
-  extraImports?: string
+  extraTypes?: string
 ): { current: GraphQLSchema | null } => {
   const ref: { current: GraphQLSchema | null } = { current: null };
   let url: URL | undefined;
@@ -58,7 +58,7 @@ export const loadSchema = (
               (result as { data: IntrospectionQuery }).data
             );
             logger(`Got schema for ${url!.toString()}`);
-            generateBaseTypes(ref.current, baseTypesPath, scalars);
+            generateBaseTypes(ref.current, baseTypesPath, scalars, extraTypes);
           } catch (e: any) {
             logger(`Got schema error for ${e.message}`);
           }
@@ -81,7 +81,7 @@ export const loadSchema = (
     ref.current = isJson
       ? buildClientSchema(JSON.parse(contents))
       : buildSchema(contents);
-    generateBaseTypes(ref.current, baseTypesPath, scalars);
+    generateBaseTypes(ref.current, baseTypesPath, scalars, extraTypes);
     logger(`Got schema and initialized watcher for ${schema}`);
   }
 

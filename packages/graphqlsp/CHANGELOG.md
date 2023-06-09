@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 0.6.0
+
+### Minor Changes
+
+- Add new option named `extraTypes` which can be used to define an additional set of types to help with the `scalar` definitions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#58](https://github.com/0no-co/GraphQLSP/pull/58))
+- Change `avoidOptionals` to false in the base type generation
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#58](https://github.com/0no-co/GraphQLSP/pull/58))
+
 ## 0.5.2
 
 ### Patch Changes

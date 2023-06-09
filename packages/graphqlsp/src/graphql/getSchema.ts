@@ -17,7 +17,8 @@ export const loadSchema = (
   schema: string,
   logger: Logger,
   baseTypesPath: string,
-  scalars: Record<string, unknown>
+  scalars: Record<string, unknown>,
+  extraImports?: string
 ): { current: GraphQLSchema | null } => {
   const ref: { current: GraphQLSchema | null } = { current: null };
   let url: URL | undefined;

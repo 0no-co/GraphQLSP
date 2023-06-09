@@ -31,6 +31,7 @@ function create(info: ts.server.PluginCreateInfo) {
   logger('Setting up the GraphQL Plugin');
 
   const scalars = info.config.scalars || {};
+  const extraImports = info.config.extraImports;
 
   const proxy = createBasicDecorator(info);
 
@@ -42,7 +43,8 @@ function create(info: ts.server.PluginCreateInfo) {
     info.config.schema,
     logger,
     baseTypesPath,
-    scalars
+    scalars,
+    extraImports
   );
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {

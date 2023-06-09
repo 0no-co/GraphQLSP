@@ -17,6 +17,7 @@ export const loadSchema = (
   schema: string,
   logger: Logger,
   baseTypesPath: string,
+  shouldTypegen: boolean,
   scalars: Record<string, unknown>,
   extraTypes?: string
 ): { current: GraphQLSchema | null } => {

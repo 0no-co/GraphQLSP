@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.7.1
+
+### Patch Changes
+
+- ⚠️ Fix forgotten typegen
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#67](https://github.com/0no-co/GraphQLSP/pull/67))
+
 ## 0.7.0
 
 ### Minor Changes

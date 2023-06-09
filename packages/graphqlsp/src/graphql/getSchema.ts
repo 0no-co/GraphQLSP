@@ -59,7 +59,13 @@ export const loadSchema = (
               (result as { data: IntrospectionQuery }).data
             );
             logger(`Got schema for ${url!.toString()}`);
-            generateBaseTypes(ref.current, baseTypesPath, scalars, extraTypes);
+            if (shouldTypegen)
+              generateBaseTypes(
+                ref.current,
+                baseTypesPath,
+                scalars,
+                extraTypes
+              );
           } catch (e: any) {
             logger(`Got schema error for ${e.message}`);
           }
@@ -76,7 +82,7 @@ export const loadSchema = (
       ref.current = isJson
         ? buildClientSchema(JSON.parse(contents))
         : buildSchema(contents);
-      generateBaseTypes(ref.current, baseTypesPath, scalars);
+      if (shouldTypegen) generateBaseTypes(ref.current, baseTypesPath, scalars);
     });
 
     ref.current = isJson

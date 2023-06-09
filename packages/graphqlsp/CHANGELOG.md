@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.6.2
+
+### Patch Changes
+
+- ⚠️ Fix extra types
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#62](https://github.com/0no-co/GraphQLSP/pull/62))
+
 ## 0.6.1
 
 ### Patch Changes

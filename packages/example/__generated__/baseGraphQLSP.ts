@@ -20,27 +20,27 @@ export type Scalars = {
 
 /** Move a Pokémon can perform with the associated damage and type. */
 export type Attack = {
-  __typename?: 'Attack';
+  __typename: 'Attack';
   damage?: Maybe<Scalars['Int']>;
   name?: Maybe<Scalars['String']>;
   type?: Maybe<PokemonType>;
 };
 
 export type AttacksConnection = {
-  __typename?: 'AttacksConnection';
+  __typename: 'AttacksConnection';
   fast?: Maybe<Array<Maybe<Attack>>>;
   special?: Maybe<Array<Maybe<Attack>>>;
 };
 
 /** Requirement that prevents an evolution through regular means of levelling up. */
 export type EvolutionRequirement = {
-  __typename?: 'EvolutionRequirement';
+  __typename: 'EvolutionRequirement';
   amount?: Maybe<Scalars['Int']>;
   name?: Maybe<Scalars['String']>;
 };
 
 export type Pokemon = {
-  __typename?: 'Pokemon';
+  __typename: 'Pokemon';
   attacks?: Maybe<AttacksConnection>;
   /** @deprecated And this is the reason why */
   classification?: Maybe<Scalars['String']>;
@@ -62,7 +62,7 @@ export type Pokemon = {
 };
 
 export type PokemonDimension = {
-  __typename?: 'PokemonDimension';
+  __typename: 'PokemonDimension';
   maximum?: Maybe<Scalars['String']>;
   minimum?: Maybe<Scalars['String']>;
 };
@@ -89,7 +89,7 @@ export type PokemonType =
   | 'Water';
 
 export type Query = {
-  __typename?: 'Query';
+  __typename: 'Query';
   /** Get a single Pokémon by its ID, a three character long identifier padded with zeroes */
   pokemon?: Maybe<Pokemon>;
   /** List out all Pokémon, optionally in pages */

@@ -333,6 +333,8 @@ export function getGraphQLDiagnostics(
             // but ` as ` meaning we need to keep that part
             // around.
             imp = imp.slice(4);
+            // We remove the \n
+            imp = imp.substring(0, imp.length - 1);
             text = sourceText.replace(typeImport.getText(), imp);
             span.length =
               imp.length + ((oldExportName || '').length - exportName.length);
@@ -343,14 +345,12 @@ export function getGraphQLDiagnostics(
               sourceText.substring(span.start + span.length, sourceText.length);
           }
 
-          // @ts-ignore
-          source.hasBeenIncrementallyParsed = false;
           sourceText = text;
           addedLength = addedLength + imp.length;
-          source.update(text, { span, newLength: imp.length });
-          source.text = text;
           // @ts-ignore
           source.hasBeenIncrementallyParsed = false;
+          source.update(text, { span, newLength: imp.length });
+          source.text = text;
 
           return sourceText;
         }, source.text);
@@ -359,10 +359,7 @@ export function getGraphQLDiagnostics(
         const snapshot = scriptInfo!.getSnapshot();
         scriptInfo!.editContent(0, snapshot.getLength(), finalSourceText);
         info.languageServiceHost.writeFile!(source.fileName, finalSourceText);
-        if (shouldReload) {
-          // To update the types, otherwise data is stale
-          scriptInfo!.reloadFromFile();
-        }
+        scriptInfo!.reloadFromFile();
         scriptInfo!.registerFileUpdate();
       });
     } catch (e) {}

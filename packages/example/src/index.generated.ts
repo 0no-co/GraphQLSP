@@ -3,7 +3,7 @@ import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/
 export type PokemonsQueryVariables = Types.Exact<{ [key: string]: never }>;
 
 export type PokemonsQuery = {
-  __typename?: 'Query';
+  __typename: 'Query';
   pokemons?: Array<{
     __typename: 'Pokemon';
     id: string;
@@ -17,7 +17,7 @@ export type PokemonQueryVariables = Types.Exact<{
 }>;
 
 export type PokemonQuery = {
-  __typename?: 'Query';
+  __typename: 'Query';
   pokemon?: {
     __typename: 'Pokemon';
     id: string;

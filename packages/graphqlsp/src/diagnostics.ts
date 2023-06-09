@@ -46,7 +46,7 @@ export function getGraphQLDiagnostics(
   const shouldCheckForColocatedFragments =
     info.config.shouldCheckForColocatedFragments || true;
 
-  const source = getSource(info, filename);
+  let source = getSource(info, filename);
   if (!source) return undefined;
 
   const nodes = findAllTaggedTemplateNodes(source);
@@ -268,11 +268,19 @@ export function getGraphQLDiagnostics(
         scalars,
         baseTypesPath
       ).then(() => {
+        source = getSource(info, filename);
+        if (!source) return undefined;
+
         if (isFileDirty(filename, source) && !hasTSErrors) {
           return;
         }
 
-        nodes.forEach((node, i) => {
+        let addedLength = 0,
+          shouldReload = false;
+        const finalSourceText = nodes.reduce((sourceText, node, i) => {
+          source = getSource(info, filename);
+          if (!source) return sourceText;
+
           const queryText = texts[i] || '';
           const parsed = parse(queryText, { noLocation: true });
           const isFragment = parsed.definitions.every(
@@ -290,7 +298,7 @@ export function getGraphQLDiagnostics(
             name = operationNode.name?.value || '';
           }
 
-          if (!name) return;
+          if (!name) return sourceText;
 
           name = name.charAt(0).toUpperCase() + name.slice(1);
           const parentChildren = node.parent.getChildren();
@@ -300,7 +308,7 @@ export function getGraphQLDiagnostics(
             : `${name}Document`;
           let imp = ` as typeof import('./${nameParts
             .join('.')
-            .replace('.ts', '')}').${exportName}`;
+            .replace('.ts', '')}').${exportName}\n`;
 
           // This checks whether one of the children is an import-type
           // which is a short-circuit if there is no as
@@ -308,12 +316,14 @@ export function getGraphQLDiagnostics(
             isImportTypeNode(x)
           ) as ImportTypeNode;
 
-          if (typeImport && typeImport.getText().includes(exportName)) return;
+          if (typeImport && typeImport.getText().includes(exportName))
+            return sourceText;
 
           const span = { length: 1, start: node.end };
 
           let text = '';
           if (typeImport) {
+            shouldReload = true;
             // We only want the oldExportName here to be present
             // that way we can diff its length vs the new one
             const oldExportName = typeImport.getText().split('.').pop();
@@ -323,32 +333,37 @@ export function getGraphQLDiagnostics(
             // but ` as ` meaning we need to keep that part
             // around.
             imp = imp.slice(4);
-            text = source.text.replace(typeImport.getText(), imp);
+            text = sourceText.replace(typeImport.getText(), imp);
             span.length =
               imp.length + ((oldExportName || '').length - exportName.length);
           } else {
             text =
-              source.text.substring(0, span.start) +
+              sourceText.substring(0, span.start) +
               imp +
-              source.text.substring(
-                span.start + span.length,
-                source.text.length
-              );
+              sourceText.substring(span.start + span.length, sourceText.length);
           }
 
-          const scriptInfo =
-            info.project.projectService.getScriptInfo(filename);
-          const snapshot = scriptInfo!.getSnapshot();
-
+          // @ts-ignore
+          source.hasBeenIncrementallyParsed = false;
+          sourceText = text;
+          addedLength = addedLength + imp.length;
           source.update(text, { span, newLength: imp.length });
-          scriptInfo!.editContent(0, snapshot.getLength(), text);
-          info.languageServiceHost.writeFile!(source.fileName, text);
-          if (!!typeImport) {
-            // To update the types, otherwise data is stale
-            scriptInfo!.reloadFromFile();
-          }
-          scriptInfo!.registerFileUpdate();
-        });
+          source.text = text;
+          // @ts-ignore
+          source.hasBeenIncrementallyParsed = false;
+
+          return sourceText;
+        }, source.text);
+
+        const scriptInfo = info.project.projectService.getScriptInfo(filename);
+        const snapshot = scriptInfo!.getSnapshot();
+        scriptInfo!.editContent(0, snapshot.getLength(), finalSourceText);
+        info.languageServiceHost.writeFile!(source.fileName, finalSourceText);
+        if (shouldReload) {
+          // To update the types, otherwise data is stale
+          scriptInfo!.reloadFromFile();
+        }
+        scriptInfo!.registerFileUpdate();
       });
     } catch (e) {}
   }

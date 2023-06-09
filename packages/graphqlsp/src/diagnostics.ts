@@ -275,8 +275,7 @@ export function getGraphQLDiagnostics(
           return;
         }
 
-        let addedLength = 0,
-          shouldReload = false;
+        let addedLength = 0;
         const finalSourceText = nodes.reduce((sourceText, node, i) => {
           source = getSource(info, filename);
           if (!source) return sourceText;
@@ -323,7 +322,6 @@ export function getGraphQLDiagnostics(
 
           let text = '';
           if (typeImport) {
-            shouldReload = true;
             // We only want the oldExportName here to be present
             // that way we can diff its length vs the new one
             const oldExportName = typeImport.getText().split('.').pop();

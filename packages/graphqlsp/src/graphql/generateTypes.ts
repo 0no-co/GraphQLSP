@@ -6,12 +6,12 @@ import * as typescriptPlugin from '@graphql-codegen/typescript';
 import * as typescriptOperationsPlugin from '@graphql-codegen/typescript-operations';
 import * as typedDocumentNodePlugin from '@graphql-codegen/typed-document-node';
 import * as addPlugin from '@graphql-codegen/add';
-import { Logger } from '..';
 
 export const generateBaseTypes = async (
   schema: GraphQLSchema | null,
   outputFile: string,
-  scalars: Record<string, unknown>
+  scalars: Record<string, unknown>,
+  extraImports?: string
 ) => {
   if (!schema) return;
 
@@ -19,17 +19,24 @@ export const generateBaseTypes = async (
     documents: [],
     config: {
       scalars,
-      // nonOptionalTypename: true,
-      // avoidOptionals, worth looking into
+      avoidOptionals: false,
       enumsAsTypes: true,
       globalNamespace: true,
     },
     filename: outputFile,
     schema: parse(printSchema(schema)),
-    plugins: [{ typescript: {} }],
-    pluginMap: {
-      typescript: typescriptPlugin,
-    },
+    plugins: [
+      { typescript: {} },
+      extraImports && { add: { content: extraImports } },
+    ].filter(Boolean),
+    pluginMap: extraImports
+      ? {
+          typescript: typescriptPlugin,
+          add: addPlugin,
+        }
+      : {
+          typescript: typescriptPlugin,
+        },
   };
 
   // @ts-ignore
@@ -74,11 +81,8 @@ export const generateTypedDocumentNodes = async (
     config: {
       namespacedImportName: 'Types',
       scalars,
-      // nonOptionalTypename: true,
-      // avoidOptionals, worth looking into
+      avoidOptionals: false,
       enumsAsTypes: true,
-      dedupeOperationSuffix: true,
-      dedupeFragments: true,
     },
     filename: outputFile,
     schema: parse(printSchema(schema)),

@@ -43,6 +43,7 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 
 - `schema` allows you to specify a url, `.json` or `.graphql` file as your schema
 - `scalars` allows you to pass an object of scalars that we'll feed into `graphql-code-generator`
+- `extraTypes` allows you to specify imports or declare types to help with `scalar` definitions
 - `shouldCheckForColocatedFragments` when turned on (default), this will scan your imports to find
   unused fragments and provide a message notifying you about them
 

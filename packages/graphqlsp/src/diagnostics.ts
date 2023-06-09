@@ -40,6 +40,7 @@ export function getGraphQLDiagnostics(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
+  const disableTypegen = info.config.disableTypegen;
   const tagTemplate = info.config.template || 'gql';
   const scalars = info.config.scalars || {};
   const shouldCheckForColocatedFragments =
@@ -246,7 +247,8 @@ export function getGraphQLDiagnostics(
       x =>
         x.category === ts.DiagnosticCategory.Error ||
         x.category === ts.DiagnosticCategory.Warning
-    ).length
+    ).length &&
+    !disableTypegen
   ) {
     try {
       if (isFileDirty(filename, source)) {

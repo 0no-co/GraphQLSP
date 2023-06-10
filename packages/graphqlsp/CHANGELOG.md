@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.7.2
+
+### Patch Changes
+
+- ⚠️ Fix multiple selection-set updates
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#69](https://github.com/0no-co/GraphQLSP/pull/69))
+
 ## 0.7.1
 
 ### Patch Changes

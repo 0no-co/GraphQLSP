@@ -29,9 +29,11 @@ export function resolveTemplate(
         span.expression.getStart()
       );
       if (!definitions) return;
+
       const def = definitions[0];
       const src = getSource(info, def.fileName);
       if (!src) return;
+
       const node = findNode(src, def.textSpan.start);
       if (!node || !node.parent) return;
 

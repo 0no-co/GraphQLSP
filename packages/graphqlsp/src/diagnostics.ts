@@ -40,6 +40,8 @@ export function getGraphQLDiagnostics(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
+  const logger = (msg: string) =>
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const disableTypegen = info.config.disableTypegen;
   const tagTemplate = info.config.template || 'gql';
   const scalars = info.config.scalars || {};
@@ -63,6 +65,9 @@ export function getGraphQLDiagnostics(
     return resolveTemplate(node, filename, info);
   });
 
+  // TODO: when an issue occurs in a fragment definition identifier then
+  // we need to indicate this on the fragment or reliably filter them out
+  // currently there's a hack in place with the start-end.
   const diagnostics = nodes
     .map(originalNode => {
       let node = originalNode;
@@ -78,26 +83,29 @@ export function getGraphQLDiagnostics(
       const lines = text.split('\n');
 
       let startingPosition = node.pos + (tagTemplate.length + 1);
-      const graphQLDiagnostics = getDiagnostics(text, schema.current).map(x => {
-        const { start, end } = x.range;
+      const endPosition = startingPosition + node.getText().length;
+      const graphQLDiagnostics = getDiagnostics(text, schema.current)
+        .map(x => {
+          const { start, end } = x.range;
 
-        // We add the start.line to account for newline characters which are
-        // split out
-        let startChar = startingPosition + start.line;
-        for (let i = 0; i <= start.line; i++) {
-          if (i === start.line) startChar += start.character;
-          else startChar += lines[i].length;
-        }
+          // We add the start.line to account for newline characters which are
+          // split out
+          let startChar = startingPosition + start.line;
+          for (let i = 0; i <= start.line; i++) {
+            if (i === start.line) startChar += start.character;
+            else startChar += lines[i].length;
+          }
 
-        let endChar = startingPosition + end.line;
-        for (let i = 0; i <= end.line; i++) {
-          if (i === end.line) endChar += end.character;
-          else endChar += lines[i].length;
-        }
+          let endChar = startingPosition + end.line;
+          for (let i = 0; i <= end.line; i++) {
+            if (i === end.line) endChar += end.character;
+            else endChar += lines[i].length;
+          }
 
-        // We add 1 to the start because the range is exclusive of start.character
-        return { ...x, start: startChar + 1, length: endChar - startChar };
-      });
+          // We add 1 to the start because the range is exclusive of start.character
+          return { ...x, start: startChar + 1, length: endChar - startChar };
+        })
+        .filter(x => x.start + x.length <= endPosition);
 
       try {
         const parsed = parse(text, { noLocation: true });

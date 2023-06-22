@@ -14,6 +14,9 @@ export function getGraphQLQuickInfo(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.QuickInfo | undefined {
+  const logger = (msg: string) =>
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
+
   const tagTemplate = info.config.template || 'gql';
 
   const source = getSource(info, filename);
@@ -32,9 +35,25 @@ export function getGraphQLQuickInfo(
 
     if (!foundToken || !schema.current) return undefined;
 
+    const { combinedText: text, resolvedSpans } = resolveTemplate(
+      node,
+      filename,
+      info
+    );
+
+    const amountOfLines = resolvedSpans
+      .filter(
+        x =>
+          x.original.start < cursorPosition &&
+          x.original.start + x.original.length < cursorPosition
+      )
+      .reduce((acc, span) => acc + (span.lines - 1), 0);
+
+    foundToken.line = foundToken.line + amountOfLines;
+
     const hoverInfo = getHoverInformation(
       schema.current,
-      resolveTemplate(node, filename, info).combinedText,
+      text,
       new Cursor(foundToken.line, foundToken.start)
     );
 

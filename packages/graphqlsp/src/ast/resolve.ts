@@ -12,6 +12,7 @@ import { getSource } from '../ast';
 type TemplateResult = {
   combinedText: string;
   resolvedSpans: Array<{
+    lines: number;
     identifier: string;
     original: { start: number; length: number };
     new: { start: number; length: number };
@@ -73,6 +74,7 @@ export function resolveTemplate(
             );
 
             const alteredSpan = {
+              lines: text.combinedText.split('\n').length,
               identifier: identifierName,
               original: originalRange,
               new: {
@@ -97,6 +99,7 @@ export function resolveTemplate(
               text.combinedText
             );
             const alteredSpan = {
+              lines: text.combinedText.split('\n').length,
               identifier: identifierName,
               original: originalRange,
               new: {

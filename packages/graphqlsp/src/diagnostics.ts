@@ -65,9 +65,6 @@ export function getGraphQLDiagnostics(
     return resolveTemplate(node, filename, info).combinedText;
   });
 
-  // TODO: when an issue occurs in a fragment definition identifier then
-  // we need to indicate this on the fragment or reliably filter them out
-  // currently there's a hack in place with the start-end.
   const diagnostics = nodes
     .map(originalNode => {
       let node = originalNode;
@@ -86,7 +83,6 @@ export function getGraphQLDiagnostics(
       );
       const lines = text.split('\n');
 
-      logger(`${text} ${JSON.stringify(resolvedSpans)}`);
       let startingPosition = node.pos + (tagTemplate.length + 1);
       const endPosition = startingPosition + node.getText().length;
       const graphQLDiagnostics = getDiagnostics(text, schema.current)
@@ -121,7 +117,28 @@ export function getGraphQLDiagnostics(
                 locatedInFragment.original.length,
             };
           } else {
-            return { ...x, start: startChar + 1, length: endChar - startChar };
+            if (startChar > endPosition) {
+              // we have to calculate the added length and fix this
+              const addedCharacters = resolvedSpans
+                .filter(x => x.new.start + x.new.length < startChar)
+                .reduce(
+                  (acc, span) => acc + (span.new.length - span.original.length),
+                  0
+                );
+              startChar = startChar - addedCharacters;
+              endChar = endChar - addedCharacters;
+              return {
+                ...x,
+                start: startChar + 1,
+                length: endChar - startChar,
+              };
+            } else {
+              return {
+                ...x,
+                start: startChar + 1,
+                length: endChar - startChar,
+              };
+            }
           }
         })
         .filter(x => x.start + x.length <= endPosition);

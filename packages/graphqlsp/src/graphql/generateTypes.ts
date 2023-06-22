@@ -60,49 +60,51 @@ export const generateTypedDocumentNodes = async (
   scalars: Record<string, unknown>,
   baseTypesPath: string
 ) => {
-  if (!schema) return;
+  try {
+    if (!schema) return;
 
-  const parts = outputFile.split('/');
-  parts.pop();
-  let basePath = path
-    .relative(parts.join('/'), baseTypesPath)
-    .replace('.ts', '');
-  // case where files are declared globally, we need to prefix with ./
-  if (basePath === '__generated__/baseGraphQLSP') {
-    basePath = './' + basePath;
-  }
+    const parts = outputFile.split('/');
+    parts.pop();
+    let basePath = path
+      .relative(parts.join('/'), baseTypesPath)
+      .replace('.ts', '');
+    // case where files are declared globally, we need to prefix with ./
+    if (basePath === '__generated__/baseGraphQLSP') {
+      basePath = './' + basePath;
+    }
 
-  const config = {
-    documents: [
-      {
-        location: 'operation.graphql',
-        document: parse(doc),
+    const config = {
+      documents: [
+        {
+          location: 'operation.graphql',
+          document: parse(doc),
+        },
+      ],
+      config: {
+        scalars,
+        avoidOptionals: false,
+        enumsAsTypes: true,
+        nonOptionalTypename: true,
+        namespacedImportName: 'Types',
       },
-    ],
-    config: {
-      scalars,
-      avoidOptionals: false,
-      enumsAsTypes: true,
-      nonOptionalTypename: true,
-      namespacedImportName: 'Types',
-    },
-    filename: outputFile,
-    schema: parse(printSchema(schema)),
-    plugins: [
-      { 'typescript-operations': {} },
-      { 'typed-document-node': {} },
-      { add: { content: `import * as Types from "${basePath}"` } },
-    ],
-    pluginMap: {
-      'typescript-operations': typescriptOperationsPlugin,
-      'typed-document-node': typedDocumentNodePlugin,
-      add: addPlugin,
-    },
-  };
+      filename: outputFile,
+      schema: parse(printSchema(schema)),
+      plugins: [
+        { 'typescript-operations': {} },
+        { 'typed-document-node': {} },
+        { add: { content: `import * as Types from "${basePath}"` } },
+      ],
+      pluginMap: {
+        'typescript-operations': typescriptOperationsPlugin,
+        'typed-document-node': typedDocumentNodePlugin,
+        add: addPlugin,
+      },
+    };
 
-  // @ts-ignore
-  const output = await codegen(config);
-  fs.writeFile(path.join(outputFile), output, 'utf8', err => {
-    console.error(err);
-  });
+    // @ts-ignore
+    const output = await codegen(config);
+    fs.writeFile(path.join(outputFile), output, 'utf8', err => {
+      console.error(err);
+    });
+  } catch (e) {}
 };

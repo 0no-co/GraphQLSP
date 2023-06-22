@@ -4,6 +4,7 @@ import {
   isNoSubstitutionTemplateLiteral,
   isTaggedTemplateExpression,
   isTemplateExpression,
+  isTemplateSpan,
   isToken,
 } from 'typescript';
 import fs from 'fs';
@@ -68,7 +69,8 @@ export function bubbleUpTemplate(node: ts.Node): ts.Node {
   while (
     isNoSubstitutionTemplateLiteral(node) ||
     isToken(node) ||
-    isTemplateExpression(node)
+    isTemplateExpression(node) ||
+    isTemplateSpan(node)
   ) {
     node = node.parent;
   }

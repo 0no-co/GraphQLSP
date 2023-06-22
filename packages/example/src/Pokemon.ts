@@ -5,6 +5,7 @@ export const PokemonFields = gql`
   fragment pokemonFields on Pokemon {
     id
     name
+    ...someUnknownFragment
     attacks {
       fast {
         damage
@@ -13,6 +14,14 @@ export const PokemonFields = gql`
     }
   }
 ` as typeof import('./Pokemon.generated').PokemonFieldsFragmentDoc;
+
+export const WeakFields = gql`
+  fragment weaknessFields on Pokemon {
+    weaknesses
+    someUnknownField
+  }
+` as typeof import('./Pokemon.generated').WeaknessFieldsFragmentDoc;
+
 export const Pokemon = (data: any) => {
   const pokemon = useFragment(PokemonFields, data);
   return `hi ${pokemon.name}`;

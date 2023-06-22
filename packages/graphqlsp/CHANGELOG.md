@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.7.3
+
+### Patch Changes
+
+- Avoid polluting with diagnostics not in current file
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#73](https://github.com/0no-co/GraphQLSP/pull/73))
+
 ## 0.7.2
 
 ### Patch Changes

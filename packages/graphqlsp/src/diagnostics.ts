@@ -40,6 +40,8 @@ export function getGraphQLDiagnostics(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
+  const logger = (msg: string) =>
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const disableTypegen = info.config.disableTypegen;
   const tagTemplate = info.config.template || 'gql';
   const scalars = info.config.scalars || {};
@@ -60,7 +62,7 @@ export function getGraphQLDiagnostics(
       }
     }
 
-    return resolveTemplate(node, filename, info);
+    return resolveTemplate(node, filename, info).combinedText;
   });
 
   const diagnostics = nodes
@@ -74,30 +76,70 @@ export function getGraphQLDiagnostics(
         }
       }
 
-      const text = resolveTemplate(node, filename, info);
+      const { combinedText: text, resolvedSpans } = resolveTemplate(
+        node,
+        filename,
+        info
+      );
       const lines = text.split('\n');
 
       let startingPosition = node.pos + (tagTemplate.length + 1);
-      const graphQLDiagnostics = getDiagnostics(text, schema.current).map(x => {
-        const { start, end } = x.range;
+      const endPosition = startingPosition + node.getText().length;
+      const graphQLDiagnostics = getDiagnostics(text, schema.current)
+        .map(x => {
+          const { start, end } = x.range;
 
-        // We add the start.line to account for newline characters which are
-        // split out
-        let startChar = startingPosition + start.line;
-        for (let i = 0; i <= start.line; i++) {
-          if (i === start.line) startChar += start.character;
-          else startChar += lines[i].length;
-        }
+          // We add the start.line to account for newline characters which are
+          // split out
+          let startChar = startingPosition + start.line;
+          for (let i = 0; i <= start.line; i++) {
+            if (i === start.line) startChar += start.character;
+            else startChar += lines[i].length;
+          }
 
-        let endChar = startingPosition + end.line;
-        for (let i = 0; i <= end.line; i++) {
-          if (i === end.line) endChar += end.character;
-          else endChar += lines[i].length;
-        }
+          let endChar = startingPosition + end.line;
+          for (let i = 0; i <= end.line; i++) {
+            if (i === end.line) endChar += end.character;
+            else endChar += lines[i].length;
+          }
 
-        // We add 1 to the start because the range is exclusive of start.character
-        return { ...x, start: startChar + 1, length: endChar - startChar };
-      });
+          const locatedInFragment = resolvedSpans.find(x => {
+            const newEnd = x.new.start + x.new.length;
+            return startChar >= x.new.start && endChar <= newEnd;
+          });
+
+          if (!!locatedInFragment) {
+            return {
+              ...x,
+              start: locatedInFragment.original.start,
+              length: locatedInFragment.original.length,
+            };
+          } else {
+            if (startChar > endPosition) {
+              // we have to calculate the added length and fix this
+              const addedCharacters = resolvedSpans
+                .filter(x => x.new.start + x.new.length < startChar)
+                .reduce(
+                  (acc, span) => acc + (span.new.length - span.original.length),
+                  0
+                );
+              startChar = startChar - addedCharacters;
+              endChar = endChar - addedCharacters;
+              return {
+                ...x,
+                start: startChar + 1,
+                length: endChar - startChar,
+              };
+            } else {
+              return {
+                ...x,
+                start: startChar + 1,
+                length: endChar - startChar,
+              };
+            }
+          }
+        })
+        .filter(x => x.start + x.length <= endPosition);
 
       try {
         const parsed = parse(text, { noLocation: true });
@@ -208,7 +250,7 @@ export function getGraphQLDiagnostics(
               node,
               node.getSourceFile().fileName,
               info
-            );
+            ).combinedText;
             try {
               const parsed = parse(text, { noLocation: true });
               if (

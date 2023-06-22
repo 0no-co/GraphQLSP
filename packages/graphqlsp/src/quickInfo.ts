@@ -34,7 +34,7 @@ export function getGraphQLQuickInfo(
 
     const hoverInfo = getHoverInformation(
       schema.current,
-      resolveTemplate(node, filename, info),
+      resolveTemplate(node, filename, info).combinedText,
       new Cursor(foundToken.line, foundToken.start)
     );
 

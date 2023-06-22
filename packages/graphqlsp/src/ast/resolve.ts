@@ -51,10 +51,12 @@ export function resolveTemplate(
         const parent = node.parent;
         if (ts.isVariableDeclaration(parent)) {
           const identifierName = span.expression.escapedText;
-          const originalStart = span.expression.getStart();
+          // we reduce by two to account for the "${"
+          const originalStart = span.expression.getStart() - 2;
           const originalRange = {
             start: originalStart,
-            length: span.expression.end - originalStart,
+            // we add 1 to account for the "}"
+            length: span.expression.end - originalStart + 1,
           };
           if (
             parent.initializer &&

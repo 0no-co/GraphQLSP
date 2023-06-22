@@ -112,9 +112,7 @@ export function getGraphQLDiagnostics(
             return {
               ...x,
               start: locatedInFragment.original.start,
-              length:
-                locatedInFragment.original.start +
-                locatedInFragment.original.length,
+              length: locatedInFragment.original.length,
             };
           } else {
             if (startChar > endPosition) {

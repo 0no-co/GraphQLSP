@@ -48,7 +48,7 @@ export function getGraphQLCompletions(
     const foundToken = getToken(template, cursorPosition);
     if (!foundToken || !schema.current) return undefined;
 
-    const text = resolveTemplate(node, filename, info);
+    const text = resolveTemplate(node, filename, info).combinedText;
 
     const cursor = new Cursor(foundToken.line, foundToken.start);
 

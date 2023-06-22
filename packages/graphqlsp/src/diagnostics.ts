@@ -62,7 +62,7 @@ export function getGraphQLDiagnostics(
       }
     }
 
-    return resolveTemplate(node, filename, info);
+    return resolveTemplate(node, filename, info).combinedText;
   });
 
   // TODO: when an issue occurs in a fragment definition identifier then
@@ -79,9 +79,14 @@ export function getGraphQLDiagnostics(
         }
       }
 
-      const text = resolveTemplate(node, filename, info);
+      const { combinedText: text, resolvedSpans } = resolveTemplate(
+        node,
+        filename,
+        info
+      );
       const lines = text.split('\n');
 
+      logger(`${text} ${JSON.stringify(resolvedSpans)}`);
       let startingPosition = node.pos + (tagTemplate.length + 1);
       const endPosition = startingPosition + node.getText().length;
       const graphQLDiagnostics = getDiagnostics(text, schema.current)
@@ -102,8 +107,22 @@ export function getGraphQLDiagnostics(
             else endChar += lines[i].length;
           }
 
-          // We add 1 to the start because the range is exclusive of start.character
-          return { ...x, start: startChar + 1, length: endChar - startChar };
+          const locatedInFragment = resolvedSpans.find(x => {
+            const newEnd = x.new.start + x.new.length;
+            return startChar >= x.new.start && endChar <= newEnd;
+          });
+
+          if (!!locatedInFragment) {
+            return {
+              ...x,
+              start: locatedInFragment.original.start,
+              length:
+                locatedInFragment.original.start +
+                locatedInFragment.original.length,
+            };
+          } else {
+            return { ...x, start: startChar + 1, length: endChar - startChar };
+          }
         })
         .filter(x => x.start + x.length <= endPosition);
 
@@ -216,7 +235,7 @@ export function getGraphQLDiagnostics(
               node,
               node.getSourceFile().fileName,
               info
-            );
+            ).combinedText;
             try {
               const parsed = parse(text, { noLocation: true });
               if (

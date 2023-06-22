@@ -12,6 +12,7 @@ const query = gql`
 
   query Po {
     posts {
+
       __typenam
       ...fields
     }

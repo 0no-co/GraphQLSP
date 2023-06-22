@@ -53,6 +53,17 @@ export function getGraphQLCompletions(
       filename,
       info
     );
+
+    const amountOfLines = resolvedSpans
+      .filter(
+        x =>
+          x.original.start < cursorPosition &&
+          x.original.start + x.original.length < cursorPosition
+      )
+      .reduce((acc, span) => acc + (span.lines - 1), 0);
+
+    foundToken.line = foundToken.line + amountOfLines;
+
     const cursor = new Cursor(foundToken.line, foundToken.start);
 
     const [suggestions, spreadSuggestions] = getSuggestionsInternal(

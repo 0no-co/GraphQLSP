@@ -375,7 +375,10 @@ export function getGraphQLDiagnostics(
             imp = imp.slice(4);
             // We remove the \n
             imp = imp.substring(0, imp.length - 1);
-            text = sourceText.replace(typeImport.getText(), imp);
+            const from = node.getStart();
+            text =
+              sourceText.slice(0, from) +
+              sourceText.slice(from).replace(typeImport.getText(), imp);
             span.length =
               imp.length + ((oldExportName || '').length - exportName.length);
           } else {

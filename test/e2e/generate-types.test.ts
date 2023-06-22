@@ -11,7 +11,9 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const projectPath = path.resolve(__dirname, 'fixture-project');
 describe('Type-generation', () => {
   const outFile = path.join(projectPath, 'rename.ts');
+  const outFileComplex = path.join(projectPath, 'rename-complex.ts');
   const genFile = path.join(projectPath, 'rename.generated.ts');
+  const genFileComplex = path.join(projectPath, 'rename-complex.generated.ts');
   const baseGenFile = path.join(projectPath, '__generated__/baseGraphQLSP.ts');
 
   let server: TSServer;
@@ -22,7 +24,9 @@ describe('Type-generation', () => {
   afterAll(() => {
     try {
       fs.unlinkSync(outFile);
+      fs.unlinkSync(outFileComplex);
       fs.unlinkSync(genFile);
+      fs.unlinkSync(genFileComplex);
       fs.unlinkSync(baseGenFile);
     } catch {}
   });
@@ -91,6 +95,41 @@ describe('Type-generation', () => {
       expect(fs.readFileSync(genFile, 'utf-8')).toContain(
         'export const PostListDocument ='
       );
+    });
+  }, 20000);
+
+  it('gets renamed correctly (complex)', async () => {
+    server.sendCommand('open', {
+      file: outFileComplex,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+
+    server.sendCommand('updateOpen', {
+      openFiles: [
+        {
+          file: outFileComplex,
+          fileContent: fs.readFileSync(
+            path.join(projectPath, 'fixtures/rename-complex.ts'),
+            'utf-8'
+          ),
+        },
+      ],
+    } satisfies ts.server.protocol.UpdateOpenRequestArgs);
+
+    server.sendCommand('saveto', {
+      file: outFileComplex,
+      tmpfile: outFileComplex,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+
+    await waitForExpect(() => {
+      const contents = fs.readFileSync(outFileComplex, 'utf-8');
+      expect(contents).toContain(`    id
+  }
+\` as typeof import('./rename-complex.generated').PostFieldsFragmentDoc`);
+      expect(contents).toContain(`    title
+  }
+\` as typeof import('./rename-complex.generated').Post2FieldsFragmentDoc`);
     });
   }, 20000);
 });

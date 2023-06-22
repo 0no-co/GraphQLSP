@@ -20,7 +20,7 @@ export const WeakFields = gql`
     weaknesses
     someUnknownField
   }
-` as typeof import('./Pokemon.generated').WeaknessFieldsFragmentDoc;
+` as typeof import('./Pokemon.generated').PokemonFieldsFragmentDoc;
 
 export const Pokemon = (data: any) => {
   const pokemon = useFragment(PokemonFields, data);

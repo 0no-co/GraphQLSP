@@ -4,12 +4,11 @@ import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
 import ts from 'typescript/lib/tsserverlibrary';
-import { waitForExpect } from './util';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
 const projectPath = path.resolve(__dirname, 'fixture-project');
-describe('Fragments', () => {
+describe('Fragment + operations', () => {
   const outfileCombinations = path.join(projectPath, 'Combination.ts');
 
   let server: TSServer;
@@ -85,11 +84,11 @@ describe('Fragments', () => {
           "category": "error",
           "code": 52001,
           "end": {
-            "line": 16,
+            "line": 17,
             "offset": 1,
           },
           "start": {
-            "line": 15,
+            "line": 16,
             "offset": 7,
           },
           "text": "Cannot query field \\"__typenam\\" on type \\"Post\\".",
@@ -124,5 +123,76 @@ describe('Fragments', () => {
     expect(res?.body.displayString).toEqual(
       `Query.posts: [Post]\n\nList out all posts`
     );
+  }, 30000);
+
+  it('gives suggestions with preceding fragments', async () => {
+    server.send({
+      seq: 10,
+      type: 'request',
+      command: 'completionInfo',
+      arguments: {
+        file: outfileCombinations,
+        line: 15,
+        offset: 7,
+        includeExternalModuleExports: true,
+        includeInsertTextCompletions: true,
+        triggerKind: 1,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'completionInfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(
+        resp => resp.type === 'response' && resp.command === 'completionInfo'
+      );
+
+    expect(res).toBeDefined();
+    expect(typeof res?.body.entries).toEqual('object');
+    expect(res?.body.entries).toMatchInlineSnapshot(`
+      [
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " ID!",
+          },
+          "name": "id",
+          "sortText": "0id",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " String!",
+          },
+          "name": "title",
+          "sortText": "1title",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " String!",
+          },
+          "name": "content",
+          "sortText": "2content",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "description": "The name of the current Object type at runtime.",
+            "detail": " String!",
+          },
+          "name": "__typename",
+          "sortText": "3__typename",
+        },
+      ]
+    `);
   }, 30000);
 });

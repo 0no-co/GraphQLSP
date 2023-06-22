@@ -1,5 +1,16 @@
 # @0no-co/graphqlsp
 
+## 0.7.4
+
+### Patch Changes
+
+- Correctly replace with identical replacement strings
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#82](https://github.com/0no-co/GraphQLSP/pull/82))
+- Account for offsets in auto-complete as well
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#81](https://github.com/0no-co/GraphQLSP/pull/81))
+- ⚠️ Fix quick-info getting offset by preceding fragments
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#78](https://github.com/0no-co/GraphQLSP/pull/78))
+
 ## 0.7.3
 
 ### Patch Changes

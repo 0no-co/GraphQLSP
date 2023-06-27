@@ -12,14 +12,14 @@ import fs from 'fs';
 import { Logger } from '../index';
 import { generateBaseTypes } from './generateTypes';
 
-type SchemaOrigin = {
+export type SchemaOrigin = {
   url: string;
   headers: Record<string, unknown>;
 };
 
 export const loadSchema = (
   root: string,
-  schema: string,
+  schema: SchemaOrigin | string,
   logger: Logger,
   baseTypesPath: string,
   shouldTypegen: boolean,
@@ -31,19 +31,14 @@ export const loadSchema = (
 
   let isJSON = false;
   let config: undefined | SchemaOrigin;
+
   try {
-    config = JSON.parse(schema);
-    if (typeof config === 'object') {
-      isJSON = true;
-      url = new URL(config.url);
+    if (typeof schema === 'object') {
+      url = new URL(schema.url);
+    } else {
+      url = new URL(schema);
     }
   } catch (e) {}
-
-  if (!isJSON) {
-    try {
-      url = new URL(schema);
-    } catch (e) {}
-  }
 
   if (url) {
     logger(`Fetching introspection from ${url.toString()}`);
@@ -61,7 +56,7 @@ export const loadSchema = (
       body: JSON.stringify({
         query: getIntrospectionQuery({
           descriptions: true,
-          schemaDescription: true,
+          schemaDescription: false,
           inputValueDeprecation: false,
           directiveIsRepeatable: false,
           specifiedByUrl: false,
@@ -74,6 +69,7 @@ export const loadSchema = (
         else return response.text();
       })
       .then(result => {
+        logger(`Got result ${JSON.stringify(result)}`);
         if (typeof result === 'string') {
           logger(`Got error while fetching introspection ${result}`);
         } else {
@@ -94,7 +90,7 @@ export const loadSchema = (
           }
         }
       });
-  } else {
+  } else if (typeof schema === 'string') {
     const isJson = schema.endsWith('json');
     const resolvedPath = path.resolve(path.dirname(root), schema);
     logger(`Getting schema from ${resolvedPath}`);

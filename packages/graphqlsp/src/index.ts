@@ -1,6 +1,6 @@
 import ts from 'typescript/lib/tsserverlibrary';
 
-import { loadSchema } from './graphql/getSchema';
+import { SchemaOrigin, loadSchema } from './graphql/getSchema';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
 import { getGraphQLDiagnostics } from './diagnostics';
@@ -20,19 +20,30 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
 
 export type Logger = (msg: string) => void;
 
+type Config = {
+  schema: SchemaOrigin | string;
+  template?: string;
+  disableTypegen?: boolean;
+  extraTypes?: string;
+  scalars?: Record<string, unknown>;
+  shouldCheckForColocatedFragments?: boolean;
+};
+
 function create(info: ts.server.PluginCreateInfo) {
   const logger: Logger = (msg: string) =>
     info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-  logger('config: ' + JSON.stringify(info.config));
-  if (!info.config.schema) {
+  const config: Config = info.config;
+
+  logger('config: ' + JSON.stringify(config));
+  if (!config.schema) {
     throw new Error('Please provide a GraphQL Schema!');
   }
 
   logger('Setting up the GraphQL Plugin');
 
-  const scalars = info.config.scalars || {};
-  const extraTypes = info.config.extraTypes;
-  const disableTypegen = info.config.disableTypegen;
+  const scalars = config.scalars || {};
+  const extraTypes = config.extraTypes || '';
+  const disableTypegen = config.disableTypegen || false;
 
   const proxy = createBasicDecorator(info);
 
@@ -41,7 +52,7 @@ function create(info: ts.server.PluginCreateInfo) {
 
   const schema = loadSchema(
     info.project.getProjectName(),
-    info.config.schema,
+    config.schema,
     logger,
     baseTypesPath,
     !disableTypegen,

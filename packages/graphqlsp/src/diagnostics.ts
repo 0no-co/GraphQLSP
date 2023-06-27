@@ -309,7 +309,9 @@ export function getGraphQLDiagnostics(
         texts.join('\n'),
         scalars,
         baseTypesPath
-      ).then(() => {
+      ).then(({ success }) => {
+        if (!success) return undefined;
+
         source = getSource(info, filename);
         if (!source) return undefined;
 

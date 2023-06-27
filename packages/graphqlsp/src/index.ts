@@ -25,6 +25,7 @@ function create(info: ts.server.PluginCreateInfo) {
     info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   logger('config: ' + JSON.stringify(info.config));
   if (!info.config.schema) {
+    logger('Missing "schema" option in configuration.');
     throw new Error('Please provide a GraphQL Schema!');
   }
 

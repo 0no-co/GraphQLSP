@@ -12,6 +12,11 @@ import fs from 'fs';
 import { Logger } from '../index';
 import { generateBaseTypes } from './generateTypes';
 
+type SchemaOrigin = {
+  url: string;
+  headers: Record<string, unknown>;
+};
+
 export const loadSchema = (
   root: string,
   schema: string,
@@ -24,17 +29,35 @@ export const loadSchema = (
   const ref: { current: GraphQLSchema | null } = { current: null };
   let url: URL | undefined;
 
+  let isJSON = false;
+  let config: undefined | SchemaOrigin;
   try {
-    url = new URL(schema);
+    config = JSON.parse(schema);
+    if (typeof config === 'object') {
+      isJSON = true;
+      url = new URL(config.url);
+    }
   } catch (e) {}
+
+  if (!isJSON) {
+    try {
+      url = new URL(schema);
+    } catch (e) {}
+  }
 
   if (url) {
     logger(`Fetching introspection from ${url.toString()}`);
     fetch(url.toString(), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers:
+        isJSON && config
+          ? {
+              ...(config.headers || {}),
+              'Content-Type': 'application/json',
+            }
+          : {
+              'Content-Type': 'application/json',
+            },
       body: JSON.stringify({
         query: getIntrospectionQuery({
           descriptions: true,

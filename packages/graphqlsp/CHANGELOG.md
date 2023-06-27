@@ -1,5 +1,19 @@
 # @0no-co/graphqlsp
 
+## 0.8.0
+
+### Minor Changes
+
+- Allow specifying headers for fetching the introspection
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#87](https://github.com/0no-co/GraphQLSP/pull/87))
+
+### Patch Changes
+
+- Guard against no schema or errored codegen attempts
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#89](https://github.com/0no-co/GraphQLSP/pull/89))
+- catch more schema errors and improve logging
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#84](https://github.com/0no-co/GraphQLSP/pull/84))
+
 ## 0.7.4
 
 ### Patch Changes

@@ -16,7 +16,6 @@ export type PokemonFieldsFragment = {
   __typename: 'Pokemon';
   id: string;
   name: string;
-  resistant?: Array<Types.PokemonType | null> | null;
   attacks?: {
     __typename: 'AttacksConnection';
     fast?: Array<{
@@ -27,9 +26,9 @@ export type PokemonFieldsFragment = {
   } | null;
 };
 
-export type MoreFieldsFragment = {
+export type WeaknessFieldsFragment = {
   __typename: 'Pokemon';
-  resistant?: Array<Types.PokemonType | null> | null;
+  weaknesses?: Array<Types.PokemonType | null> | null;
 };
 
 export type PoQueryVariables = Types.Exact<{
@@ -45,25 +44,6 @@ export type PoQuery = {
   } | null;
 };
 
-export const MoreFieldsFragmentDoc = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'FragmentDefinition',
-      name: { kind: 'Name', value: 'moreFields' },
-      typeCondition: {
-        kind: 'NamedType',
-        name: { kind: 'Name', value: 'Pokemon' },
-      },
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          { kind: 'Field', name: { kind: 'Name', value: 'resistant' } },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<MoreFieldsFragment, unknown>;
 export const PokemonFieldsFragmentDoc = {
   kind: 'Document',
   definitions: [
@@ -79,10 +59,6 @@ export const PokemonFieldsFragmentDoc = {
         selections: [
           { kind: 'Field', name: { kind: 'Name', value: 'id' } },
           { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-          {
-            kind: 'FragmentSpread',
-            name: { kind: 'Name', value: 'moreFields' },
-          },
           {
             kind: 'Field',
             name: { kind: 'Name', value: 'attacks' },
@@ -109,9 +85,14 @@ export const PokemonFieldsFragmentDoc = {
         ],
       },
     },
+  ],
+} as unknown as DocumentNode<PokemonFieldsFragment, unknown>;
+export const WeaknessFieldsFragmentDoc = {
+  kind: 'Document',
+  definitions: [
     {
       kind: 'FragmentDefinition',
-      name: { kind: 'Name', value: 'moreFields' },
+      name: { kind: 'Name', value: 'weaknessFields' },
       typeCondition: {
         kind: 'NamedType',
         name: { kind: 'Name', value: 'Pokemon' },
@@ -119,12 +100,12 @@ export const PokemonFieldsFragmentDoc = {
       selectionSet: {
         kind: 'SelectionSet',
         selections: [
-          { kind: 'Field', name: { kind: 'Name', value: 'resistant' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'weaknesses' } },
         ],
       },
     },
   ],
-} as unknown as DocumentNode<PokemonFieldsFragment, unknown>;
+} as unknown as DocumentNode<WeaknessFieldsFragment, unknown>;
 export const PokDocument = {
   kind: 'Document',
   definitions: [
@@ -143,8 +124,8 @@ export const PokDocument = {
               selections: [
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
-                { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'fleeRate' } },
+                { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
               ],
             },
           },

@@ -12,9 +12,14 @@ import fs from 'fs';
 import { Logger } from '../index';
 import { generateBaseTypes } from './generateTypes';
 
+export type SchemaOrigin = {
+  url: string;
+  headers: Record<string, unknown>;
+};
+
 export const loadSchema = (
   root: string,
-  schema: string,
+  schema: SchemaOrigin | string,
   logger: Logger,
   baseTypesPath: string,
   shouldTypegen: boolean,
@@ -24,21 +29,34 @@ export const loadSchema = (
   const ref: { current: GraphQLSchema | null } = { current: null };
   let url: URL | undefined;
 
+  let isJSON = false;
+  let config: undefined | SchemaOrigin;
+
   try {
-    url = new URL(schema);
+    if (typeof schema === 'object') {
+      url = new URL(schema.url);
+    } else {
+      url = new URL(schema);
+    }
   } catch (e) {}
 
   if (url) {
     logger(`Fetching introspection from ${url.toString()}`);
     fetch(url.toString(), {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers:
+        isJSON && config
+          ? {
+              ...(config.headers || {}),
+              'Content-Type': 'application/json',
+            }
+          : {
+              'Content-Type': 'application/json',
+            },
       body: JSON.stringify({
         query: getIntrospectionQuery({
           descriptions: true,
-          schemaDescription: true,
+          schemaDescription: false,
           inputValueDeprecation: false,
           directiveIsRepeatable: false,
           specifiedByUrl: false,
@@ -51,6 +69,7 @@ export const loadSchema = (
         else return response.text();
       })
       .then(result => {
+        logger(`Got result ${JSON.stringify(result)}`);
         if (typeof result === 'string') {
           logger(`Got error while fetching introspection ${result}`);
         } else if (result.data) {
@@ -73,7 +92,7 @@ export const loadSchema = (
           logger(`Got invalid response ${JSON.stringify(result)}`);
         }
       });
-  } else {
+  } else if (typeof schema === 'string') {
     const isJson = schema.endsWith('json');
     const resolvedPath = path.resolve(path.dirname(root), schema);
     logger(`Getting schema from ${resolvedPath}`);

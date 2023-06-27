@@ -7,8 +7,7 @@ const PokemonsQuery = gql`
       id
       name
       fleeRate
-
-      __typenam
+      __typename
     }
   }
 

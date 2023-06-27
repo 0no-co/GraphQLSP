@@ -59,9 +59,9 @@ export const generateTypedDocumentNodes = async (
   doc: string,
   scalars: Record<string, unknown>,
   baseTypesPath: string
-) => {
+): Promise<{ success: boolean }> => {
   try {
-    if (!schema) return;
+    if (!schema) return { success: false };
 
     const parts = outputFile.split('/');
     parts.pop();
@@ -106,5 +106,9 @@ export const generateTypedDocumentNodes = async (
     fs.writeFile(path.join(outputFile), output, 'utf8', err => {
       console.error(err);
     });
-  } catch (e) {}
+
+    return { success: true };
+  } catch (e) {
+    return { success: false };
+  }
 };

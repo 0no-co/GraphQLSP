@@ -36,6 +36,7 @@ function create(info: ts.server.PluginCreateInfo) {
 
   logger('config: ' + JSON.stringify(config));
   if (!config.schema) {
+    logger('Missing "schema" option in configuration.');
     throw new Error('Please provide a GraphQL Schema!');
   }
 

@@ -72,7 +72,7 @@ export const loadSchema = (
         logger(`Got result ${JSON.stringify(result)}`);
         if (typeof result === 'string') {
           logger(`Got error while fetching introspection ${result}`);
-        } else {
+        } else if (result.data) {
           try {
             ref.current = buildClientSchema(
               (result as { data: IntrospectionQuery }).data
@@ -88,6 +88,8 @@ export const loadSchema = (
           } catch (e: any) {
             logger(`Got schema error for ${e.message}`);
           }
+        } else {
+          logger(`Got invalid response ${JSON.stringify(result)}`);
         }
       });
   } else if (typeof schema === 'string') {

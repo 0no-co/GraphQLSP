@@ -39,6 +39,8 @@ now restart your TS-server and you should be good to go, ensure you are using th
 workspace version of TypeScript. In VSCode you can do so by clicking the bottom right
 when on a TypeScript file or adding a file like [this](https://github.com/0no-co/GraphQLSP/blob/main/packages/example/.vscode/settings.json).
 
+> If you are using VSCode ensure that your editor is using the Workspace Version of TypeScript
+
 ### Configuration
 
 - `schema` allows you to specify a url, `.json` or `.graphql` file as your schema

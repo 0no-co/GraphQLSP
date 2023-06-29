@@ -7,6 +7,8 @@ const PokemonsQuery = gql`
       id
       name
       fleeRate
+      ...pokemonFields
+      ...weaknessFields
       __typename
     }
   }
@@ -23,7 +25,9 @@ client
   .query(PokemonsQuery, {})
   .toPromise()
   .then(result => {
-    result.data?.pokemons;
+    const fastAttacks = result.data?.pokemons?.map(
+      pokemon => pokemon?.attacks?.fast
+    );
   });
 
 const PokemonQuery = gql`

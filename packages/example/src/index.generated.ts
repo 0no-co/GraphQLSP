@@ -9,6 +9,15 @@ export type PokQuery = {
     id: string;
     name: string;
     fleeRate?: number | null;
+    weaknesses?: Array<Types.PokemonType | null> | null;
+    attacks?: {
+      __typename: 'AttacksConnection';
+      fast?: Array<{
+        __typename: 'Attack';
+        damage?: number | null;
+        name?: string | null;
+      } | null> | null;
+    } | null;
   } | null> | null;
 };
 
@@ -32,7 +41,7 @@ export type WeaknessFieldsFragment = {
 };
 
 export type PoQueryVariables = Types.Exact<{
-  id: Types.Scalars['ID'];
+  id: Types.Scalars['ID']['input'];
 }>;
 
 export type PoQuery = {
@@ -125,10 +134,70 @@ export const PokDocument = {
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'fleeRate' } },
+                {
+                  kind: 'FragmentSpread',
+                  name: { kind: 'Name', value: 'pokemonFields' },
+                },
+                {
+                  kind: 'FragmentSpread',
+                  name: { kind: 'Name', value: 'weaknessFields' },
+                },
                 { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
               ],
             },
           },
+        ],
+      },
+    },
+    {
+      kind: 'FragmentDefinition',
+      name: { kind: 'Name', value: 'pokemonFields' },
+      typeCondition: {
+        kind: 'NamedType',
+        name: { kind: 'Name', value: 'Pokemon' },
+      },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          { kind: 'Field', name: { kind: 'Name', value: 'id' } },
+          { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'attacks' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'fast' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'damage' },
+                      },
+                      { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        ],
+      },
+    },
+    {
+      kind: 'FragmentDefinition',
+      name: { kind: 'Name', value: 'weaknessFields' },
+      typeCondition: {
+        kind: 'NamedType',
+        name: { kind: 'Name', value: 'Pokemon' },
+      },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          { kind: 'Field', name: { kind: 'Name', value: 'weaknesses' } },
         ],
       },
     },

@@ -81,9 +81,12 @@ importers:
       '@graphql-codegen/typescript-operations':
         specifier: ^3.0.3
         version: 3.0.3(graphql@16.6.0)
+      '@graphql-typed-document-node/core':
+        specifier: ^3.2.0
+        version: 3.2.0(graphql@16.6.0)
       graphql-language-service:
-        specifier: ^5.1.3
-        version: 5.1.3(graphql@16.6.0)
+        specifier: ^5.1.7
+        version: 5.1.7(graphql@16.6.0)
       node-fetch:
         specifier: ^2.0.0
         version: 2.6.7
@@ -1233,7 +1236,6 @@ packages:
       graphql: ^0.8.0 || ^0.9.0 || ^0.10.0 || ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0
     dependencies:
       graphql: 16.6.0
-    dev: false
 
   /@jridgewell/gen-mapping@0.1.1:
     resolution: {integrity: sha512-sQXCasFk+U8lWYEe66WxRDOE9PjVz4vSM51fTu3Hw+ClTpUSQb718772vH3pyS5pShp6lvQM7SxgIDXXXmOX7w==}
@@ -2438,8 +2440,8 @@ packages:
     resolution: {integrity: sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==}
     dev: true
 
-  /graphql-language-service@5.1.3(graphql@16.6.0):
-    resolution: {integrity: sha512-01KZLExoF53i8a2Jhgt+nVGsm9O2+jmDdwms4THSxCY+gU9FukF6X4pPLO2Gk7qZ6CVcInM8+IQx/ph4AOTOLA==}
+  /graphql-language-service@5.1.7(graphql@16.6.0):
+    resolution: {integrity: sha512-xkawYMJeoNYGhT+SpSH3c2qf6HpGHQ/duDmrseVHBpVCrXAiGnliXGSCC4jyMGgZQ05GytsZ12p0nUo7s6lSSw==}
     hasBin: true
     peerDependencies:
       graphql: ^15.5.0 || ^16.0.0
@@ -4340,7 +4342,8 @@ packages:
       '@graphql-codegen/typed-document-node': 3.0.2(graphql@16.6.0)
       '@graphql-codegen/typescript': 3.0.3(graphql@16.6.0)
       '@graphql-codegen/typescript-operations': 3.0.3(graphql@16.6.0)
-      graphql-language-service: 5.1.3(graphql@16.6.0)
+      '@graphql-typed-document-node/core': 3.2.0(graphql@16.6.0)
+      graphql-language-service: 5.1.7(graphql@16.6.0)
       node-fetch: 2.6.7
     transitivePeerDependencies:
       - encoding

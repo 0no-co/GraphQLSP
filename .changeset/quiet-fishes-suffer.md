@@ -1,5 +1,5 @@
 ---
-'@0no-co/graphqlsp': patch
+'@0no-co/graphqlsp': minor
 ---
 
 Add missing dependencies

@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.9.0
+
+### Minor Changes
+
+- Add missing dependencies
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#91](https://github.com/0no-co/GraphQLSP/pull/91))
+
 ## 0.8.0
 
 ### Minor Changes

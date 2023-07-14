@@ -1,6 +1,8 @@
 import ts from 'typescript/lib/tsserverlibrary';
 import {
   ImportTypeNode,
+  isAsExpression,
+  isExpressionStatement,
   isImportTypeNode,
   isNamedImportBindings,
   isNamespaceImport,
@@ -83,7 +85,20 @@ export function getGraphQLDiagnostics(
       );
       const lines = text.split('\n');
 
-      let startingPosition = node.pos + (tagTemplate.length + 1);
+      let isExpression = false;
+      if (isAsExpression(node.parent)) {
+        if (isExpressionStatement(node.parent.parent)) {
+          isExpression = true;
+        }
+      } else {
+        if (isExpressionStatement(node.parent)) {
+          isExpression = true;
+        }
+      }
+      // When we are dealing with a plain gql statement we have to add two these can be recognised
+      // by the fact that the parent is an expressionStatement
+      let startingPosition =
+        node.pos + (tagTemplate.length + (isExpression ? 2 : 1));
       const endPosition = startingPosition + node.getText().length;
       const graphQLDiagnostics = getDiagnostics(text, schema.current)
         .map(x => {

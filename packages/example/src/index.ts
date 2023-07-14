@@ -1,12 +1,13 @@
 import { gql, createClient } from '@urql/core';
 import { Pokemon, PokemonFields, WeakFields } from './Pokemon';
 
-const PokemonsQuery = gql`
-  query Pok {
-    pokemons {
+const x = gql`
+  query Pok($limit: Int!) {
+    pokemons(limit: $limit) {
       id
       name
       fleeRate
+      classification
       ...pokemonFields
       ...weaknessFields
       __typename
@@ -20,15 +21,6 @@ const PokemonsQuery = gql`
 const client = createClient({
   url: '',
 });
-
-client
-  .query(PokemonsQuery, {})
-  .toPromise()
-  .then(result => {
-    const fastAttacks = result.data?.pokemons?.map(
-      pokemon => pokemon?.attacks?.fast
-    );
-  });
 
 const PokemonQuery = gql`
   query Po($id: ID!) {

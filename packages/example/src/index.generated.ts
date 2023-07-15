@@ -1,6 +1,8 @@
 import * as Types from '../__generated__/baseGraphQLSP';
 import { TypedDocumentNode as DocumentNode } from '@graphql-typed-document-node/core';
-export type PokQueryVariables = Types.Exact<{ [key: string]: never }>;
+export type PokQueryVariables = Types.Exact<{
+  limit: Types.Scalars['Int']['input'];
+}>;
 
 export type PokQuery = {
   __typename: 'Query';
@@ -122,12 +124,35 @@ export const PokDocument = {
       kind: 'OperationDefinition',
       operation: 'query',
       name: { kind: 'Name', value: 'Pok' },
+      variableDefinitions: [
+        {
+          kind: 'VariableDefinition',
+          variable: {
+            kind: 'Variable',
+            name: { kind: 'Name', value: 'limit' },
+          },
+          type: {
+            kind: 'NonNullType',
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+          },
+        },
+      ],
       selectionSet: {
         kind: 'SelectionSet',
         selections: [
           {
             kind: 'Field',
             name: { kind: 'Name', value: 'pokemons' },
+            arguments: [
+              {
+                kind: 'Argument',
+                name: { kind: 'Name', value: 'limit' },
+                value: {
+                  kind: 'Variable',
+                  name: { kind: 'Name', value: 'limit' },
+                },
+              },
+            ],
             selectionSet: {
               kind: 'SelectionSet',
               selections: [

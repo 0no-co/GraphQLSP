@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.9.1
+
+### Patch Changes
+
+- Catch expression statements
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#94](https://github.com/0no-co/GraphQLSP/pull/94))
+
 ## 0.9.0
 
 ### Minor Changes

@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.9.2
+
+### Patch Changes
+
+- ⚠️ Fix setting `shouldCheckForColocatedFragments` to `false` falling back to `true`
+  Submitted by [@dan-lee](https://github.com/dan-lee) (See [#96](https://github.com/0no-co/GraphQLSP/pull/96))
+
 ## 0.9.1
 
 ### Patch Changes

@@ -1,5 +1,17 @@
 # @0no-co/graphqlsp
 
+## 0.10.0
+
+### Minor Changes
+
+- Change default config to not check for co-located fragments by default
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#99](https://github.com/0no-co/GraphQLSP/pull/99))
+
+### Patch Changes
+
+- Prevent duplicate async file-generation processes from happening
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#100](https://github.com/0no-co/GraphQLSP/pull/100))
+
 ## 0.9.2
 
 ### Patch Changes

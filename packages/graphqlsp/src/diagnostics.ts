@@ -33,6 +33,8 @@ export const MISSING_OPERATION_NAME_CODE = 52002;
 export const MISSING_FRAGMENT_CODE = 52003;
 export const USING_DEPRECATED_FIELD_CODE = 52004;
 
+let isGeneratingTypes = false;
+
 export function getGraphQLDiagnostics(
   // This is so that we don't change offsets when there are
   // TypeScript errors
@@ -308,9 +310,10 @@ export function getGraphQLDiagnostics(
     !disableTypegen
   ) {
     try {
-      if (isFileDirty(filename, source)) {
+      if (isFileDirty(filename, source) && !isGeneratingTypes) {
         return tsDiagnostics;
       }
+      isGeneratingTypes = true;
 
       const parts = source.fileName.split('/');
       const name = parts[parts.length - 1];
@@ -421,10 +424,12 @@ export function getGraphQLDiagnostics(
         info.languageServiceHost.writeFile!(source.fileName, finalSourceText);
         scriptInfo!.reloadFromFile();
         scriptInfo!.registerFileUpdate();
+        isGeneratingTypes = false;
       });
     } catch (e) {
       const scriptInfo = info.project.projectService.getScriptInfo(filename);
       scriptInfo!.reloadFromFile();
+      isGeneratingTypes = false;
     }
   }
 

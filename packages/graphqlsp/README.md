@@ -43,12 +43,17 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 
 ### Configuration
 
+**Required**
+
 - `schema` allows you to specify a url, `.json` or `.graphql` file as your schema. If you need to specify headers for your introspection
   you can opt into the object notation i.e. `{ "schema": { "url": "x", "headers": { "Authorization": "y" } }}`
-- `disableTypegen` disables type-generation in general
+
+**Optional**
+
+- `disableTypegen` disables type-generation in general, this could be needed if offset bugs are introduced
 - `scalars` allows you to pass an object of scalars that we'll feed into `graphql-code-generator`
 - `extraTypes` allows you to specify imports or declare types to help with `scalar` definitions
-- `shouldCheckForColocatedFragments` when turned on (default), this will scan your imports to find
+- `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find
   unused fragments and provide a message notifying you about them
 
 ## Fragment masking

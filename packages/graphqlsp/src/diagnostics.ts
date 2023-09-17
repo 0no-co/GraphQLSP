@@ -48,7 +48,7 @@ export function getGraphQLDiagnostics(
   const tagTemplate = info.config.template || 'gql';
   const scalars = info.config.scalars || {};
   const shouldCheckForColocatedFragments =
-    info.config.shouldCheckForColocatedFragments ?? true;
+    info.config.shouldCheckForColocatedFragments ?? false;
 
   let source = getSource(info, filename);
   if (!source) return undefined;

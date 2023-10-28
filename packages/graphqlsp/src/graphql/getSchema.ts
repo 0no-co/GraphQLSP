@@ -25,8 +25,11 @@ export const loadSchema = (
   shouldTypegen: boolean,
   scalars: Record<string, unknown>,
   extraTypes?: string
-): { current: GraphQLSchema | null } => {
-  const ref: { current: GraphQLSchema | null } = { current: null };
+): { current: GraphQLSchema | null; version: number } => {
+  const ref: { current: GraphQLSchema | null; version: number } = {
+    current: null,
+    version: 0,
+  };
   let url: URL | undefined;
 
   let isJSON = false;
@@ -77,6 +80,7 @@ export const loadSchema = (
             ref.current = buildClientSchema(
               (result as { data: IntrospectionQuery }).data
             );
+            ref.version = ref.version + 1;
             logger(`Got schema for ${url!.toString()}`);
             if (shouldTypegen)
               generateBaseTypes(
@@ -103,12 +107,16 @@ export const loadSchema = (
       ref.current = isJson
         ? buildClientSchema(JSON.parse(contents))
         : buildSchema(contents);
+      ref.version = ref.version + 1;
+
       if (shouldTypegen) generateBaseTypes(ref.current, baseTypesPath, scalars);
     });
 
     ref.current = isJson
       ? buildClientSchema(JSON.parse(contents))
       : buildSchema(contents);
+    ref.version = ref.version + 1;
+
     if (shouldTypegen)
       generateBaseTypes(ref.current, baseTypesPath, scalars, extraTypes);
     logger(`Got schema and initialized watcher for ${schema}`);

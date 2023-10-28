@@ -49,7 +49,7 @@ export function getGraphQLDiagnostics(
   hasTSErrors: Boolean,
   filename: string,
   baseTypesPath: string,
-  schema: { current: GraphQLSchema | null },
+  schema: { current: GraphQLSchema | null; version: number },
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
   const logger = (msg: string) =>
@@ -78,7 +78,7 @@ export function getGraphQLDiagnostics(
   });
 
   let tsDiagnostics: ts.Diagnostic[] = [];
-  const cacheKey = fnv1a(texts.join('-'));
+  const cacheKey = fnv1a(texts.join('-') + schema.version);
   if (cache.has(cacheKey)) {
     tsDiagnostics = cache.get(cacheKey)!;
   } else {

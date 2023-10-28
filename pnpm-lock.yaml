@@ -84,9 +84,15 @@ importers:
       '@graphql-typed-document-node/core':
         specifier: ^3.2.0
         version: 3.2.0(graphql@16.6.0)
+      '@sindresorhus/fnv1a':
+        specifier: ^2.0.0
+        version: 2.0.0
       graphql-language-service:
         specifier: ^5.1.7
         version: 5.1.7(graphql@16.6.0)
+      lru-cache:
+        specifier: ^10.0.1
+        version: 10.0.1
       node-fetch:
         specifier: ^2.0.0
         version: 2.6.7
@@ -1352,6 +1358,16 @@ packages:
       estree-walker: 2.0.2
       picomatch: 2.3.1
       rollup: 3.20.2
+    dev: true
+
+  /@sindresorhus/fnv1a@2.0.0:
+    resolution: {integrity: sha512-HAK3TQvR1AbJ4uMFBp9K0V+jlujsHkCokWJRebQK1mlXBG+i7Q5/Y7AKRmqVPt4T78Uqp2U5fFHgK3gxi4OUqw==}
+    engines: {node: '>=10'}
+    dev: false
+
+  /@sindresorhus/fnv1a@2.0.1:
+    resolution: {integrity: sha512-suq9tRQ6bkpMukTG5K5z0sPWB7t0zExMzZCdmYm6xTSSIm/yCKNm7VCL36wVeyTsFr597/UhU1OAYdHGMDiHrw==}
+    engines: {node: '>=10'}
     dev: true
 
   /@types/chai-subset@1.3.3:
@@ -2927,6 +2943,10 @@ packages:
     dependencies:
       tslib: 2.5.0
 
+  /lru-cache@10.0.1:
+    resolution: {integrity: sha512-IJ4uwUTi2qCccrioU6g9g/5rvvVl13bsdczUUcqbciD9iLr095yj8DQKdObriEvuNSx325N1rV1O0sJFszx75g==}
+    engines: {node: 14 || >=16.14}
+
   /lru-cache@4.1.5:
     resolution: {integrity: sha512-sWZlbEP2OsHNkXrMl5GYk/jKk70MBng6UU4YI/qGDYbgf6YbP4EvmqISbXCoJiRKs+1bSpFHVgQxvJ17F2li5g==}
     dependencies:
@@ -4327,7 +4347,9 @@ packages:
       '@graphql-codegen/typescript': 4.0.1(graphql@16.6.0)
       '@graphql-codegen/typescript-operations': 4.0.1(graphql@16.6.0)
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.6.0)
+      '@sindresorhus/fnv1a': 2.0.1
       graphql-language-service: 5.1.7(graphql@16.6.0)
+      lru-cache: 10.0.1
       node-fetch: 2.6.7
     transitivePeerDependencies:
       - encoding

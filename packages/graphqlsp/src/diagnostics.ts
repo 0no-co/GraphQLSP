@@ -328,12 +328,10 @@ export function getGraphQLDiagnostics(
         scalars,
         baseTypesPath
       ).then(({ success }) => {
-        if (!success) return undefined;
+        if (!success || hasTSErrors) return;
 
         source = getSource(info, filename);
-        if (!source) return undefined;
-
-        if (isFileDirty(filename, source) && !hasTSErrors) {
+        if (!source || isFileDirty(filename, source)) {
           return;
         }
 

@@ -2,9 +2,11 @@ import {
   isAsExpression,
   isIdentifier,
   isNoSubstitutionTemplateLiteral,
+  isObjectLiteralExpression,
   isTaggedTemplateExpression,
   TaggedTemplateExpression,
 } from 'typescript';
+import { print } from 'graphql';
 import ts from 'typescript/lib/tsserverlibrary';
 import { findNode } from '.';
 import { getSource } from '../ast';
@@ -108,6 +110,31 @@ export function resolveTemplate(
               },
             };
             addedCharacters += text.combinedText.length - originalRange.length;
+            return alteredSpan;
+          } else if (
+            parent.initializer &&
+            isAsExpression(parent.initializer) &&
+            isAsExpression(parent.initializer.expression) &&
+            isObjectLiteralExpression(parent.initializer.expression.expression)
+          ) {
+            const astObject = JSON.parse(
+              parent.initializer.expression.expression.getText()
+            );
+            const resolvedTemplate = print(astObject);
+            templateText = templateText.replace(
+              '${' + span.expression.escapedText + '}',
+              resolvedTemplate
+            );
+            const alteredSpan = {
+              lines: resolvedTemplate.split('\n').length,
+              identifier: identifierName,
+              original: originalRange,
+              new: {
+                start: originalRange.start + addedCharacters,
+                length: resolvedTemplate.length,
+              },
+            };
+            addedCharacters += resolvedTemplate.length - originalRange.length;
             return alteredSpan;
           }
 

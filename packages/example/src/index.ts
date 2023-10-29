@@ -38,3 +38,11 @@ client
   .then(result => {
     result.data?.pokemon;
   });
+
+const myQuery = gql`
+  query PokemonsAreAwesome {
+    pokemons {
+      id
+    }
+  }
+`;

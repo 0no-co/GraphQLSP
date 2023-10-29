@@ -88,8 +88,8 @@ importers:
         specifier: ^2.0.0
         version: 2.0.0
       graphql-language-service:
-        specifier: ^5.1.7
-        version: 5.1.7(graphql@16.8.1)
+        specifier: ^5.2.0
+        version: 5.2.0(graphql@16.8.1)
       lru-cache:
         specifier: ^10.0.1
         version: 10.0.1
@@ -2415,8 +2415,8 @@ packages:
     resolution: {integrity: sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==}
     dev: true
 
-  /graphql-language-service@5.1.7(graphql@16.8.1):
-    resolution: {integrity: sha512-xkawYMJeoNYGhT+SpSH3c2qf6HpGHQ/duDmrseVHBpVCrXAiGnliXGSCC4jyMGgZQ05GytsZ12p0nUo7s6lSSw==}
+  /graphql-language-service@5.2.0(graphql@16.8.1):
+    resolution: {integrity: sha512-o/ZgTS0pBxWm3hSF4+6GwiV1//DxzoLWEbS38+jqpzzy1d/QXBidwQuVYTOksclbtOJZ3KR/tZ8fi/tI6VpVMg==}
     hasBin: true
     peerDependencies:
       graphql: ^15.5.0 || ^16.0.0
@@ -4259,7 +4259,7 @@ packages:
       '@graphql-codegen/typescript-operations': 4.0.1(graphql@16.8.1)
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.8.1)
       '@sindresorhus/fnv1a': 2.0.1
-      graphql-language-service: 5.1.7(graphql@16.8.1)
+      graphql-language-service: 5.2.0(graphql@16.8.1)
       lru-cache: 10.0.1
       node-fetch: 2.6.7
     transitivePeerDependencies:

@@ -47,7 +47,7 @@
     "@graphql-codegen/typescript-operations": "^4.0.1",
     "@graphql-typed-document-node/core": "^3.2.0",
     "@sindresorhus/fnv1a": "^2.0.0",
-    "graphql-language-service": "^5.1.7",
+    "graphql-language-service": "^5.2.0",
     "lru-cache": "^10.0.1",
     "node-fetch": "^2.0.0"
   },

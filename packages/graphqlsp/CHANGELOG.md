@@ -1,5 +1,16 @@
 # @0no-co/graphqlsp
 
+## 0.10.1
+
+### Patch Changes
+
+- Resolve parsed AST nodes being interpolated into an operation
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#105](https://github.com/0no-co/GraphQLSP/pull/105))
+- add caching for gql-diagnostics
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#104](https://github.com/0no-co/GraphQLSP/pull/104))
+- Correctly bail when file has typescript errors
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#107](https://github.com/0no-co/GraphQLSP/pull/107))
+
 ## 0.10.0
 
 ### Minor Changes

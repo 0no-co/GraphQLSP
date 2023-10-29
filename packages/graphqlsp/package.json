@@ -36,7 +36,7 @@
   "devDependencies": {
     "@types/node": "^18.15.11",
     "@types/node-fetch": "^2.6.3",
-    "graphql": "^16.6.0",
+    "graphql": "^16.8.1",
     "typescript": "^5.0.0"
   },
   "dependencies": {

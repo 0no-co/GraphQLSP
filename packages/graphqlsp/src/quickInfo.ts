@@ -1,5 +1,4 @@
 import ts from 'typescript/lib/tsserverlibrary';
-import { isIdentifier, isTaggedTemplateExpression } from 'typescript';
 import { getHoverInformation } from 'graphql-language-service';
 import { GraphQLSchema } from 'graphql';
 
@@ -57,9 +56,9 @@ export function getGraphQLQuickInfo(
         ? hoverInfo.map(item => ({ kind: '', text: item as string }))
         : [{ kind: '', text: hoverInfo as string }],
     };
-  } else if (isTaggedTemplateExpression(node)) {
+  } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
-    if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
+    if (!ts.isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
 
     const foundToken = getToken(template, cursorPosition);
 

@@ -1,20 +1,6 @@
 import ts from 'typescript/lib/tsserverlibrary';
-import {
-  isCallExpression,
-  isImportDeclaration,
-  isNoSubstitutionTemplateLiteral,
-  isObjectLiteralExpression,
-  isPropertyAssignment,
-  isStringLiteral,
-  isTaggedTemplateExpression,
-  isTemplateExpression,
-  isTemplateSpan,
-  isToken,
-  isVariableStatement,
-} from 'typescript';
 import fs from 'fs';
 import { FragmentDefinitionNode, parse } from 'graphql';
-import { Logger } from '..';
 
 export function isFileDirty(fileName: string, source: ts.SourceFile) {
   const contents = fs.readFileSync(fileName, 'utf-8');
@@ -53,8 +39,8 @@ export function findAllTaggedTemplateNodes(
   > = [];
   function find(node: ts.Node) {
     if (
-      isTaggedTemplateExpression(node) ||
-      isNoSubstitutionTemplateLiteral(node)
+      ts.isTaggedTemplateExpression(node) ||
+      ts.isNoSubstitutionTemplateLiteral(node)
     ) {
       result.push(node);
       return;
@@ -74,19 +60,17 @@ export function findAllCallExpressions(
   nodes: Array<ts.NoSubstitutionTemplateLiteral>;
   fragments: Array<FragmentDefinitionNode>;
 } {
-  const logger: Logger = (msg: string) =>
-    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const result: Array<ts.NoSubstitutionTemplateLiteral> = [];
   let fragments: Array<FragmentDefinitionNode> = [];
   let hasTriedToFindFragments = false;
   function find(node: ts.Node) {
-    if (isCallExpression(node) && node.expression.getText() === template) {
+    if (ts.isCallExpression(node) && node.expression.getText() === template) {
       if (!hasTriedToFindFragments) {
         hasTriedToFindFragments = true;
         fragments = getAllFragments(sourceFile.fileName, node, info);
       }
       const [arg] = node.arguments;
-      if (arg && isNoSubstitutionTemplateLiteral(arg)) {
+      if (arg && ts.isNoSubstitutionTemplateLiteral(arg)) {
         result.push(arg);
       }
       return;
@@ -117,19 +101,19 @@ export function getAllFragments(
 
   ts.forEachChild(src, node => {
     if (
-      isVariableStatement(node) &&
+      ts.isVariableStatement(node) &&
       node.declarationList &&
       node.declarationList.declarations[0].name.getText() === 'documents'
     ) {
       const [declaration] = node.declarationList.declarations;
       if (
         declaration.initializer &&
-        isObjectLiteralExpression(declaration.initializer)
+        ts.isObjectLiteralExpression(declaration.initializer)
       ) {
         declaration.initializer.properties.forEach(property => {
           if (
-            isPropertyAssignment(property) &&
-            isStringLiteral(property.name)
+            ts.isPropertyAssignment(property) &&
+            ts.isStringLiteral(property.name)
           ) {
             try {
               const possibleFragment = JSON.parse(
@@ -162,15 +146,15 @@ export function getAllFragments(
 export function findAllImports(
   sourceFile: ts.SourceFile
 ): Array<ts.ImportDeclaration> {
-  return sourceFile.statements.filter(isImportDeclaration);
+  return sourceFile.statements.filter(ts.isImportDeclaration);
 }
 
 export function bubbleUpTemplate(node: ts.Node): ts.Node {
   while (
-    isNoSubstitutionTemplateLiteral(node) ||
-    isToken(node) ||
-    isTemplateExpression(node) ||
-    isTemplateSpan(node)
+    ts.isNoSubstitutionTemplateLiteral(node) ||
+    ts.isToken(node) ||
+    ts.isTemplateExpression(node) ||
+    ts.isTemplateSpan(node)
   ) {
     node = node.parent;
   }
@@ -180,10 +164,10 @@ export function bubbleUpTemplate(node: ts.Node): ts.Node {
 
 export function bubbleUpCallExpression(node: ts.Node): ts.Node {
   while (
-    isNoSubstitutionTemplateLiteral(node) ||
-    isToken(node) ||
-    isTemplateExpression(node) ||
-    isTemplateSpan(node)
+    ts.isNoSubstitutionTemplateLiteral(node) ||
+    ts.isToken(node) ||
+    ts.isTemplateExpression(node) ||
+    ts.isTemplateSpan(node)
   ) {
     node = node.parent;
   }

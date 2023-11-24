@@ -1,15 +1,4 @@
 import ts from 'typescript/lib/tsserverlibrary';
-import {
-  ImportTypeNode,
-  isAsExpression,
-  isExpressionStatement,
-  isImportTypeNode,
-  isNamedImportBindings,
-  isNamespaceImport,
-  isNoSubstitutionTemplateLiteral,
-  isTaggedTemplateExpression,
-  isTemplateExpression,
-} from 'typescript';
 import { Diagnostic, getDiagnostics } from 'graphql-language-service';
 import {
   FragmentDefinitionNode,
@@ -78,10 +67,11 @@ export function getGraphQLDiagnostics(
 
   const texts = nodes.map(node => {
     if (
-      (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node)) &&
+      (ts.isNoSubstitutionTemplateLiteral(node) ||
+        ts.isTemplateExpression(node)) &&
       !isCallExpression
     ) {
-      if (isTaggedTemplateExpression(node.parent)) {
+      if (ts.isTaggedTemplateExpression(node.parent)) {
         node = node.parent;
       } else {
         return undefined;
@@ -101,9 +91,10 @@ export function getGraphQLDiagnostics(
         let node = originalNode;
         if (
           !isCallExpression &&
-          (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node))
+          (ts.isNoSubstitutionTemplateLiteral(node) ||
+            ts.isTemplateExpression(node))
         ) {
-          if (isTaggedTemplateExpression(node.parent)) {
+          if (ts.isTaggedTemplateExpression(node.parent)) {
             node = node.parent;
           } else {
             return undefined;
@@ -118,14 +109,12 @@ export function getGraphQLDiagnostics(
         const lines = text.split('\n');
 
         let isExpression = false;
-        if (isAsExpression(node.parent)) {
-          if (isExpressionStatement(node.parent.parent)) {
+        if (ts.isAsExpression(node.parent)) {
+          if (ts.isExpressionStatement(node.parent.parent)) {
             isExpression = true;
           }
-        } else {
-          if (isExpressionStatement(node.parent)) {
-            isExpression = true;
-          }
+        } else if (ts.isExpressionStatement(node.parent)) {
+          isExpression = true;
         }
         // When we are dealing with a plain gql statement we have to add two these can be recognised
         // by the fact that the parent is an expressionStatement
@@ -269,13 +258,13 @@ export function getGraphQLDiagnostics(
 
         if (
           imp.importClause.namedBindings &&
-          isNamespaceImport(imp.importClause.namedBindings)
+          ts.isNamespaceImport(imp.importClause.namedBindings)
         ) {
           // TODO: we might need to warn here when the fragment is unused as a namespace import
           return;
         } else if (
           imp.importClause.namedBindings &&
-          isNamedImportBindings(imp.importClause.namedBindings)
+          ts.isNamedImportBindings(imp.importClause.namedBindings)
         ) {
           imp.importClause.namedBindings.elements.forEach(el => {
             importedNames.push(el.name.text);
@@ -307,10 +296,10 @@ export function getGraphQLDiagnostics(
             if (template) {
               let node = template;
               if (
-                isNoSubstitutionTemplateLiteral(node) ||
-                isTemplateExpression(node)
+                ts.isNoSubstitutionTemplateLiteral(node) ||
+                ts.isTemplateExpression(node)
               ) {
-                if (isTaggedTemplateExpression(node.parent)) {
+                if (ts.isTaggedTemplateExpression(node.parent)) {
                   node = node.parent;
                 } else {
                   return;
@@ -427,8 +416,8 @@ export function getGraphQLDiagnostics(
           // This checks whether one of the children is an import-type
           // which is a short-circuit if there is no as
           const typeImport = parentChildren.find(x =>
-            isImportTypeNode(x)
-          ) as ImportTypeNode;
+            ts.isImportTypeNode(x)
+          ) as ts.ImportTypeNode;
 
           if (typeImport && typeImport.getText().includes(exportName))
             return sourceText;

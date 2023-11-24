@@ -1,11 +1,3 @@
-import {
-  isAsExpression,
-  isIdentifier,
-  isNoSubstitutionTemplateLiteral,
-  isObjectLiteralExpression,
-  isTaggedTemplateExpression,
-  TaggedTemplateExpression,
-} from 'typescript';
 import { print } from 'graphql';
 import ts from 'typescript/lib/tsserverlibrary';
 import { findNode } from '.';
@@ -22,13 +14,17 @@ type TemplateResult = {
 };
 
 export function resolveTemplate(
-  node: TaggedTemplateExpression,
+  node: ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral,
   filename: string,
   info: ts.server.PluginCreateInfo
 ): TemplateResult {
+  if (ts.isNoSubstitutionTemplateLiteral(node)) {
+    return { combinedText: node.getText().slice(1, -1), resolvedSpans: [] };
+  }
+
   let templateText = node.template.getText().slice(1, -1);
   if (
-    isNoSubstitutionTemplateLiteral(node.template) ||
+    ts.isNoSubstitutionTemplateLiteral(node.template) ||
     node.template.templateSpans.length === 0
   ) {
     return { combinedText: templateText, resolvedSpans: [] };
@@ -37,7 +33,7 @@ export function resolveTemplate(
   let addedCharacters = 0;
   const resolvedSpans = node.template.templateSpans
     .map(span => {
-      if (isIdentifier(span.expression)) {
+      if (ts.isIdentifier(span.expression)) {
         const definitions = info.languageService.getDefinitionAtPosition(
           filename,
           span.expression.getStart()
@@ -63,7 +59,7 @@ export function resolveTemplate(
           };
           if (
             parent.initializer &&
-            isTaggedTemplateExpression(parent.initializer)
+            ts.isTaggedTemplateExpression(parent.initializer)
           ) {
             const text = resolveTemplate(
               parent.initializer,
@@ -88,8 +84,8 @@ export function resolveTemplate(
             return alteredSpan;
           } else if (
             parent.initializer &&
-            isAsExpression(parent.initializer) &&
-            isTaggedTemplateExpression(parent.initializer.expression)
+            ts.isAsExpression(parent.initializer) &&
+            ts.isTaggedTemplateExpression(parent.initializer.expression)
           ) {
             const text = resolveTemplate(
               parent.initializer.expression,
@@ -113,9 +109,11 @@ export function resolveTemplate(
             return alteredSpan;
           } else if (
             parent.initializer &&
-            isAsExpression(parent.initializer) &&
-            isAsExpression(parent.initializer.expression) &&
-            isObjectLiteralExpression(parent.initializer.expression.expression)
+            ts.isAsExpression(parent.initializer) &&
+            ts.isAsExpression(parent.initializer.expression) &&
+            ts.isObjectLiteralExpression(
+              parent.initializer.expression.expression
+            )
           ) {
             const astObject = JSON.parse(
               parent.initializer.expression.expression.getText()

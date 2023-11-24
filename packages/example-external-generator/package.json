@@ -1,0 +1,24 @@
+{
+  "name": "example",
+  "private": true,
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@graphql-typed-document-node/core": "^3.2.0",
+    "@urql/core": "^3.0.0",
+    "graphql": "^16.8.1"
+  },
+  "devDependencies": {
+    "@0no-co/graphqlsp": "file:../graphqlsp",
+    "@graphql-codegen/cli": "^5.0.0",
+    "@graphql-codegen/client-preset": "^4.1.0",
+    "ts-node": "^10.9.1",
+    "typescript": "^5.0.4"
+  }
+}

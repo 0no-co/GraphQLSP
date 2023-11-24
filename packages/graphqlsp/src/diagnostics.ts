@@ -1,15 +1,4 @@
 import ts from 'typescript/lib/tsserverlibrary';
-import {
-  ImportTypeNode,
-  isAsExpression,
-  isExpressionStatement,
-  isImportTypeNode,
-  isNamedImportBindings,
-  isNamespaceImport,
-  isNoSubstitutionTemplateLiteral,
-  isTaggedTemplateExpression,
-  isTemplateExpression,
-} from 'typescript';
 import { Diagnostic, getDiagnostics } from 'graphql-language-service';
 import {
   FragmentDefinitionNode,
@@ -22,6 +11,7 @@ import { LRUCache } from 'lru-cache';
 import fnv1a from '@sindresorhus/fnv1a';
 
 import {
+  findAllCallExpressions,
   findAllImports,
   findAllTaggedTemplateNodes,
   getSource,
@@ -29,6 +19,7 @@ import {
 } from './ast';
 import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './graphql/generateTypes';
+import { Logger } from '.';
 
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const MISSING_OPERATION_NAME_CODE = 52002;
@@ -52,22 +43,35 @@ export function getGraphQLDiagnostics(
   schema: { current: GraphQLSchema | null; version: number },
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
-  const logger = (msg: string) =>
+  const logger: Logger = (msg: string) =>
     info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-  const disableTypegen = info.config.disableTypegen;
+  const disableTypegen = info.config.disableTypegen ?? false;
   const tagTemplate = info.config.template || 'gql';
   const scalars = info.config.scalars || {};
   const shouldCheckForColocatedFragments =
     info.config.shouldCheckForColocatedFragments ?? false;
+  const isCallExpression = info.config.templateIsCallExpression ?? false;
 
   let source = getSource(info, filename);
   if (!source) return undefined;
 
-  const nodes = findAllTaggedTemplateNodes(source);
+  let fragments: Array<FragmentDefinitionNode> = [],
+    nodes: (ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral)[];
+  if (isCallExpression) {
+    const result = findAllCallExpressions(source, tagTemplate, info);
+    fragments = result.fragments;
+    nodes = result.nodes;
+  } else {
+    nodes = findAllTaggedTemplateNodes(source);
+  }
 
   const texts = nodes.map(node => {
-    if (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node)) {
-      if (isTaggedTemplateExpression(node.parent)) {
+    if (
+      (ts.isNoSubstitutionTemplateLiteral(node) ||
+        ts.isTemplateExpression(node)) &&
+      !isCallExpression
+    ) {
+      if (ts.isTaggedTemplateExpression(node.parent)) {
         node = node.parent;
       } else {
         return undefined;
@@ -86,10 +90,11 @@ export function getGraphQLDiagnostics(
       .map(originalNode => {
         let node = originalNode;
         if (
-          isNoSubstitutionTemplateLiteral(node) ||
-          isTemplateExpression(node)
+          !isCallExpression &&
+          (ts.isNoSubstitutionTemplateLiteral(node) ||
+            ts.isTemplateExpression(node))
         ) {
-          if (isTaggedTemplateExpression(node.parent)) {
+          if (ts.isTaggedTemplateExpression(node.parent)) {
             node = node.parent;
           } else {
             return undefined;
@@ -104,21 +109,42 @@ export function getGraphQLDiagnostics(
         const lines = text.split('\n');
 
         let isExpression = false;
-        if (isAsExpression(node.parent)) {
-          if (isExpressionStatement(node.parent.parent)) {
+        if (ts.isAsExpression(node.parent)) {
+          if (ts.isExpressionStatement(node.parent.parent)) {
             isExpression = true;
           }
-        } else {
-          if (isExpressionStatement(node.parent)) {
-            isExpression = true;
-          }
+        } else if (ts.isExpressionStatement(node.parent)) {
+          isExpression = true;
         }
         // When we are dealing with a plain gql statement we have to add two these can be recognised
         // by the fact that the parent is an expressionStatement
         let startingPosition =
-          node.pos + (tagTemplate.length + (isExpression ? 2 : 1));
+          node.pos +
+          (isCallExpression ? 0 : tagTemplate.length + (isExpression ? 2 : 1));
         const endPosition = startingPosition + node.getText().length;
-        const graphQLDiagnostics = getDiagnostics(text, schema.current)
+
+        let docFragments = [...fragments];
+        if (isCallExpression) {
+          const documentFragments = parse(text, {
+            noLocation: true,
+          }).definitions.filter(x => x.kind === Kind.FRAGMENT_DEFINITION);
+          docFragments = docFragments.filter(
+            x =>
+              !documentFragments.some(
+                y =>
+                  y.kind === Kind.FRAGMENT_DEFINITION &&
+                  y.name.value === x.name.value
+              )
+          );
+        }
+
+        const graphQLDiagnostics = getDiagnostics(
+          text,
+          schema.current,
+          undefined,
+          undefined,
+          docFragments
+        )
           .map(x => {
             const { start, end } = x.range;
 
@@ -232,13 +258,13 @@ export function getGraphQLDiagnostics(
 
         if (
           imp.importClause.namedBindings &&
-          isNamespaceImport(imp.importClause.namedBindings)
+          ts.isNamespaceImport(imp.importClause.namedBindings)
         ) {
           // TODO: we might need to warn here when the fragment is unused as a namespace import
           return;
         } else if (
           imp.importClause.namedBindings &&
-          isNamedImportBindings(imp.importClause.namedBindings)
+          ts.isNamedImportBindings(imp.importClause.namedBindings)
         ) {
           imp.importClause.namedBindings.elements.forEach(el => {
             importedNames.push(el.name.text);
@@ -270,10 +296,10 @@ export function getGraphQLDiagnostics(
             if (template) {
               let node = template;
               if (
-                isNoSubstitutionTemplateLiteral(node) ||
-                isTemplateExpression(node)
+                ts.isNoSubstitutionTemplateLiteral(node) ||
+                ts.isTemplateExpression(node)
               ) {
-                if (isTaggedTemplateExpression(node.parent)) {
+                if (ts.isTaggedTemplateExpression(node.parent)) {
                   node = node.parent;
                 } else {
                   return;
@@ -302,8 +328,6 @@ export function getGraphQLDiagnostics(
           .filter(Boolean);
 
         if (missingImports.length) {
-          // TODO: we could use getCodeFixesAtPosition
-          // to build on this
           tsDiagnostics.push({
             file: source,
             length: imp.getText().length,
@@ -392,8 +416,8 @@ export function getGraphQLDiagnostics(
           // This checks whether one of the children is an import-type
           // which is a short-circuit if there is no as
           const typeImport = parentChildren.find(x =>
-            isImportTypeNode(x)
-          ) as ImportTypeNode;
+            ts.isImportTypeNode(x)
+          ) as ts.ImportTypeNode;
 
           if (typeImport && typeImport.getText().includes(exportName))
             return sourceText;

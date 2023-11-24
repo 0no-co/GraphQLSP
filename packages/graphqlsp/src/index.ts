@@ -23,6 +23,7 @@ export type Logger = (msg: string) => void;
 type Config = {
   schema: SchemaOrigin | string;
   template?: string;
+  templateIsCallExpression?: boolean;
   disableTypegen?: boolean;
   extraTypes?: string;
   scalars?: Record<string, unknown>;
@@ -44,7 +45,7 @@ function create(info: ts.server.PluginCreateInfo) {
 
   const scalars = config.scalars || {};
   const extraTypes = config.extraTypes || '';
-  const disableTypegen = config.disableTypegen || false;
+  const disableTypegen = config.disableTypegen ?? false;
 
   const proxy = createBasicDecorator(info);
 

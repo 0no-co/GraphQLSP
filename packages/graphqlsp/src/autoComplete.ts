@@ -2,6 +2,7 @@ import ts from 'typescript/lib/tsserverlibrary';
 import {
   ScriptElementKind,
   isIdentifier,
+  isNoSubstitutionTemplateLiteral,
   isTaggedTemplateExpression,
 } from 'typescript';
 import {
@@ -18,11 +19,18 @@ import {
 } from 'graphql-language-service';
 import { FragmentDefinitionNode, GraphQLSchema, Kind, parse } from 'graphql';
 
-import { bubbleUpTemplate, findNode, getSource } from './ast';
+import {
+  bubbleUpCallExpression,
+  bubbleUpTemplate,
+  findNode,
+  getAllFragments,
+  getSource,
+} from './ast';
 import { Cursor } from './ast/cursor';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { getSuggestionsForFragmentSpread } from './graphql/getFragmentSpreadSuggestions';
+import { Logger } from '.';
 
 export function getGraphQLCompletions(
   filename: string,
@@ -30,7 +38,10 @@ export function getGraphQLCompletions(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.WithMetadata<ts.CompletionInfo> | undefined {
+  const logger: Logger = (msg: string) =>
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const tagTemplate = info.config.template || 'gql';
+  const isCallExpression = info.config.templateIsCallExpression ?? false;
 
   const source = getSource(info, filename);
   if (!source) return undefined;
@@ -38,9 +49,50 @@ export function getGraphQLCompletions(
   let node = findNode(source, cursorPosition);
   if (!node) return undefined;
 
-  node = bubbleUpTemplate(node);
+  node = isCallExpression
+    ? bubbleUpCallExpression(node)
+    : bubbleUpTemplate(node);
 
-  if (isTaggedTemplateExpression(node)) {
+  if (
+    ts.isCallExpression(node) &&
+    isCallExpression &&
+    node.expression.getText() === tagTemplate &&
+    node.arguments.length > 0 &&
+    isNoSubstitutionTemplateLiteral(node.arguments[0])
+  ) {
+    const foundToken = getToken(node.arguments[0], cursorPosition);
+    if (!schema.current || !foundToken) return undefined;
+
+    const queryText = node.arguments[0].getText();
+    const fragments = getAllFragments(filename, node, info);
+    const cursor = new Cursor(foundToken.line, foundToken.start);
+    const items = getAutocompleteSuggestions(
+      schema.current,
+      queryText,
+      cursor,
+      undefined,
+      fragments
+    );
+
+    return {
+      isGlobalCompletion: false,
+      isMemberCompletion: false,
+      isNewIdentifierLocation: false,
+      entries: items.map(suggestion => ({
+        ...suggestion,
+        kind: ScriptElementKind.variableElement,
+        name: suggestion.label,
+        kindModifiers: 'declare',
+        sortText: suggestion.sortText || '0',
+        labelDetails: {
+          detail: suggestion.type
+            ? ' ' + suggestion.type?.toString()
+            : undefined,
+          description: suggestion.documentation,
+        },
+      })),
+    };
+  } else if (isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
 
     if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;

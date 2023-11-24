@@ -52,7 +52,7 @@ export function getGraphQLCompletions(
   node = isCallExpression
     ? bubbleUpCallExpression(node)
     : bubbleUpTemplate(node);
-  logger('' + node.kind);
+
   if (
     ts.isCallExpression(node) &&
     isCallExpression &&

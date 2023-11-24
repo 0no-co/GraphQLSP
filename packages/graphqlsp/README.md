@@ -50,11 +50,33 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 
 **Optional**
 
+- `template` the shape of your template, by default `gql`
+- `templateIsCallExpression` this tells our client that you are using `graphql('doc')`
 - `disableTypegen` disables type-generation in general, this could be needed if offset bugs are introduced
 - `scalars` allows you to pass an object of scalars that we'll feed into `graphql-code-generator`
 - `extraTypes` allows you to specify imports or declare types to help with `scalar` definitions
 - `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find
   unused fragments and provide a message notifying you about them
+
+### GraphQL Code Generator client-preset
+
+For folks using the `client-preset` you can ues the following config
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "./schema.graphql",
+        "disableTypegen": true,
+        "templateIsCallExpression": true,
+        "template": "graphql"
+      }
+    ]
+  }
+}
+```
 
 ## Fragment masking
 

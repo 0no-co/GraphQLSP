@@ -45,7 +45,7 @@ function create(info: ts.server.PluginCreateInfo) {
 
   const scalars = config.scalars || {};
   const extraTypes = config.extraTypes || '';
-  const disableTypegen = config.disableTypegen || false;
+  const disableTypegen = config.disableTypegen ?? false;
 
   const proxy = createBasicDecorator(info);
 

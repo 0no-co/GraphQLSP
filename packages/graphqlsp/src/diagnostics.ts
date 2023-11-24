@@ -45,7 +45,7 @@ export function getGraphQLDiagnostics(
 ): ts.Diagnostic[] | undefined {
   const logger: Logger = (msg: string) =>
     info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-  const disableTypegen = info.config.disableTypegen;
+  const disableTypegen = info.config.disableTypegen ?? false;
   const tagTemplate = info.config.template || 'gql';
   const scalars = info.config.scalars || {};
   const shouldCheckForColocatedFragments =

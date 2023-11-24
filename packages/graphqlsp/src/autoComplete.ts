@@ -30,7 +30,6 @@ import { Cursor } from './ast/cursor';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { getSuggestionsForFragmentSpread } from './graphql/getFragmentSpreadSuggestions';
-import { Logger } from '.';
 
 export function getGraphQLCompletions(
   filename: string,
@@ -38,8 +37,6 @@ export function getGraphQLCompletions(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.WithMetadata<ts.CompletionInfo> | undefined {
-  const logger: Logger = (msg: string) =>
-    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const tagTemplate = info.config.template || 'gql';
   const isCallExpression = info.config.templateIsCallExpression ?? false;
 

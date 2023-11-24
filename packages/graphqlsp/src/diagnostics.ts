@@ -19,7 +19,6 @@ import {
 } from './ast';
 import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './graphql/generateTypes';
-import { Logger } from '.';
 
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const MISSING_OPERATION_NAME_CODE = 52002;
@@ -37,19 +36,13 @@ const cache = new LRUCache<number, ts.Diagnostic[]>({
 export function getGraphQLDiagnostics(
   // This is so that we don't change offsets when there are
   // TypeScript errors
-  hasTSErrors: Boolean,
+  hasTSErrors: boolean,
   filename: string,
   baseTypesPath: string,
   schema: { current: GraphQLSchema | null; version: number },
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
-  const logger: Logger = (msg: string) =>
-    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-  const disableTypegen = info.config.disableTypegen ?? false;
   const tagTemplate = info.config.template || 'gql';
-  const scalars = info.config.scalars || {};
-  const shouldCheckForColocatedFragments =
-    info.config.shouldCheckForColocatedFragments ?? false;
   const isCallExpression = info.config.templateIsCallExpression ?? false;
 
   let source = getSource(info, filename);
@@ -86,267 +79,328 @@ export function getGraphQLDiagnostics(
   if (cache.has(cacheKey)) {
     tsDiagnostics = cache.get(cacheKey)!;
   } else {
-    const diagnostics = nodes
-      .map(originalNode => {
-        let node = originalNode;
-        if (
-          !isCallExpression &&
-          (ts.isNoSubstitutionTemplateLiteral(node) ||
-            ts.isTemplateExpression(node))
-        ) {
-          if (ts.isTaggedTemplateExpression(node.parent)) {
-            node = node.parent;
-          } else {
-            return undefined;
-          }
-        }
-
-        const { combinedText: text, resolvedSpans } = resolveTemplate(
-          node,
-          filename,
-          info
-        );
-        const lines = text.split('\n');
-
-        let isExpression = false;
-        if (ts.isAsExpression(node.parent)) {
-          if (ts.isExpressionStatement(node.parent.parent)) {
-            isExpression = true;
-          }
-        } else if (ts.isExpressionStatement(node.parent)) {
-          isExpression = true;
-        }
-        // When we are dealing with a plain gql statement we have to add two these can be recognised
-        // by the fact that the parent is an expressionStatement
-        let startingPosition =
-          node.pos +
-          (isCallExpression ? 0 : tagTemplate.length + (isExpression ? 2 : 1));
-        const endPosition = startingPosition + node.getText().length;
-
-        let docFragments = [...fragments];
-        if (isCallExpression) {
-          const documentFragments = parse(text, {
-            noLocation: true,
-          }).definitions.filter(x => x.kind === Kind.FRAGMENT_DEFINITION);
-          docFragments = docFragments.filter(
-            x =>
-              !documentFragments.some(
-                y =>
-                  y.kind === Kind.FRAGMENT_DEFINITION &&
-                  y.name.value === x.name.value
-              )
-          );
-        }
-
-        const graphQLDiagnostics = getDiagnostics(
-          text,
-          schema.current,
-          undefined,
-          undefined,
-          docFragments
-        )
-          .map(x => {
-            const { start, end } = x.range;
-
-            // We add the start.line to account for newline characters which are
-            // split out
-            let startChar = startingPosition + start.line;
-            for (let i = 0; i <= start.line; i++) {
-              if (i === start.line) startChar += start.character;
-              else startChar += lines[i].length;
-            }
-
-            let endChar = startingPosition + end.line;
-            for (let i = 0; i <= end.line; i++) {
-              if (i === end.line) endChar += end.character;
-              else endChar += lines[i].length;
-            }
-
-            const locatedInFragment = resolvedSpans.find(x => {
-              const newEnd = x.new.start + x.new.length;
-              return startChar >= x.new.start && endChar <= newEnd;
-            });
-
-            if (!!locatedInFragment) {
-              return {
-                ...x,
-                start: locatedInFragment.original.start,
-                length: locatedInFragment.original.length,
-              };
-            } else {
-              if (startChar > endPosition) {
-                // we have to calculate the added length and fix this
-                const addedCharacters = resolvedSpans
-                  .filter(x => x.new.start + x.new.length < startChar)
-                  .reduce(
-                    (acc, span) =>
-                      acc + (span.new.length - span.original.length),
-                    0
-                  );
-                startChar = startChar - addedCharacters;
-                endChar = endChar - addedCharacters;
-                return {
-                  ...x,
-                  start: startChar + 1,
-                  length: endChar - startChar,
-                };
-              } else {
-                return {
-                  ...x,
-                  start: startChar + 1,
-                  length: endChar - startChar,
-                };
-              }
-            }
-          })
-          .filter(x => x.start + x.length <= endPosition);
-
-        try {
-          const parsed = parse(text, { noLocation: true });
-
-          if (
-            parsed.definitions.some(x => x.kind === Kind.OPERATION_DEFINITION)
-          ) {
-            const op = parsed.definitions.find(
-              x => x.kind === Kind.OPERATION_DEFINITION
-            ) as OperationDefinitionNode;
-            if (!op.name) {
-              graphQLDiagnostics.push({
-                message: 'Operation needs a name for types to be generated.',
-                start: node.pos,
-                code: MISSING_OPERATION_NAME_CODE,
-                length: originalNode.getText().length,
-                range: {} as any,
-                severity: 2,
-              } as any);
-            }
-          }
-        } catch (e) {}
-
-        return graphQLDiagnostics;
-      })
-      .flat()
-      .filter(Boolean) as Array<Diagnostic & { length: number; start: number }>;
-
-    tsDiagnostics = diagnostics.map(diag => ({
-      file: source,
-      length: diag.length,
-      start: diag.start,
-      category:
-        diag.severity === 2
-          ? ts.DiagnosticCategory.Warning
-          : ts.DiagnosticCategory.Error,
-      code:
-        typeof diag.code === 'number'
-          ? diag.code
-          : diag.severity === 2
-          ? USING_DEPRECATED_FIELD_CODE
-          : SEMANTIC_DIAGNOSTIC_CODE,
-      messageText: diag.message.split('\n')[0],
-    }));
-
-    const imports = findAllImports(source);
-    if (imports.length && shouldCheckForColocatedFragments) {
-      const typeChecker = info.languageService.getProgram()?.getTypeChecker();
-      imports.forEach(imp => {
-        if (!imp.importClause) return;
-
-        const importedNames: string[] = [];
-        if (imp.importClause.name) {
-          importedNames.push(imp.importClause?.name.text);
-        }
-
-        if (
-          imp.importClause.namedBindings &&
-          ts.isNamespaceImport(imp.importClause.namedBindings)
-        ) {
-          // TODO: we might need to warn here when the fragment is unused as a namespace import
-          return;
-        } else if (
-          imp.importClause.namedBindings &&
-          ts.isNamedImportBindings(imp.importClause.namedBindings)
-        ) {
-          imp.importClause.namedBindings.elements.forEach(el => {
-            importedNames.push(el.name.text);
-          });
-        }
-
-        const symbol = typeChecker?.getSymbolAtLocation(imp.moduleSpecifier);
-        if (!symbol) return;
-
-        const moduleExports = typeChecker?.getExportsOfModule(symbol);
-        if (!moduleExports) return;
-
-        const missingImports = moduleExports
-          .map(exp => {
-            if (importedNames.includes(exp.name)) {
-              return;
-            }
-
-            const declarations = exp.getDeclarations();
-            const declaration = declarations?.find(x => {
-              // TODO: check whether the sourceFile.fileName resembles the module
-              // specifier
-              return true;
-            });
-
-            if (!declaration) return;
-
-            const [template] = findAllTaggedTemplateNodes(declaration);
-            if (template) {
-              let node = template;
-              if (
-                ts.isNoSubstitutionTemplateLiteral(node) ||
-                ts.isTemplateExpression(node)
-              ) {
-                if (ts.isTaggedTemplateExpression(node.parent)) {
-                  node = node.parent;
-                } else {
-                  return;
-                }
-              }
-
-              const text = resolveTemplate(
-                node,
-                node.getSourceFile().fileName,
-                info
-              ).combinedText;
-              try {
-                const parsed = parse(text, { noLocation: true });
-                if (
-                  parsed.definitions.every(
-                    x => x.kind === Kind.FRAGMENT_DEFINITION
-                  )
-                ) {
-                  return `'${exp.name}'`;
-                }
-              } catch (e) {
-                return;
-              }
-            }
-          })
-          .filter(Boolean);
-
-        if (missingImports.length) {
-          tsDiagnostics.push({
-            file: source,
-            length: imp.getText().length,
-            start: imp.getStart(),
-            category: ts.DiagnosticCategory.Message,
-            code: MISSING_FRAGMENT_CODE,
-            messageText: `Missing Fragment import(s) ${missingImports.join(
-              ', '
-            )} from ${imp.moduleSpecifier.getText()}.`,
-          });
-        }
-      });
-    }
-
+    tsDiagnostics = runDiagnostics(source, { nodes, fragments }, schema, info);
     cache.set(cacheKey, tsDiagnostics);
   }
 
+  runTypedDocumentNodes(
+    nodes,
+    texts,
+    schema,
+    tsDiagnostics,
+    hasTSErrors,
+    baseTypesPath,
+    source,
+    info
+  );
+
+  return tsDiagnostics;
+}
+
+const runDiagnostics = (
+  source: ts.SourceFile,
+  {
+    nodes,
+    fragments,
+  }: {
+    nodes: (ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral)[];
+    fragments: FragmentDefinitionNode[];
+  },
+  schema: { current: GraphQLSchema | null; version: number },
+  info: ts.server.PluginCreateInfo
+) => {
+  const tagTemplate = info.config.template || 'gql';
+  const filename = source.fileName;
+  const isCallExpression = info.config.templateIsCallExpression ?? false;
+
+  const diagnostics = nodes
+    .map(originalNode => {
+      let node = originalNode;
+      if (
+        !isCallExpression &&
+        (ts.isNoSubstitutionTemplateLiteral(node) ||
+          ts.isTemplateExpression(node))
+      ) {
+        if (ts.isTaggedTemplateExpression(node.parent)) {
+          node = node.parent;
+        } else {
+          return undefined;
+        }
+      }
+
+      const { combinedText: text, resolvedSpans } = resolveTemplate(
+        node,
+        filename,
+        info
+      );
+      const lines = text.split('\n');
+
+      let isExpression = false;
+      if (ts.isAsExpression(node.parent)) {
+        if (ts.isExpressionStatement(node.parent.parent)) {
+          isExpression = true;
+        }
+      } else if (ts.isExpressionStatement(node.parent)) {
+        isExpression = true;
+      }
+      // When we are dealing with a plain gql statement we have to add two these can be recognised
+      // by the fact that the parent is an expressionStatement
+      let startingPosition =
+        node.pos +
+        (isCallExpression ? 0 : tagTemplate.length + (isExpression ? 2 : 1));
+      const endPosition = startingPosition + node.getText().length;
+
+      let docFragments = [...fragments];
+      if (isCallExpression) {
+        const documentFragments = parse(text, {
+          noLocation: true,
+        }).definitions.filter(x => x.kind === Kind.FRAGMENT_DEFINITION);
+        docFragments = docFragments.filter(
+          x =>
+            !documentFragments.some(
+              y =>
+                y.kind === Kind.FRAGMENT_DEFINITION &&
+                y.name.value === x.name.value
+            )
+        );
+      }
+
+      const graphQLDiagnostics = getDiagnostics(
+        text,
+        schema.current,
+        undefined,
+        undefined,
+        docFragments
+      )
+        .map(x => {
+          const { start, end } = x.range;
+
+          // We add the start.line to account for newline characters which are
+          // split out
+          let startChar = startingPosition + start.line;
+          for (let i = 0; i <= start.line; i++) {
+            if (i === start.line) startChar += start.character;
+            else startChar += lines[i].length;
+          }
+
+          let endChar = startingPosition + end.line;
+          for (let i = 0; i <= end.line; i++) {
+            if (i === end.line) endChar += end.character;
+            else endChar += lines[i].length;
+          }
+
+          const locatedInFragment = resolvedSpans.find(x => {
+            const newEnd = x.new.start + x.new.length;
+            return startChar >= x.new.start && endChar <= newEnd;
+          });
+
+          if (!!locatedInFragment) {
+            return {
+              ...x,
+              start: locatedInFragment.original.start,
+              length: locatedInFragment.original.length,
+            };
+          } else {
+            if (startChar > endPosition) {
+              // we have to calculate the added length and fix this
+              const addedCharacters = resolvedSpans
+                .filter(x => x.new.start + x.new.length < startChar)
+                .reduce(
+                  (acc, span) => acc + (span.new.length - span.original.length),
+                  0
+                );
+              startChar = startChar - addedCharacters;
+              endChar = endChar - addedCharacters;
+              return {
+                ...x,
+                start: startChar + 1,
+                length: endChar - startChar,
+              };
+            } else {
+              return {
+                ...x,
+                start: startChar + 1,
+                length: endChar - startChar,
+              };
+            }
+          }
+        })
+        .filter(x => x.start + x.length <= endPosition);
+
+      try {
+        const parsed = parse(text, { noLocation: true });
+
+        if (
+          parsed.definitions.some(x => x.kind === Kind.OPERATION_DEFINITION)
+        ) {
+          const op = parsed.definitions.find(
+            x => x.kind === Kind.OPERATION_DEFINITION
+          ) as OperationDefinitionNode;
+          if (!op.name) {
+            graphQLDiagnostics.push({
+              message: 'Operation needs a name for types to be generated.',
+              start: node.pos,
+              code: MISSING_OPERATION_NAME_CODE,
+              length: originalNode.getText().length,
+              range: {} as any,
+              severity: 2,
+            } as any);
+          }
+        }
+      } catch (e) {}
+
+      return graphQLDiagnostics;
+    })
+    .flat()
+    .filter(Boolean) as Array<Diagnostic & { length: number; start: number }>;
+
+  const tsDiagnostics = diagnostics.map(diag => ({
+    file: source,
+    length: diag.length,
+    start: diag.start,
+    category:
+      diag.severity === 2
+        ? ts.DiagnosticCategory.Warning
+        : ts.DiagnosticCategory.Error,
+    code:
+      typeof diag.code === 'number'
+        ? diag.code
+        : diag.severity === 2
+        ? USING_DEPRECATED_FIELD_CODE
+        : SEMANTIC_DIAGNOSTIC_CODE,
+    messageText: diag.message.split('\n')[0],
+  }));
+
+  const importDiagnostics = checkImportsForFragments(source, info);
+
+  return [...tsDiagnostics, ...importDiagnostics];
+};
+
+const checkImportsForFragments = (
+  source: ts.SourceFile,
+  info: ts.server.PluginCreateInfo
+) => {
+  const imports = findAllImports(source);
+
+  const shouldCheckForColocatedFragments =
+    info.config.shouldCheckForColocatedFragments ?? false;
+  const tsDiagnostics: ts.Diagnostic[] = [];
+  if (imports.length && shouldCheckForColocatedFragments) {
+    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+    imports.forEach(imp => {
+      if (!imp.importClause) return;
+
+      const importedNames: string[] = [];
+      if (imp.importClause.name) {
+        importedNames.push(imp.importClause?.name.text);
+      }
+
+      if (
+        imp.importClause.namedBindings &&
+        ts.isNamespaceImport(imp.importClause.namedBindings)
+      ) {
+        // TODO: we might need to warn here when the fragment is unused as a namespace import
+        return;
+      } else if (
+        imp.importClause.namedBindings &&
+        ts.isNamedImportBindings(imp.importClause.namedBindings)
+      ) {
+        imp.importClause.namedBindings.elements.forEach(el => {
+          importedNames.push(el.name.text);
+        });
+      }
+
+      const symbol = typeChecker?.getSymbolAtLocation(imp.moduleSpecifier);
+      if (!symbol) return;
+
+      const moduleExports = typeChecker?.getExportsOfModule(symbol);
+      if (!moduleExports) return;
+
+      const missingImports = moduleExports
+        .map(exp => {
+          if (importedNames.includes(exp.name)) {
+            return;
+          }
+
+          const declarations = exp.getDeclarations();
+          const declaration = declarations?.find(x => {
+            // TODO: check whether the sourceFile.fileName resembles the module
+            // specifier
+            return true;
+          });
+
+          if (!declaration) return;
+
+          const [template] = findAllTaggedTemplateNodes(declaration);
+          if (template) {
+            let node = template;
+            if (
+              ts.isNoSubstitutionTemplateLiteral(node) ||
+              ts.isTemplateExpression(node)
+            ) {
+              if (ts.isTaggedTemplateExpression(node.parent)) {
+                node = node.parent;
+              } else {
+                return;
+              }
+            }
+
+            const text = resolveTemplate(
+              node,
+              node.getSourceFile().fileName,
+              info
+            ).combinedText;
+            try {
+              const parsed = parse(text, { noLocation: true });
+              if (
+                parsed.definitions.every(
+                  x => x.kind === Kind.FRAGMENT_DEFINITION
+                )
+              ) {
+                return `'${exp.name}'`;
+              }
+            } catch (e) {
+              return;
+            }
+          }
+        })
+        .filter(Boolean);
+
+      if (missingImports.length) {
+        tsDiagnostics.push({
+          file: source,
+          length: imp.getText().length,
+          start: imp.getStart(),
+          category: ts.DiagnosticCategory.Message,
+          code: MISSING_FRAGMENT_CODE,
+          messageText: `Missing Fragment import(s) ${missingImports.join(
+            ', '
+          )} from ${imp.moduleSpecifier.getText()}.`,
+        });
+      }
+    });
+  }
+
+  return tsDiagnostics;
+};
+
+const runTypedDocumentNodes = (
+  nodes: (ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral)[],
+  texts: (string | undefined)[],
+  schema: { current: GraphQLSchema | null },
+  diagnostics: ts.Diagnostic[],
+  hasTSErrors: boolean,
+  baseTypesPath: string,
+  sourceFile: ts.SourceFile,
+  info: ts.server.PluginCreateInfo
+) => {
+  const filename = sourceFile.fileName;
+  const scalars = info.config.scalars || {};
+  const disableTypegen = info.config.disableTypegen ?? false;
+  let source: ts.SourceFile | undefined = sourceFile;
+
   if (
-    !tsDiagnostics.filter(
+    !diagnostics.filter(
       x =>
         x.category === ts.DiagnosticCategory.Error ||
         x.category === ts.DiagnosticCategory.Warning
@@ -355,8 +409,9 @@ export function getGraphQLDiagnostics(
   ) {
     try {
       if (isFileDirty(filename, source) && !isGeneratingTypes) {
-        return tsDiagnostics;
+        return;
       }
+
       isGeneratingTypes = true;
 
       const parts = source.fileName.split('/');
@@ -474,6 +529,4 @@ export function getGraphQLDiagnostics(
       isGeneratingTypes = false;
     }
   }
-
-  return tsDiagnostics;
-}
+};

@@ -4,7 +4,7 @@ import { graphql } from './gql';
 export const PokemonFields = graphql(`
   fragment pokemonFields on Pokemon {
     id
-    nam
+    name
     attacks {
       fast {
         damage

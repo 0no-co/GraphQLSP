@@ -14,9 +14,6 @@ export function getGraphQLQuickInfo(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.QuickInfo | undefined {
-  const logger = (msg: string) =>
-    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-
   const tagTemplate = info.config.template || 'gql';
 
   const source = getSource(info, filename);

@@ -73,8 +73,6 @@ export function findAllCallExpressions(
   nodes: Array<ts.NoSubstitutionTemplateLiteral>;
   fragments: Array<FragmentDefinitionNode>;
 } {
-  const logger = (msg: string) =>
-    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const result: Array<ts.NoSubstitutionTemplateLiteral> = [];
   const fragments: Array<FragmentDefinitionNode> = [];
   let hasTriedToFindFragments = false;
@@ -92,7 +90,6 @@ export function findAllCallExpressions(
         const src = getSource(info, def.fileName);
         if (!src) return;
 
-        // TODO: nested fragments
         ts.forEachChild(src, node => {
           if (
             isVariableStatement(node) &&
@@ -126,9 +123,7 @@ export function findAllCallExpressions(
                         }
                       });
                     }
-                  } catch (e: any) {
-                    logger('error parsing fragment: ' + e.message);
-                  }
+                  } catch (e: any) {}
                 }
               });
             }

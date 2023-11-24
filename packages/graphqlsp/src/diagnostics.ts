@@ -22,6 +22,7 @@ import { LRUCache } from 'lru-cache';
 import fnv1a from '@sindresorhus/fnv1a';
 
 import {
+  findAllCallExpressions,
   findAllImports,
   findAllTaggedTemplateNodes,
   getSource,
@@ -59,14 +60,37 @@ export function getGraphQLDiagnostics(
   const scalars = info.config.scalars || {};
   const shouldCheckForColocatedFragments =
     info.config.shouldCheckForColocatedFragments ?? false;
+  const isCallExpression = info.config.templateIsCallExpression ?? false;
 
   let source = getSource(info, filename);
   if (!source) return undefined;
 
-  const nodes = findAllTaggedTemplateNodes(source);
+  let fragments: Array<FragmentDefinitionNode>,
+    nodes: (ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral)[];
+  if (isCallExpression) {
+    const result = findAllCallExpressions(source, tagTemplate, info);
+    fragments = result.fragments;
+    nodes = result.nodes;
+  } else {
+    nodes = findAllTaggedTemplateNodes(source);
+    fragments = [];
+  }
+
+  logger(
+    'Found ' +
+      nodes.length +
+      ' gql template(s) in ' +
+      filename +
+      ' and ' +
+      fragments.length +
+      ' fragments'
+  );
 
   const texts = nodes.map(node => {
-    if (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node)) {
+    if (
+      (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node)) &&
+      !isCallExpression
+    ) {
       if (isTaggedTemplateExpression(node.parent)) {
         node = node.parent;
       } else {
@@ -77,6 +101,8 @@ export function getGraphQLDiagnostics(
     return resolveTemplate(node, filename, info).combinedText;
   });
 
+  logger(`${JSON.stringify(texts)}`);
+
   let tsDiagnostics: ts.Diagnostic[] = [];
   const cacheKey = fnv1a(texts.join('-') + schema.version);
   if (cache.has(cacheKey)) {
@@ -86,8 +112,8 @@ export function getGraphQLDiagnostics(
       .map(originalNode => {
         let node = originalNode;
         if (
-          isNoSubstitutionTemplateLiteral(node) ||
-          isTemplateExpression(node)
+          !isCallExpression &&
+          (isNoSubstitutionTemplateLiteral(node) || isTemplateExpression(node))
         ) {
           if (isTaggedTemplateExpression(node.parent)) {
             node = node.parent;
@@ -102,6 +128,7 @@ export function getGraphQLDiagnostics(
           info
         );
         const lines = text.split('\n');
+        logger(`Checking ${text} and found newlines ${JSON.stringify(lines)}`);
 
         let isExpression = false;
         if (isAsExpression(node.parent)) {
@@ -116,11 +143,27 @@ export function getGraphQLDiagnostics(
         // When we are dealing with a plain gql statement we have to add two these can be recognised
         // by the fact that the parent is an expressionStatement
         let startingPosition =
-          node.pos + (tagTemplate.length + (isExpression ? 2 : 1));
+          node.pos + isCallExpression
+            ? 0
+            : tagTemplate.length + (isExpression ? 2 : 1);
         const endPosition = startingPosition + node.getText().length;
-        const graphQLDiagnostics = getDiagnostics(text, schema.current)
+
+        // TODO: chicken and egg problem... we have to parse the current document and see if one of the global
+        // fragments match so we can filter it out... but when there are nested fragments it won't parse
+        const graphQLDiagnostics = getDiagnostics(
+          text,
+          schema.current,
+          undefined,
+          undefined,
+          fragments
+        )
           .map(x => {
             const { start, end } = x.range;
+            logger(
+              `Checking ${x.message} and found start ${JSON.stringify(
+                start
+              )} and end ${JSON.stringify(end)}`
+            );
 
             // We add the start.line to account for newline characters which are
             // split out
@@ -302,8 +345,6 @@ export function getGraphQLDiagnostics(
           .filter(Boolean);
 
         if (missingImports.length) {
-          // TODO: we could use getCodeFixesAtPosition
-          // to build on this
           tsDiagnostics.push({
             file: source,
             length: imp.getText().length,

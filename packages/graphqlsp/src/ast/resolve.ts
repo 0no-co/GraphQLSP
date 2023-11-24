@@ -4,6 +4,7 @@ import {
   isNoSubstitutionTemplateLiteral,
   isObjectLiteralExpression,
   isTaggedTemplateExpression,
+  NoSubstitutionTemplateLiteral,
   TaggedTemplateExpression,
 } from 'typescript';
 import { print } from 'graphql';
@@ -22,10 +23,14 @@ type TemplateResult = {
 };
 
 export function resolveTemplate(
-  node: TaggedTemplateExpression,
+  node: TaggedTemplateExpression | NoSubstitutionTemplateLiteral,
   filename: string,
   info: ts.server.PluginCreateInfo
 ): TemplateResult {
+  if (isNoSubstitutionTemplateLiteral(node)) {
+    return { combinedText: node.getText().slice(1, -1), resolvedSpans: [] };
+  }
+
   let templateText = node.template.getText().slice(1, -1);
   if (
     isNoSubstitutionTemplateLiteral(node.template) ||

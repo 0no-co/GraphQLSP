@@ -23,6 +23,7 @@ export type Logger = (msg: string) => void;
 type Config = {
   schema: SchemaOrigin | string;
   template?: string;
+  templateIsCallExpression?: boolean;
   disableTypegen?: boolean;
   extraTypes?: string;
   scalars?: Record<string, unknown>;

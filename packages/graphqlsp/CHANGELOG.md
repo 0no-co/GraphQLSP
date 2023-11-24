@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.11.0
+
+### Minor Changes
+
+- Support the GraphQL Code Generator client preset
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#109](https://github.com/0no-co/GraphQLSP/pull/109))
+
 ## 0.10.1
 
 ### Patch Changes

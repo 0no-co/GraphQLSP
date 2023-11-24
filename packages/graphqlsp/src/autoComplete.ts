@@ -1,11 +1,5 @@
 import ts from 'typescript/lib/tsserverlibrary';
 import {
-  ScriptElementKind,
-  isIdentifier,
-  isNoSubstitutionTemplateLiteral,
-  isTaggedTemplateExpression,
-} from 'typescript';
-import {
   getAutocompleteSuggestions,
   getTokenAtPosition,
   getTypeInfo,
@@ -55,7 +49,7 @@ export function getGraphQLCompletions(
     isCallExpression &&
     node.expression.getText() === tagTemplate &&
     node.arguments.length > 0 &&
-    isNoSubstitutionTemplateLiteral(node.arguments[0])
+    ts.isNoSubstitutionTemplateLiteral(node.arguments[0])
   ) {
     const foundToken = getToken(node.arguments[0], cursorPosition);
     if (!schema.current || !foundToken) return undefined;
@@ -77,7 +71,7 @@ export function getGraphQLCompletions(
       isNewIdentifierLocation: false,
       entries: items.map(suggestion => ({
         ...suggestion,
-        kind: ScriptElementKind.variableElement,
+        kind: ts.ScriptElementKind.variableElement,
         name: suggestion.label,
         kindModifiers: 'declare',
         sortText: suggestion.sortText || '0',
@@ -89,10 +83,10 @@ export function getGraphQLCompletions(
         },
       })),
     };
-  } else if (isTaggedTemplateExpression(node)) {
+  } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
 
-    if (!isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
+    if (!ts.isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
 
     const foundToken = getToken(template, cursorPosition);
     if (!foundToken || !schema.current) return undefined;
@@ -128,7 +122,7 @@ export function getGraphQLCompletions(
       entries: [
         ...suggestions.map(suggestion => ({
           ...suggestion,
-          kind: ScriptElementKind.variableElement,
+          kind: ts.ScriptElementKind.variableElement,
           name: suggestion.label,
           kindModifiers: 'declare',
           sortText: suggestion.sortText || '0',
@@ -141,7 +135,7 @@ export function getGraphQLCompletions(
         })),
         ...spreadSuggestions.map(suggestion => ({
           ...suggestion,
-          kind: ScriptElementKind.variableElement,
+          kind: ts.ScriptElementKind.variableElement,
           name: suggestion.label,
           insertText: '...' + suggestion.label,
           kindModifiers: 'declare',

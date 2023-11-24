@@ -30,6 +30,7 @@ import {
 } from './ast';
 import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './graphql/generateTypes';
+import { Logger } from '.';
 
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const MISSING_OPERATION_NAME_CODE = 52002;
@@ -53,7 +54,7 @@ export function getGraphQLDiagnostics(
   schema: { current: GraphQLSchema | null; version: number },
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
-  const logger = (msg: string) =>
+  const logger: Logger = (msg: string) =>
     info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const disableTypegen = info.config.disableTypegen;
   const tagTemplate = info.config.template || 'gql';
@@ -65,7 +66,7 @@ export function getGraphQLDiagnostics(
   let source = getSource(info, filename);
   if (!source) return undefined;
 
-  let fragments: Array<FragmentDefinitionNode>,
+  let fragments: Array<FragmentDefinitionNode> = [],
     nodes: (ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral)[];
   if (isCallExpression) {
     const result = findAllCallExpressions(source, tagTemplate, info);
@@ -73,7 +74,6 @@ export function getGraphQLDiagnostics(
     nodes = result.nodes;
   } else {
     nodes = findAllTaggedTemplateNodes(source);
-    fragments = [];
   }
 
   const texts = nodes.map(node => {
@@ -148,6 +148,7 @@ export function getGraphQLDiagnostics(
               )
           );
         }
+
         const graphQLDiagnostics = getDiagnostics(
           text,
           schema.current,

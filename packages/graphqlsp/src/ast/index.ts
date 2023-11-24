@@ -14,6 +14,7 @@ import {
 } from 'typescript';
 import fs from 'fs';
 import { FragmentDefinitionNode, parse } from 'graphql';
+import { Logger } from '..';
 
 export function isFileDirty(fileName: string, source: ts.SourceFile) {
   const contents = fs.readFileSync(fileName, 'utf-8');
@@ -73,62 +74,16 @@ export function findAllCallExpressions(
   nodes: Array<ts.NoSubstitutionTemplateLiteral>;
   fragments: Array<FragmentDefinitionNode>;
 } {
+  const logger: Logger = (msg: string) =>
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const result: Array<ts.NoSubstitutionTemplateLiteral> = [];
-  const fragments: Array<FragmentDefinitionNode> = [];
+  let fragments: Array<FragmentDefinitionNode> = [];
   let hasTriedToFindFragments = false;
   function find(node: ts.Node) {
     if (isCallExpression(node) && node.expression.getText() === template) {
       if (!hasTriedToFindFragments) {
         hasTriedToFindFragments = true;
-        const definitions = info.languageService.getDefinitionAtPosition(
-          sourceFile.fileName,
-          node.expression.getStart()
-        );
-        if (!definitions) return;
-
-        const def = definitions[0];
-        const src = getSource(info, def.fileName);
-        if (!src) return;
-
-        ts.forEachChild(src, node => {
-          if (
-            isVariableStatement(node) &&
-            node.declarationList &&
-            node.declarationList.declarations[0].name.getText() === 'documents'
-          ) {
-            const [declaration] = node.declarationList.declarations;
-            if (
-              declaration.initializer &&
-              isObjectLiteralExpression(declaration.initializer)
-            ) {
-              declaration.initializer.properties.forEach(property => {
-                if (
-                  isPropertyAssignment(property) &&
-                  isStringLiteral(property.name)
-                ) {
-                  try {
-                    const possibleFragment = JSON.parse(
-                      property.name.getFullText()
-                    );
-                    if (
-                      possibleFragment.includes('fragment ') &&
-                      possibleFragment.includes(' on ')
-                    ) {
-                      const parsed = parse(possibleFragment.slice(1, -1), {
-                        noLocation: true,
-                      });
-                      parsed.definitions.forEach(definition => {
-                        if (definition.kind === 'FragmentDefinition') {
-                          fragments.push(definition);
-                        }
-                      });
-                    }
-                  } catch (e: any) {}
-                }
-              });
-            }
-          }
-        });
+        fragments = getAllFragments(sourceFile.fileName, node, info);
       }
       const [arg] = node.arguments;
       if (arg && isNoSubstitutionTemplateLiteral(arg)) {
@@ -143,6 +98,67 @@ export function findAllCallExpressions(
   return { nodes: result, fragments };
 }
 
+export function getAllFragments(
+  fileName: string,
+  node: ts.CallExpression,
+  info: ts.server.PluginCreateInfo
+) {
+  let fragments: Array<FragmentDefinitionNode> = [];
+
+  const definitions = info.languageService.getDefinitionAtPosition(
+    fileName,
+    node.expression.getStart()
+  );
+  if (!definitions) return fragments;
+
+  const def = definitions[0];
+  const src = getSource(info, def.fileName);
+  if (!src) return fragments;
+
+  ts.forEachChild(src, node => {
+    if (
+      isVariableStatement(node) &&
+      node.declarationList &&
+      node.declarationList.declarations[0].name.getText() === 'documents'
+    ) {
+      const [declaration] = node.declarationList.declarations;
+      if (
+        declaration.initializer &&
+        isObjectLiteralExpression(declaration.initializer)
+      ) {
+        declaration.initializer.properties.forEach(property => {
+          if (
+            isPropertyAssignment(property) &&
+            isStringLiteral(property.name)
+          ) {
+            try {
+              const possibleFragment = JSON.parse(
+                `${property.name.getText().replace(/'/g, '"')}`
+              );
+
+              if (
+                possibleFragment.includes('fragment ') &&
+                possibleFragment.includes(' on ')
+              ) {
+                const parsed = parse(possibleFragment, {
+                  noLocation: true,
+                });
+                parsed.definitions.forEach(definition => {
+                  if (definition.kind === 'FragmentDefinition') {
+                    fragments.push(definition);
+                  }
+                });
+              }
+            } catch (e: any) {}
+          }
+        });
+      }
+    }
+  });
+
+  return fragments;
+}
+
 export function findAllImports(
   sourceFile: ts.SourceFile
 ): Array<ts.ImportDeclaration> {
@@ -150,6 +166,19 @@ export function findAllImports(
 }
 
 export function bubbleUpTemplate(node: ts.Node): ts.Node {
+  while (
+    isNoSubstitutionTemplateLiteral(node) ||
+    isToken(node) ||
+    isTemplateExpression(node) ||
+    isTemplateSpan(node)
+  ) {
+    node = node.parent;
+  }
+
+  return node;
+}
+
+export function bubbleUpCallExpression(node: ts.Node): ts.Node {
   while (
     isNoSubstitutionTemplateLiteral(node) ||
     isToken(node) ||

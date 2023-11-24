@@ -1,5 +1,6 @@
 import ts from 'typescript/lib/tsserverlibrary';
 import { onlineParser, State, CharacterStream } from 'graphql-language-service';
+import { isTemplateLiteral } from 'typescript';
 
 export interface Token {
   start: number;

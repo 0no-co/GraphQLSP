@@ -97,6 +97,7 @@ export const loadSchema = (
         });
     };
 
+    pollSchema();
     setInterval(() => {
       pollSchema();
     }, 1000 * 60);

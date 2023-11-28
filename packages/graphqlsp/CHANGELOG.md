@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.11.1
+
+### Patch Changes
+
+- Poll schema every minute
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#112](https://github.com/0no-co/GraphQLSP/pull/112))
+
 ## 0.11.0
 
 ### Minor Changes

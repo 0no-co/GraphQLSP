@@ -152,17 +152,19 @@ const runDiagnostics = (
 
       let docFragments = [...fragments];
       if (isCallExpression) {
-        const documentFragments = parse(text, {
-          noLocation: true,
-        }).definitions.filter(x => x.kind === Kind.FRAGMENT_DEFINITION);
-        docFragments = docFragments.filter(
-          x =>
-            !documentFragments.some(
-              y =>
-                y.kind === Kind.FRAGMENT_DEFINITION &&
-                y.name.value === x.name.value
-            )
-        );
+        try {
+          const documentFragments = parse(text, {
+            noLocation: true,
+          }).definitions.filter(x => x.kind === Kind.FRAGMENT_DEFINITION);
+          docFragments = docFragments.filter(
+            x =>
+              !documentFragments.some(
+                y =>
+                  y.kind === Kind.FRAGMENT_DEFINITION &&
+                  y.name.value === x.name.value
+              )
+          );
+        } catch (e) {}
       }
 
       const graphQLDiagnostics = getDiagnostics(

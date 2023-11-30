@@ -11,6 +11,7 @@ export type PokQuery = {
     id: string;
     name: string;
     fleeRate?: number | null;
+    classification?: string | null;
     weaknesses?: Array<Types.PokemonType | null> | null;
     attacks?: {
       __typename: 'AttacksConnection';
@@ -45,15 +46,6 @@ export type WeaknessFieldsFragment = {
 export type PoQueryVariables = Types.Exact<{
   id: Types.Scalars['ID']['input'];
 }>;
-
-export type PoQuery = {
-  __typename: 'Query';
-  pokemon?: {
-    __typename: 'Pokemon';
-    id: string;
-    fleeRate?: number | null;
-  } | null;
-};
 
 export const PokemonFieldsFragmentDoc = {
   kind: 'Document',
@@ -274,4 +266,4 @@ export const PoDocument = {
       },
     },
   ],
-} as unknown as DocumentNode<PoQuery, PoQueryVariables>;
+} as unknown as DocumentNode<PokQuery, PoQueryVariables>;

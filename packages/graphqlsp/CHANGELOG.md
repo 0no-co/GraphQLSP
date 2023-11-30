@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.11.2
+
+### Patch Changes
+
+- ⚠️ Fix crash during fragment aggregation step
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#119](https://github.com/0no-co/GraphQLSP/pull/119))
+
 ## 0.11.1
 
 ### Patch Changes

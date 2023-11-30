@@ -35,7 +35,79 @@ Go to your `tsconfig.json` and add
 }
 ```
 
-now restart your TS-server and you should be good to go
+now restart your TS-server and you should be good to go, ensure you are using the
+workspace version of TypeScript. In VSCode you can do so by clicking the bottom right
+when on a TypeScript file or adding a file like [this](https://github.com/0no-co/GraphQLSP/blob/main/packages/example/.vscode/settings.json).
+
+> If you are using VSCode ensure that your editor is using the Workspace Version of TypeScript
+
+### Configuration
+
+**Required**
+
+- `schema` allows you to specify a url, `.json` or `.graphql` file as your schema. If you need to specify headers for your introspection
+  you can opt into the object notation i.e. `{ "schema": { "url": "x", "headers": { "Authorization": "y" } }}`
+
+**Optional**
+
+- `template` the shape of your template, by default `gql`
+- `templateIsCallExpression` this tells our client that you are using `graphql('doc')`
+- `disableTypegen` disables type-generation in general, this could be needed if offset bugs are introduced
+- `scalars` allows you to pass an object of scalars that we'll feed into `graphql-code-generator`
+- `extraTypes` allows you to specify imports or declare types to help with `scalar` definitions
+- `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find
+  unused fragments and provide a message notifying you about them
+
+### GraphQL Code Generator client-preset
+
+For folks using the `client-preset` you can ues the following config
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "./schema.graphql",
+        "disableTypegen": true,
+        "templateIsCallExpression": true,
+        "template": "graphql"
+      }
+    ]
+  }
+}
+```
+
+## Fragment masking
+
+When we use a `useQuery` that supports `TypedDocumentNode` it will automatically pick up the typings
+from the `query` you provide it. However for fragments this could become a bit more troublesome, the
+minimal way of providing typings for a fragment would be the following:
+
+```tsx
+import { TypedDocumentNode } from '@graphql-typed-document-node/core';
+
+export const PokemonFields = gql`
+  fragment pokemonFields on Pokemon {
+    id
+    name
+  }
+` as typeof import('./Pokemon.generated').PokemonFieldsFragmentDoc;
+
+export const Pokemon = props => {
+  const pokemon = useFragment(props.pokemon, PokemonFields);
+};
+
+export function useFragment<Type>(
+  data: any,
+  _fragment: TypedDocumentNode<Type>
+): Type {
+  return data;
+}
+```
+
+This is mainly needed in cases where this isn't supported out of the box and mainly serves as a way
+for you to case your types.
 
 ## Local development
 

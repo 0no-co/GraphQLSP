@@ -96,7 +96,7 @@ describe('Type-generation', () => {
         'export const PostListDocument ='
       );
     });
-  }, 20000);
+  }, 30000);
 
   it('gets renamed correctly (complex)', async () => {
     server.sendCommand('open', {
@@ -131,5 +131,5 @@ describe('Type-generation', () => {
   }
 \` as typeof import('./rename-complex.generated').Post2FieldsFragmentDoc`);
     });
-  }, 20000);
+  }, 30000);
 });

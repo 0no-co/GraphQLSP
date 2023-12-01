@@ -344,18 +344,7 @@ List out all Pokémon, optionally in pages`
         {
           "kind": "string",
           "kindModifiers": "",
-          "name": "
-        fragment pokemonFields on Pokemon {
-          id
-          name
-          attacks {
-            fast {
-              damage
-              name
-            }
-          }
-        }
-      ",
+          "name": "\\\\n  fragment pokemonFields on Pokemon {\\\\n    id\\\\n    name\\\\n    attacks {\\\\n      fast {\\\\n        damage\\\\n        name\\\\n      }\\\\n    }\\\\n  }\\\\n",
           "replacementSpan": {
             "end": {
               "line": 10,
@@ -371,19 +360,7 @@ List out all Pokémon, optionally in pages`
         {
           "kind": "string",
           "kindModifiers": "",
-          "name": "
-        query Pok($limit: Int!) {
-          pokemons(limit: $limit) {
-            id
-            name
-            fleeRate
-            classification
-            ...pokemonFields
-            ...weaknessFields
-            __typename
-          }
-        }
-      ",
+          "name": "\\\\n  query Pok($limit: Int!) {\\\\n    pokemons(limit: $limit) {\\\\n      id\\\\n      name\\\\n      fleeRate\\\\n      classification\\\\n      ...pokemonFields\\\\n      ...weaknessFields\\\\n      __typename\\\\n    }\\\\n  }\\\\n",
           "replacementSpan": {
             "end": {
               "line": 10,

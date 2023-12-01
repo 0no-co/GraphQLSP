@@ -48,7 +48,7 @@ describe('simple', () => {
 
   afterAll(() => {
     try {
-      fs.unlinkSync(testFile);
+      // fs.unlinkSync(testFile);
       fs.unlinkSync(generatedFile);
       fs.unlinkSync(baseGeneratedFile);
     } catch {}
@@ -82,6 +82,7 @@ describe('simple', () => {
       );
 
     expect(res).toBeDefined();
+    console.log(res);
     expect(typeof res?.body.entries).toEqual('object');
     const defaultAttrs = { kind: 'var', kindModifiers: 'declare' };
     expect(res?.body.entries).toEqual([
@@ -129,6 +130,7 @@ describe('simple', () => {
     const res = server.responses
       .reverse()
       .find(resp => resp.type === 'response' && resp.command === 'quickinfo');
+    console.log(res);
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
     expect(res?.body.displayString).toEqual(`Query.posts: [Post]

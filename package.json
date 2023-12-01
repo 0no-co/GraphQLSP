@@ -20,17 +20,28 @@
     "*.{js,ts,json,md}": "prettier --write"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.26.2",
-    "@changesets/get-github-info": "^0.5.2",
+    "@changesets/cli": "^2.27.1",
+    "@changesets/get-github-info": "^0.6.0",
     "@rollup/plugin-terser": "^0.4.4",
     "@rollup/plugin-typescript": "^11.1.5",
-    "@types/node": "^18.15.11",
-    "dotenv": "^16.0.3",
+    "@types/node": "^20.10.0",
+    "dotenv": "^16.3.1",
     "husky": "^8.0.3",
-    "lint-staged": "^15.0.0",
-    "prettier": "^2.8.7",
-    "rollup": "^3.20.2",
-    "typescript": "^5.0.0",
+    "lint-staged": "^15.1.0",
+    "prettier": "^3.1.0",
+    "rollup": "^4.6.0",
+    "typescript": "^5.3.0",
     "vitest": "^0.34.6"
+  },
+  "pnpm": {
+    "overrides": {
+      "ua-parser-js@<0.7.33": ">=0.7.33",
+      "postcss@<8.4.31": ">=8.4.31",
+      "semver@<5.7.2": ">=5.7.2",
+      "semver@>=6.0.0 <6.3.1": ">=6.3.1",
+      "vite@>=4.2.0 <4.2.3": ">=4.2.3",
+      "@babel/traverse@<7.23.2": ">=7.23.2",
+      "json5@>=2.0.0 <2.2.2": ">=2.2.2"
+    }
   }
 }

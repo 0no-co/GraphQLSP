@@ -34,10 +34,10 @@
     "*.{js,ts,json,md}": "prettier --write"
   },
   "devDependencies": {
-    "@types/node": "^18.15.11",
-    "@types/node-fetch": "^2.6.3",
+    "@types/node": "^20.10.0",
+    "@types/node-fetch": "^2.6.9",
     "graphql": "^16.8.1",
-    "typescript": "^5.0.0"
+    "typescript": "^5.3.0"
   },
   "dependencies": {
     "@graphql-codegen/add": "^5.0.0",

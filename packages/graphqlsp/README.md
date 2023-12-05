@@ -10,7 +10,6 @@ auto-complete and automatically generating [Typed-Document-nodes](https://the-gu
 - Diagnostics for adding fields that don't exist, are deprecated, missmatched argument types, ...
 - Auto-complete inside your editor for fields
 - When you save it will generate `typed-document-nodes` for your documents and cast them to the correct type
-- Will warn you when you are importing from a file that is exporting fragments that you're not using
 
 ## Installation
 
@@ -55,8 +54,6 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 - `disableTypegen` disables type-generation in general, this could be needed if offset bugs are introduced
 - `scalars` allows you to pass an object of scalars that we'll feed into `graphql-code-generator`
 - `extraTypes` allows you to specify imports or declare types to help with `scalar` definitions
-- `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find
-  unused fragments and provide a message notifying you about them
 
 ### GraphQL Code Generator client-preset
 

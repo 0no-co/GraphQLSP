@@ -27,7 +27,6 @@ type Config = {
   disableTypegen?: boolean;
   extraTypes?: string;
   scalars?: Record<string, unknown>;
-  shouldCheckForColocatedFragments?: boolean;
 };
 
 function create(info: ts.server.PluginCreateInfo) {

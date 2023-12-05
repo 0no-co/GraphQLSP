@@ -36,7 +36,7 @@ client
   .query(PokemonQuery, { id: '' })
   .toPromise()
   .then(result => {
-    result.data?.pokemon;
+    result.data?.pokemons;
   });
 
 const myQuery = gql`

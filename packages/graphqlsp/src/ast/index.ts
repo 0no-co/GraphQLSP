@@ -1,4 +1,4 @@
-import ts from 'typescript/lib/tsserverlibrary';
+import ts, { isTaggedTemplateExpression } from 'typescript/lib/tsserverlibrary';
 import fs from 'fs';
 import { FragmentDefinitionNode, parse } from 'graphql';
 
@@ -31,16 +31,48 @@ export function findNode(
   return find(sourceFile);
 }
 
-export function findAllTaggedTemplateNodes(
+export function findAllMagicGQLComments(
   sourceFile: ts.SourceFile | ts.Node
+): Array<ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral> {
+  const result: Array<
+    ts.TemplateExpression | ts.NoSubstitutionTemplateLiteral
+  > = [];
+
+  // TODO: find way to properly address checking the
+  // magic /* GraphQL */ comment
+  function find(node: ts.Node) {
+    if (ts.isTemplateExpression(node)) {
+      result.push(node);
+      return;
+    } else if (ts.isNoSubstitutionTemplateLiteral(node)) {
+      result.push(node);
+      return;
+    } else {
+      ts.forEachChild(node, find);
+    }
+  }
+  find(sourceFile);
+  return result;
+}
+
+export function findAllTaggedTemplateNodes(
+  sourceFile: ts.SourceFile | ts.Node,
+  tagTemplate: string
 ): Array<ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral> {
   const result: Array<
     ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral
   > = [];
   function find(node: ts.Node) {
     if (
-      ts.isTaggedTemplateExpression(node) ||
-      ts.isNoSubstitutionTemplateLiteral(node)
+      ts.isTaggedTemplateExpression(node) &&
+      node.tag.getText() === tagTemplate
+    ) {
+      result.push(node);
+      return;
+    } else if (
+      ts.isNoSubstitutionTemplateLiteral(node) &&
+      isTaggedTemplateExpression(node.parent) &&
+      node.parent.tag.getText() === tagTemplate
     ) {
       result.push(node);
       return;

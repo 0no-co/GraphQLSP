@@ -14,7 +14,10 @@ type TemplateResult = {
 };
 
 export function resolveTemplate(
-  node: ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral,
+  node:
+    | ts.TaggedTemplateExpression
+    | ts.NoSubstitutionTemplateLiteral
+    | ts.TemplateExpression,
   filename: string,
   info: ts.server.PluginCreateInfo
 ): TemplateResult {
@@ -22,17 +25,24 @@ export function resolveTemplate(
     return { combinedText: node.getText().slice(1, -1), resolvedSpans: [] };
   }
 
-  let templateText = node.template.getText().slice(1, -1);
+  let templateText = ts.isTemplateExpression(node)
+    ? node.getText().slice(1, -1)
+    : node.template.getText().slice(1, -1);
   if (
-    ts.isNoSubstitutionTemplateLiteral(node.template) ||
-    node.template.templateSpans.length === 0
+    ts.isTaggedTemplateExpression(node) &&
+    (ts.isNoSubstitutionTemplateLiteral(node.template) ||
+      node.template.templateSpans.length === 0)
   ) {
     return { combinedText: templateText, resolvedSpans: [] };
   }
 
   let addedCharacters = 0;
-  const resolvedSpans = node.template.templateSpans
-    .map(span => {
+  const resolvedSpans = (
+    ts.isTemplateExpression(node)
+      ? node.templateSpans
+      : (node.template as any).templateSpans
+  )
+    .map((span: ts.TemplateSpan) => {
       if (ts.isIdentifier(span.expression)) {
         const definitions = info.languageService.getDefinitionAtPosition(
           filename,

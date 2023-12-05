@@ -64,6 +64,25 @@ importers:
         specifier: ^5.0.0
         version: 5.0.4
 
+  packages/example-comment-strings:
+    dependencies:
+      '@graphql-typed-document-node/core':
+        specifier: ^3.2.0
+        version: 3.2.0(graphql@16.8.1)
+      '@urql/core':
+        specifier: ^3.0.0
+        version: 3.2.2(graphql@16.8.1)
+      graphql:
+        specifier: ^16.8.1
+        version: 16.8.1
+    devDependencies:
+      '@0no-co/graphqlsp':
+        specifier: file:../graphqlsp
+        version: file:packages/graphqlsp(graphql@16.8.1)
+      typescript:
+        specifier: ^5.0.0
+        version: 5.0.4
+
   packages/example-external-generator:
     dependencies:
       '@graphql-typed-document-node/core':

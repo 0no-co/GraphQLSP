@@ -13,12 +13,14 @@ import fnv1a from '@sindresorhus/fnv1a';
 import {
   findAllCallExpressions,
   findAllImports,
+  findAllMagicGQLComments,
   findAllTaggedTemplateNodes,
   getSource,
   isFileDirty,
 } from './ast';
 import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './graphql/generateTypes';
+import { Logger } from '.';
 
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const MISSING_OPERATION_NAME_CODE = 52002;
@@ -42,20 +44,27 @@ export function getGraphQLDiagnostics(
   schema: { current: GraphQLSchema | null; version: number },
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
-  const tagTemplate = info.config.template || 'gql';
+  const tagTemplate = info.config.template ?? 'gql';
   const isCallExpression = info.config.templateIsCallExpression ?? false;
 
   let source = getSource(info, filename);
   if (!source) return undefined;
 
   let fragments: Array<FragmentDefinitionNode> = [],
-    nodes: (ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral)[];
+    nodes: (
+      | ts.TaggedTemplateExpression
+      | ts.NoSubstitutionTemplateLiteral
+      | ts.TemplateExpression
+    )[];
   if (isCallExpression) {
     const result = findAllCallExpressions(source, tagTemplate, info);
     fragments = result.fragments;
     nodes = result.nodes;
+  } else if (tagTemplate === '') {
+    // TODO: comment templates
+    nodes = findAllMagicGQLComments(source);
   } else {
-    nodes = findAllTaggedTemplateNodes(source);
+    nodes = findAllTaggedTemplateNodes(source, tagTemplate);
   }
 
   const texts = nodes.map(node => {
@@ -83,16 +92,21 @@ export function getGraphQLDiagnostics(
     cache.set(cacheKey, tsDiagnostics);
   }
 
-  runTypedDocumentNodes(
-    nodes,
-    texts,
-    schema,
-    tsDiagnostics,
-    hasTSErrors,
-    baseTypesPath,
-    source,
-    info
-  );
+  if (tagTemplate.length && !isCallExpression) {
+    runTypedDocumentNodes(
+      nodes as (
+        | ts.TaggedTemplateExpression
+        | ts.NoSubstitutionTemplateLiteral
+      )[],
+      texts,
+      schema,
+      tsDiagnostics,
+      hasTSErrors,
+      baseTypesPath,
+      source,
+      info
+    );
+  }
 
   return tsDiagnostics;
 }
@@ -103,21 +117,28 @@ const runDiagnostics = (
     nodes,
     fragments,
   }: {
-    nodes: (ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral)[];
+    nodes: (
+      | ts.TaggedTemplateExpression
+      | ts.NoSubstitutionTemplateLiteral
+      | ts.TemplateExpression
+    )[];
     fragments: FragmentDefinitionNode[];
   },
   schema: { current: GraphQLSchema | null; version: number },
   info: ts.server.PluginCreateInfo
 ) => {
-  const tagTemplate = info.config.template || 'gql';
+  const tagTemplate = info.config.template ?? 'gql';
   const filename = source.fileName;
   const isCallExpression = info.config.templateIsCallExpression ?? false;
+  const shouldRunNoTypegenPath = tagTemplate.length === 0 || isCallExpression;
+  const logger: Logger = (msg: string) =>
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
 
   const diagnostics = nodes
     .map(originalNode => {
       let node = originalNode;
       if (
-        !isCallExpression &&
+        !shouldRunNoTypegenPath &&
         (ts.isNoSubstitutionTemplateLiteral(node) ||
           ts.isTemplateExpression(node))
       ) {
@@ -134,6 +155,8 @@ const runDiagnostics = (
         info
       );
       const lines = text.split('\n');
+      logger(`Checking ${filename} for GraphQL errors.`);
+      logger(`Found ${JSON.stringify(lines)}.`);
 
       let isExpression = false;
       if (ts.isAsExpression(node.parent)) {
@@ -147,7 +170,9 @@ const runDiagnostics = (
       // by the fact that the parent is an expressionStatement
       let startingPosition =
         node.pos +
-        (isCallExpression ? 0 : tagTemplate.length + (isExpression ? 2 : 1));
+        (shouldRunNoTypegenPath
+          ? 0
+          : tagTemplate.length + (isExpression ? 2 : 1));
       const endPosition = startingPosition + node.getText().length;
 
       let docFragments = [...fragments];
@@ -167,6 +192,7 @@ const runDiagnostics = (
         } catch (e) {}
       }
 
+      logger(`Checking ${filename} for GraphQL errors with ${text}.`);
       const graphQLDiagnostics = getDiagnostics(
         text,
         schema.current,
@@ -333,7 +359,7 @@ const checkImportsForFragments = (
 
           if (!declaration) return;
 
-          const [template] = findAllTaggedTemplateNodes(declaration);
+          const [template] = findAllTaggedTemplateNodes(declaration, '');
           if (template) {
             let node = template;
             if (

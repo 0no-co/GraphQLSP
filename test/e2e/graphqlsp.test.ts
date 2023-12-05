@@ -131,8 +131,8 @@ describe('simple', () => {
       .find(resp => resp.type === 'response' && resp.command === 'quickinfo');
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.displayString).toEqual(`Query.posts: [Post]
-
-List out all posts`);
+    expect(res?.body.documentation).toEqual(
+      `Query.posts: [Post]\n\nList out all posts`
+    );
   }, 7500);
 });

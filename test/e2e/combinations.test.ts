@@ -120,7 +120,7 @@ describe('Fragment + operations', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.displayString).toEqual(
+    expect(res?.body.documentation).toEqual(
       `Query.posts: [Post]\n\nList out all posts`
     );
   }, 30000);

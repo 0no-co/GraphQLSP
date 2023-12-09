@@ -65,7 +65,7 @@ export function getGraphQLCompletions(
 
     const queryText = node.arguments[0].getText();
     const fragments = getAllFragments(filename, node, info);
-    const cursor = new Cursor(foundToken.line, foundToken.start);
+    const cursor = new Cursor(foundToken.line, foundToken.start - 1);
     const text = `${queryText}\m${fragments.map(x => print(x)).join('\n')}`;
 
     const [suggestions, spreadSuggestions] = getSuggestionsInternal(
@@ -129,7 +129,7 @@ export function getGraphQLCompletions(
 
     foundToken.line = foundToken.line + amountOfLines;
 
-    const cursor = new Cursor(foundToken.line, foundToken.start);
+    const cursor = new Cursor(foundToken.line, foundToken.start - 1);
 
     const [suggestions, spreadSuggestions] = getSuggestionsInternal(
       schema.current,

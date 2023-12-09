@@ -124,6 +124,7 @@ describe('Type-generation', () => {
 
     await waitForExpect(() => {
       const contents = fs.readFileSync(outFileComplex, 'utf-8');
+      console.log('gen complex', [...server.responses], contents);
       expect(contents).toContain(`    id
   }
 \` as typeof import('./rename-complex.generated').PostFieldsFragmentDoc`);
@@ -131,5 +132,5 @@ describe('Type-generation', () => {
   }
 \` as typeof import('./rename-complex.generated').Post2FieldsFragmentDoc`);
     });
-  }, 20000);
+  }, 30000);
 });

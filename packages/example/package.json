@@ -15,7 +15,7 @@
     "@graphql-typed-document-node/core": "^3.2.0"
   },
   "devDependencies": {
-    "typescript": "^5.0.0",
+    "typescript": "^5.3.3",
     "@0no-co/graphqlsp": "file:../graphqlsp"
   }
 }

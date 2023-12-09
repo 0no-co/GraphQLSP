@@ -19,7 +19,7 @@ importers:
         version: 0.4.4(rollup@3.20.2)
       '@rollup/plugin-typescript':
         specifier: ^11.1.5
-        version: 11.1.5(rollup@3.20.2)(typescript@5.0.4)
+        version: 11.1.5(rollup@3.20.2)(typescript@5.3.3)
       '@types/node':
         specifier: ^18.15.11
         version: 18.15.11
@@ -39,8 +39,8 @@ importers:
         specifier: ^3.20.2
         version: 3.20.2
       typescript:
-        specifier: ^5.0.0
-        version: 5.0.4
+        specifier: ^5.3.3
+        version: 5.3.3
       vitest:
         specifier: ^0.34.6
         version: 0.34.6
@@ -61,8 +61,8 @@ importers:
         specifier: file:../graphqlsp
         version: file:packages/graphqlsp(graphql@16.8.1)
       typescript:
-        specifier: ^5.0.0
-        version: 5.0.4
+        specifier: ^5.3.3
+        version: 5.3.3
 
   packages/example-external-generator:
     dependencies:
@@ -81,16 +81,16 @@ importers:
         version: file:packages/graphqlsp(graphql@16.8.1)
       '@graphql-codegen/cli':
         specifier: ^5.0.0
-        version: 5.0.0(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.0.4)
+        version: 5.0.0(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.3.3)
       '@graphql-codegen/client-preset':
         specifier: ^4.1.0
         version: 4.1.0(graphql@16.8.1)
       ts-node:
         specifier: ^10.9.1
-        version: 10.9.1(@types/node@18.15.11)(typescript@5.0.4)
+        version: 10.9.1(@types/node@18.15.11)(typescript@5.3.3)
       typescript:
-        specifier: ^5.0.4
-        version: 5.0.4
+        specifier: ^5.3.3
+        version: 5.3.3
 
   packages/graphqlsp:
     dependencies:
@@ -135,8 +135,8 @@ importers:
         specifier: ^16.8.1
         version: 16.8.1
       typescript:
-        specifier: ^5.0.0
-        version: 5.0.4
+        specifier: ^5.3.3
+        version: 5.3.3
 
   test/e2e/fixture-project:
     dependencies:
@@ -148,8 +148,8 @@ importers:
         version: 4.0.4(graphql@16.8.1)
     devDependencies:
       typescript:
-        specifier: ^5.0.4
-        version: 5.0.4
+        specifier: ^5.3.3
+        version: 5.3.3
 
   test/e2e/fixture-project-client-preset:
     dependencies:
@@ -167,8 +167,8 @@ importers:
         version: 16.8.1
     devDependencies:
       typescript:
-        specifier: ^5.0.4
-        version: 5.0.4
+        specifier: ^5.3.3
+        version: 5.3.3
 
 packages:
 
@@ -1341,7 +1341,7 @@ packages:
       graphql: 16.8.1
       tslib: 2.5.0
 
-  /@graphql-codegen/cli@5.0.0(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.0.4):
+  /@graphql-codegen/cli@5.0.0(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.3.3):
     resolution: {integrity: sha512-A7J7+be/a6e+/ul2KI5sfJlpoqeqwX8EzktaKCeduyVKgOLA6W5t+NUGf6QumBDXU8PEOqXk3o3F+RAwCWOiqA==}
     hasBin: true
     peerDependencies:
@@ -1368,11 +1368,11 @@ packages:
       '@graphql-tools/utils': 10.0.1(graphql@16.8.1)
       '@whatwg-node/fetch': 0.8.8
       chalk: 4.1.2
-      cosmiconfig: 8.3.6(typescript@5.0.4)
+      cosmiconfig: 8.3.6(typescript@5.3.3)
       debounce: 1.2.1
       detect-indent: 6.1.0
       graphql: 16.8.1
-      graphql-config: 5.0.3(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.0.4)
+      graphql-config: 5.0.3(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.3.3)
       inquirer: 8.2.6
       is-glob: 4.0.3
       jiti: 1.21.0
@@ -2093,7 +2093,7 @@ packages:
       terser: 5.22.0
     dev: true
 
-  /@rollup/plugin-typescript@11.1.5(rollup@3.20.2)(typescript@5.0.4):
+  /@rollup/plugin-typescript@11.1.5(rollup@3.20.2)(typescript@5.3.3):
     resolution: {integrity: sha512-rnMHrGBB0IUEv69Q8/JGRD/n4/n6b3nfpufUu26axhUcboUzv/twfZU8fIBbTOphRAe0v8EyxzeDpKXqGHfyDA==}
     engines: {node: '>=14.0.0'}
     peerDependencies:
@@ -2109,7 +2109,7 @@ packages:
       '@rollup/pluginutils': 5.0.2(rollup@3.20.2)
       resolve: 1.22.2
       rollup: 3.20.2
-      typescript: 5.0.4
+      typescript: 5.3.3
     dev: true
 
   /@rollup/pluginutils@5.0.2(rollup@3.20.2):
@@ -2865,7 +2865,7 @@ packages:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
     dev: true
 
-  /cosmiconfig@8.3.6(typescript@5.0.4):
+  /cosmiconfig@8.3.6(typescript@5.3.3):
     resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
     engines: {node: '>=14'}
     peerDependencies:
@@ -2878,7 +2878,7 @@ packages:
       js-yaml: 4.1.0
       parse-json: 5.2.0
       path-type: 4.0.0
-      typescript: 5.0.4
+      typescript: 5.3.3
     dev: true
 
   /create-require@1.1.1:
@@ -3482,7 +3482,7 @@ packages:
     resolution: {integrity: sha512-bzh50DW9kTPM00T8y4o8vQg89Di9oLJVLW/KaOGIXJWP/iqCN6WKYkbNOF04vFLJhwcpYUh9ydh/+5vpOqV4YQ==}
     dev: true
 
-  /graphql-config@5.0.3(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.0.4):
+  /graphql-config@5.0.3(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.3.3):
     resolution: {integrity: sha512-BNGZaoxIBkv9yy6Y7omvsaBUHOzfFcII3UN++tpH8MGOKFPFkCPZuwx09ggANMt8FgyWP1Od8SWPmrUEZca4NQ==}
     engines: {node: '>= 16.0.0'}
     peerDependencies:
@@ -3498,7 +3498,7 @@ packages:
       '@graphql-tools/merge': 9.0.0(graphql@16.8.1)
       '@graphql-tools/url-loader': 8.0.0(@types/node@18.15.11)(graphql@16.8.1)
       '@graphql-tools/utils': 10.0.1(graphql@16.8.1)
-      cosmiconfig: 8.3.6(typescript@5.0.4)
+      cosmiconfig: 8.3.6(typescript@5.3.3)
       graphql: 16.8.1
       jiti: 1.21.0
       minimatch: 4.2.3
@@ -5318,7 +5318,7 @@ packages:
     resolution: {integrity: sha512-PGcnJoTBnVGy6yYNFxWVNkdcAuAMstvutN9MgDJIV6L0oG8fB+ZNNy1T+wJzah8RPGor1mZuPQkVfXNDpy9eHA==}
     dev: true
 
-  /ts-node@10.9.1(@types/node@18.15.11)(typescript@5.0.4):
+  /ts-node@10.9.1(@types/node@18.15.11)(typescript@5.3.3):
     resolution: {integrity: sha512-NtVysVPkxxrwFGUUxGYhfux8k78pQB3JqYBXlLRZgdGUqTO5wU/UyHop5p70iEbGhB7q5KmiZiU0Y3KlJrScEw==}
     hasBin: true
     peerDependencies:
@@ -5344,7 +5344,7 @@ packages:
       create-require: 1.1.1
       diff: 4.0.2
       make-error: 1.3.6
-      typescript: 5.0.4
+      typescript: 5.3.3
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
     dev: true
@@ -5408,9 +5408,9 @@ packages:
       is-typed-array: 1.1.10
     dev: true
 
-  /typescript@5.0.4:
-    resolution: {integrity: sha512-cW9T5W9xY37cc+jfEnaUvX91foxtHkza3Nw3wkoF4sSlKn0MONdkdEndig/qPBWXNkmplh3NzayQzCiHM4/hqw==}
-    engines: {node: '>=12.20'}
+  /typescript@5.3.3:
+    resolution: {integrity: sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==}
+    engines: {node: '>=14.17'}
     hasBin: true
     dev: true
 

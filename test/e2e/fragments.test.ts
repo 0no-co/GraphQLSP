@@ -74,6 +74,11 @@ describe('Fragments', () => {
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
     await waitForExpect(() => {
+      console.log(
+        ' gen 1 ',
+        [...server.responses],
+        fs.readFileSync(outFilePosts, 'utf-8')
+      );
       expect(fs.readFileSync(outFilePosts, 'utf-8')).toContain(
         `as typeof import('./Posts.generated').PostsListDocument`
       );

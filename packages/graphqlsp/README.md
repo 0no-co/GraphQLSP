@@ -12,6 +12,9 @@ auto-complete and automatically generating [Typed-Document-nodes](https://the-gu
 - When you save it will generate `typed-document-nodes` for your documents and cast them to the correct type
 - Will warn you when you are importing from a file that is exporting fragments that you're not using
 
+> Note that this plugin does not do syntax highlighting, for that you still need something like
+> [the VSCode/... plugin](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql-syntax)
+
 ## Installation
 
 ```sh

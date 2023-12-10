@@ -1,5 +1,17 @@
 # @0no-co/graphqlsp
 
+## 0.12.0
+
+### Minor Changes
+
+- Use our internal suggestions algo for better arugments and spread-suggestions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#132](https://github.com/0no-co/GraphQLSP/pull/132))
+
+### Patch Changes
+
+- Add fragments to the cache-key when using call-expressions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#134](https://github.com/0no-co/GraphQLSP/pull/134))
+
 ## 0.11.2
 
 ### Patch Changes

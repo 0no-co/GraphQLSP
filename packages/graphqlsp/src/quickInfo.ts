@@ -42,7 +42,7 @@ export function getGraphQLQuickInfo(
     if (!schema.current || !foundToken) return undefined;
 
     const queryText = node.arguments[0].getText();
-    const cursor = new Cursor(foundToken.line, foundToken.start);
+    const cursor = new Cursor(foundToken.line, foundToken.start - 1);
     const hoverInfo = getHoverInformation(schema.current, queryText, cursor);
 
     return {
@@ -83,7 +83,7 @@ export function getGraphQLQuickInfo(
     const hoverInfo = getHoverInformation(
       schema.current,
       text,
-      new Cursor(foundToken.line, foundToken.start)
+      new Cursor(foundToken.line, foundToken.start - 1)
     );
 
     return {

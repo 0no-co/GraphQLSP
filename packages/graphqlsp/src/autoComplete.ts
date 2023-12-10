@@ -11,7 +11,13 @@ import {
   CharacterStream,
   ContextToken,
 } from 'graphql-language-service';
-import { FragmentDefinitionNode, GraphQLSchema, Kind, parse } from 'graphql';
+import {
+  FragmentDefinitionNode,
+  GraphQLSchema,
+  Kind,
+  parse,
+  print,
+} from 'graphql';
 
 import {
   bubbleUpCallExpression,
@@ -31,6 +37,9 @@ export function getGraphQLCompletions(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.WithMetadata<ts.CompletionInfo> | undefined {
+  const logger: any = (msg: string) =>
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
+
   const tagTemplate = info.config.template || 'gql';
   const isCallExpression = info.config.templateIsCallExpression ?? false;
 
@@ -56,32 +65,45 @@ export function getGraphQLCompletions(
 
     const queryText = node.arguments[0].getText();
     const fragments = getAllFragments(filename, node, info);
-    const cursor = new Cursor(foundToken.line, foundToken.start);
-    const items = getAutocompleteSuggestions(
+    const cursor = new Cursor(foundToken.line, foundToken.start - 1);
+    const text = `${queryText}\m${fragments.map(x => print(x)).join('\n')}`;
+
+    const [suggestions, spreadSuggestions] = getSuggestionsInternal(
       schema.current,
-      queryText,
-      cursor,
-      undefined,
-      fragments
+      text,
+      cursor
     );
 
     return {
       isGlobalCompletion: false,
       isMemberCompletion: false,
       isNewIdentifierLocation: false,
-      entries: items.map(suggestion => ({
-        ...suggestion,
-        kind: ts.ScriptElementKind.variableElement,
-        name: suggestion.label,
-        kindModifiers: 'declare',
-        sortText: suggestion.sortText || '0',
-        labelDetails: {
-          detail: suggestion.type
-            ? ' ' + suggestion.type?.toString()
-            : undefined,
-          description: suggestion.documentation,
-        },
-      })),
+      entries: [
+        ...suggestions.map(suggestion => ({
+          ...suggestion,
+          kind: ts.ScriptElementKind.variableElement,
+          name: suggestion.label,
+          kindModifiers: 'declare',
+          sortText: suggestion.sortText || '0',
+          labelDetails: {
+            detail: suggestion.type
+              ? ' ' + suggestion.type?.toString()
+              : undefined,
+            description: suggestion.documentation,
+          },
+        })),
+        ...spreadSuggestions.map(suggestion => ({
+          ...suggestion,
+          kind: ts.ScriptElementKind.variableElement,
+          name: suggestion.label,
+          insertText: '...' + suggestion.label,
+          kindModifiers: 'declare',
+          sortText: '0',
+          labelDetails: {
+            description: suggestion.documentation,
+          },
+        })),
+      ],
     };
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
@@ -107,7 +129,7 @@ export function getGraphQLCompletions(
 
     foundToken.line = foundToken.line + amountOfLines;
 
-    const cursor = new Cursor(foundToken.line, foundToken.start);
+    const cursor = new Cursor(foundToken.line, foundToken.start - 1);
 
     const [suggestions, spreadSuggestions] = getSuggestionsInternal(
       schema.current,

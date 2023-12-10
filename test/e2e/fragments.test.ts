@@ -68,6 +68,27 @@ describe('Fragments', () => {
       tmpfile: outFilePost,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
+    await waitForExpect(() => {
+      expect(fs.readFileSync(outFilePost, 'utf-8')).toContain(
+        `as typeof import('./Post.generated').PostFieldsFragmentDoc`
+      );
+    });
+
+    await waitForExpect(() => {
+      const generatedPostFileContents = fs.readFileSync(genFilePost, 'utf-8');
+      expect(generatedPostFileContents).toContain(
+        'export const PostFieldsFragmentDoc = '
+      );
+      expect(generatedPostFileContents).toContain(
+        'import * as Types from "./__generated__/baseGraphQLSP"'
+      );
+    });
+
+    server.sendCommand('saveto', {
+      file: outFilePosts,
+      tmpfile: outFilePosts,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+
     server.sendCommand('saveto', {
       file: outFilePosts,
       tmpfile: outFilePosts,
@@ -85,22 +106,6 @@ describe('Fragments', () => {
         'export const PostsListDocument = '
       );
       expect(generatedPostsFileContents).toContain(
-        'import * as Types from "./__generated__/baseGraphQLSP"'
-      );
-    });
-
-    await waitForExpect(() => {
-      expect(fs.readFileSync(outFilePost, 'utf-8')).toContain(
-        `as typeof import('./Post.generated').PostFieldsFragmentDoc`
-      );
-    });
-
-    await waitForExpect(() => {
-      const generatedPostFileContents = fs.readFileSync(genFilePost, 'utf-8');
-      expect(generatedPostFileContents).toContain(
-        'export const PostFieldsFragmentDoc = '
-      );
-      expect(generatedPostFileContents).toContain(
         'import * as Types from "./__generated__/baseGraphQLSP"'
       );
     });

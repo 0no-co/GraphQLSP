@@ -22,12 +22,7 @@ export class TSServer {
     public projectPath: string,
     public options: { debugLog?: boolean } = {}
   ) {
-    const tsserverPath = path.resolve(
-      projectPath,
-      '../../../node_modules/typescript/lib/tsserver.js'
-    );
-
-    fs.lstatSync(tsserverPath);
+    const tsserverPath = require.resolve('typescript/lib/tsserver');
 
     const server = fork(tsserverPath, ['--logVerbosity', 'verbose'], {
       stdio: ['pipe', 'pipe', 'pipe', 'ipc'],

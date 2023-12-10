@@ -8,6 +8,6 @@
     "@urql/core": "^4.0.4"
   },
   "devDependencies": {
-    "typescript": "^5.0.4"
+    "typescript": "^5.3.3"
   }
 }

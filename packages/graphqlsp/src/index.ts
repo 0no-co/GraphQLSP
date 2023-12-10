@@ -91,24 +91,21 @@ function create(info: ts.server.PluginCreateInfo) {
       info
     );
 
-    const originalCompletions = info.languageService.getCompletionsAtPosition(
-      filename,
-      cursorPosition,
-      options
-    ) || {
-      isGlobalCompletion: false,
-      isMemberCompletion: false,
-      isNewIdentifierLocation: false,
-      entries: [],
-    };
-
-    if (completions) {
-      return {
-        ...completions,
-        entries: [...completions.entries, ...originalCompletions.entries],
-      };
+    if (completions && completions.entries.length) {
+      return completions;
     } else {
-      return originalCompletions;
+      return (
+        info.languageService.getCompletionsAtPosition(
+          filename,
+          cursorPosition,
+          options
+        ) || {
+          isGlobalCompletion: false,
+          isMemberCompletion: false,
+          isNewIdentifierLocation: false,
+          entries: [],
+        }
+      );
     }
   };
 
@@ -120,12 +117,12 @@ function create(info: ts.server.PluginCreateInfo) {
       info
     );
 
-    const originalInfo = info.languageService.getQuickInfoAtPosition(
+    if (quickInfo) return quickInfo;
+
+    return info.languageService.getQuickInfoAtPosition(
       filename,
       cursorPosition
     );
-
-    return quickInfo || originalInfo;
   };
 
   logger('proxy: ' + JSON.stringify(proxy));

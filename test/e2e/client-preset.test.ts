@@ -341,61 +341,6 @@ List out all Pokémon, optionally in pages`
           "name": "__typename",
           "sortText": "14__typename",
         },
-        {
-          "kind": "string",
-          "kindModifiers": "",
-          "name": "
-        fragment pokemonFields on Pokemon {
-          id
-          name
-          attacks {
-            fast {
-              damage
-              name
-            }
-          }
-        }
-      ",
-          "replacementSpan": {
-            "end": {
-              "line": 10,
-              "offset": 1,
-            },
-            "start": {
-              "line": 3,
-              "offset": 39,
-            },
-          },
-          "sortText": "11",
-        },
-        {
-          "kind": "string",
-          "kindModifiers": "",
-          "name": "
-        query Pok($limit: Int!) {
-          pokemons(limit: $limit) {
-            id
-            name
-            fleeRate
-            classification
-            ...pokemonFields
-            ...weaknessFields
-            __typename
-          }
-        }
-      ",
-          "replacementSpan": {
-            "end": {
-              "line": 10,
-              "offset": 1,
-            },
-            "start": {
-              "line": 3,
-              "offset": 39,
-            },
-          },
-          "sortText": "11",
-        },
       ]
     `);
   }, 30000);

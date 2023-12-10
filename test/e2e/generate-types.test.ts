@@ -122,6 +122,11 @@ describe('Type-generation', () => {
       tmpfile: outFileComplex,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
+    server.sendCommand('saveto', {
+      file: outFileComplex,
+      tmpfile: outFileComplex,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+
     await waitForExpect(() => {
       const contents = fs.readFileSync(outFileComplex, 'utf-8');
       expect(contents).toContain(`    id
@@ -131,5 +136,5 @@ describe('Type-generation', () => {
   }
 \` as typeof import('./rename-complex.generated').Post2FieldsFragmentDoc`);
     });
-  }, 20000);
+  }, 30000);
 });

@@ -122,9 +122,13 @@ describe('Type-generation', () => {
       tmpfile: outFileComplex,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
+    server.sendCommand('saveto', {
+      file: outFileComplex,
+      tmpfile: outFileComplex,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+
     await waitForExpect(() => {
       const contents = fs.readFileSync(outFileComplex, 'utf-8');
-      console.log('gen complex', [...server.responses], contents);
       expect(contents).toContain(`    id
   }
 \` as typeof import('./rename-complex.generated').PostFieldsFragmentDoc`);

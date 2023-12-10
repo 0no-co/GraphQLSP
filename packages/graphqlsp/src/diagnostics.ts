@@ -6,6 +6,7 @@ import {
   Kind,
   OperationDefinitionNode,
   parse,
+  print,
 } from 'graphql';
 import { LRUCache } from 'lru-cache';
 import fnv1a from '@sindresorhus/fnv1a';
@@ -75,7 +76,13 @@ export function getGraphQLDiagnostics(
   });
 
   let tsDiagnostics: ts.Diagnostic[] = [];
-  const cacheKey = fnv1a(texts.join('-') + schema.version);
+  const cacheKey = fnv1a(
+    isCallExpression
+      ? texts.join('-') +
+          fragments.map(x => print(x)).join('-') +
+          schema.version
+      : texts.join('-') + schema.version
+  );
   if (cache.has(cacheKey)) {
     tsDiagnostics = cache.get(cacheKey)!;
   } else {

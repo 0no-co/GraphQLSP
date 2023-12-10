@@ -9,7 +9,7 @@
     "prepare": "husky install",
     "dev": "pnpm --filter @0no-co/graphqlsp dev",
     "launch-debug": "./scripts/launch-debug.sh",
-    "test:e2e": "vitest graphqlsp"
+    "test:e2e": "vitest run --single-thread"
   },
   "prettier": {
     "singleQuote": true,

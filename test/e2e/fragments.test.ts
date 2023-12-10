@@ -89,6 +89,11 @@ describe('Fragments', () => {
       tmpfile: outFilePosts,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
+    server.sendCommand('saveto', {
+      file: outFilePosts,
+      tmpfile: outFilePosts,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+
     await waitForExpect(() => {
       expect(fs.readFileSync(outFilePosts, 'utf-8')).toContain(
         `as typeof import('./Posts.generated').PostsListDocument`

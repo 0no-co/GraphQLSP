@@ -68,32 +68,6 @@ describe('Fragments', () => {
       tmpfile: outFilePost,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
-    server.sendCommand('saveto', {
-      file: outFilePosts,
-      tmpfile: outFilePosts,
-    } satisfies ts.server.protocol.SavetoRequestArgs);
-
-    await waitForExpect(() => {
-      console.log(
-        ' gen 1 ',
-        [...server.responses],
-        fs.readFileSync(outFilePosts, 'utf-8')
-      );
-      expect(fs.readFileSync(outFilePosts, 'utf-8')).toContain(
-        `as typeof import('./Posts.generated').PostsListDocument`
-      );
-    });
-
-    await waitForExpect(() => {
-      const generatedPostsFileContents = fs.readFileSync(genFilePosts, 'utf-8');
-      expect(generatedPostsFileContents).toContain(
-        'export const PostsListDocument = '
-      );
-      expect(generatedPostsFileContents).toContain(
-        'import * as Types from "./__generated__/baseGraphQLSP"'
-      );
-    });
-
     await waitForExpect(() => {
       expect(fs.readFileSync(outFilePost, 'utf-8')).toContain(
         `as typeof import('./Post.generated').PostFieldsFragmentDoc`
@@ -106,6 +80,27 @@ describe('Fragments', () => {
         'export const PostFieldsFragmentDoc = '
       );
       expect(generatedPostFileContents).toContain(
+        'import * as Types from "./__generated__/baseGraphQLSP"'
+      );
+    });
+
+    server.sendCommand('saveto', {
+      file: outFilePosts,
+      tmpfile: outFilePosts,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+
+    await waitForExpect(() => {
+      expect(fs.readFileSync(outFilePosts, 'utf-8')).toContain(
+        `as typeof import('./Posts.generated').PostsListDocument`
+      );
+    });
+
+    await waitForExpect(() => {
+      const generatedPostsFileContents = fs.readFileSync(genFilePosts, 'utf-8');
+      expect(generatedPostsFileContents).toContain(
+        'export const PostsListDocument = '
+      );
+      expect(generatedPostsFileContents).toContain(
         'import * as Types from "./__generated__/baseGraphQLSP"'
       );
     });

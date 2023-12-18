@@ -3,7 +3,7 @@ import { graphql } from './gql';
 
 const x = graphql(`
   query Pok($limit: Int!) {
-    pokemons(limit: $limit) {
+    pokemons(limit: $limit) @populate {
       id
       name
       fleeRate

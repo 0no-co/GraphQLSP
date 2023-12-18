@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 0.12.1
+
+### Patch Changes
+
+- Upgrade TypeScript dependency, this would normally not result in a changeset but it had us remove the normal auto-complete and quick-info and only do that logic when ours ends up in no results
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#136](https://github.com/0no-co/GraphQLSP/pull/136))
+- Don't error on known client-side directives
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#144](https://github.com/0no-co/GraphQLSP/pull/144))
+
 ## 0.12.0
 
 ### Minor Changes

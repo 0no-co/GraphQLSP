@@ -1,45 +1,51 @@
-import { createClient } from '@urql/core';
+import { createClient, useQuery } from 'urql';
 import { graphql } from './gql';
-
-const x = graphql(`
-  query Pok($limit: Int!) {
-    pokemons(limit: $limit) @populate {
-      id
-      name
-      fleeRate
-      classification
-      ...pokemonFields
-      ...weaknessFields
-      __typename
-    }
-  }
-`)
-
-const client = createClient({
-  url: '',
-});
+import { Pokemon } from './Pokemon';
 
 const PokemonQuery = graphql(`
   query Po($id: ID!) {
     pokemon(id: $id) {
       id
       fleeRate
+      ...pokemonFields
+      attacks {
+        special {
+          name
+          damage
+        }
+      }
+      weight {
+        minimum
+        maximum
+      }
+      name
       __typename
     }
   }
 `);
 
-client
-  .query(PokemonQuery, { id: '' })
-  .toPromise()
-  .then(result => {
-    result.data?.pokemon;
+const Pokemons = () => {
+  const [result] = useQuery({
+    query: PokemonQuery,
+    variables: { id: '' }
   });
+  
+  // Works
+  console.log(result.data?.pokemon?.attacks && result.data?.pokemon?.attacks.special && result.data?.pokemon?.attacks.special[0] && result.data?.pokemon?.attacks.special[0].name)
 
-const myQuery = graphql(`
-  query PokemonsAreAwesome {
-    pokemons {
-      id
-    }
-  }
-`);
+  // Works
+  const { fleeRate } = result.data?.pokemon || {};
+  console.log(fleeRate)
+  // Works
+  const po = result.data?.pokemon;
+  // @ts-expect-error
+  const { pokemon: { weight: { minimum } } } = result.data || {};
+  console.log(po?.name, minimum)
+
+  // Works
+  const { pokemon } = result.data || {};
+  console.log(pokemon?.weight?.maximum)
+
+  return <Pokemon data={result.data?.pokemon} />;
+}
+

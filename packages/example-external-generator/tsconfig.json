@@ -10,6 +10,7 @@
         "templateIsCallExpression": true
       }
     ],
+    "jsx": "react-jsx",
     /* Language and Environment */
     "target": "es2016" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,
     /* Modules */

@@ -131,52 +131,35 @@ export type PokemonFieldsFragment = {
   } | null;
 } & { ' $fragmentName'?: 'PokemonFieldsFragment' };
 
-export type WeaknessFieldsFragment = {
-  __typename?: 'Pokemon';
-  weaknesses?: Array<PokemonType | null> | null;
-} & { ' $fragmentName'?: 'WeaknessFieldsFragment' };
-
-export type PokQueryVariables = Exact<{
-  limit: Scalars['Int']['input'];
-}>;
-
-export type PokQuery = {
-  __typename?: 'Query';
-  pokemons?: Array<
-    | ({
-        __typename: 'Pokemon';
-        id: string;
-        name: string;
-        fleeRate?: number | null;
-        classification?: string | null;
-      } & {
-        ' $fragmentRefs'?: {
-          PokemonFieldsFragment: PokemonFieldsFragment;
-          WeaknessFieldsFragment: WeaknessFieldsFragment;
-        };
-      })
-    | null
-  > | null;
-};
-
 export type PoQueryVariables = Exact<{
   id: Scalars['ID']['input'];
 }>;
 
 export type PoQuery = {
   __typename?: 'Query';
-  pokemon?: {
-    __typename: 'Pokemon';
-    id: string;
-    fleeRate?: number | null;
-  } | null;
-};
-
-export type PokemonsAreAwesomeQueryVariables = Exact<{ [key: string]: never }>;
-
-export type PokemonsAreAwesomeQuery = {
-  __typename?: 'Query';
-  pokemons?: Array<{ __typename?: 'Pokemon'; id: string } | null> | null;
+  pokemon?:
+    | ({
+        __typename: 'Pokemon';
+        id: string;
+        fleeRate?: number | null;
+        name: string;
+        attacks?: {
+          __typename?: 'AttacksConnection';
+          special?: Array<{
+            __typename?: 'Attack';
+            name?: string | null;
+            damage?: number | null;
+          } | null> | null;
+        } | null;
+        weight?: {
+          __typename?: 'PokemonDimension';
+          minimum?: string | null;
+          maximum?: string | null;
+        } | null;
+      } & {
+        ' $fragmentRefs'?: { PokemonFieldsFragment: PokemonFieldsFragment };
+      })
+    | null;
 };
 
 export const PokemonFieldsFragmentDoc = {
@@ -222,42 +205,20 @@ export const PokemonFieldsFragmentDoc = {
     },
   ],
 } as unknown as DocumentNode<PokemonFieldsFragment, unknown>;
-export const WeaknessFieldsFragmentDoc = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'FragmentDefinition',
-      name: { kind: 'Name', value: 'weaknessFields' },
-      typeCondition: {
-        kind: 'NamedType',
-        name: { kind: 'Name', value: 'Pokemon' },
-      },
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          { kind: 'Field', name: { kind: 'Name', value: 'weaknesses' } },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<WeaknessFieldsFragment, unknown>;
-export const PokDocument = {
+export const PoDocument = {
   kind: 'Document',
   definitions: [
     {
       kind: 'OperationDefinition',
       operation: 'query',
-      name: { kind: 'Name', value: 'Pok' },
+      name: { kind: 'Name', value: 'Po' },
       variableDefinitions: [
         {
           kind: 'VariableDefinition',
-          variable: {
-            kind: 'Variable',
-            name: { kind: 'Name', value: 'limit' },
-          },
+          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
           type: {
             kind: 'NonNullType',
-            type: { kind: 'NamedType', name: { kind: 'Name', value: 'Int' } },
+            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
           },
         },
       ],
@@ -266,14 +227,14 @@ export const PokDocument = {
         selections: [
           {
             kind: 'Field',
-            name: { kind: 'Name', value: 'pokemons' },
+            name: { kind: 'Name', value: 'pokemon' },
             arguments: [
               {
                 kind: 'Argument',
-                name: { kind: 'Name', value: 'limit' },
+                name: { kind: 'Name', value: 'id' },
                 value: {
                   kind: 'Variable',
-                  name: { kind: 'Name', value: 'limit' },
+                  name: { kind: 'Name', value: 'id' },
                 },
               },
             ],
@@ -281,20 +242,55 @@ export const PokDocument = {
               kind: 'SelectionSet',
               selections: [
                 { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: 'fleeRate' } },
-                {
-                  kind: 'Field',
-                  name: { kind: 'Name', value: 'classification' },
-                },
                 {
                   kind: 'FragmentSpread',
                   name: { kind: 'Name', value: 'pokemonFields' },
                 },
                 {
-                  kind: 'FragmentSpread',
-                  name: { kind: 'Name', value: 'weaknessFields' },
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'attacks' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'special' },
+                        selectionSet: {
+                          kind: 'SelectionSet',
+                          selections: [
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'name' },
+                            },
+                            {
+                              kind: 'Field',
+                              name: { kind: 'Name', value: 'damage' },
+                            },
+                          ],
+                        },
+                      },
+                    ],
+                  },
                 },
+                {
+                  kind: 'Field',
+                  name: { kind: 'Name', value: 'weight' },
+                  selectionSet: {
+                    kind: 'SelectionSet',
+                    selections: [
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'minimum' },
+                      },
+                      {
+                        kind: 'Field',
+                        name: { kind: 'Name', value: 'maximum' },
+                      },
+                    ],
+                  },
+                },
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
                 { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
               ],
             },
@@ -340,94 +336,5 @@ export const PokDocument = {
         ],
       },
     },
-    {
-      kind: 'FragmentDefinition',
-      name: { kind: 'Name', value: 'weaknessFields' },
-      typeCondition: {
-        kind: 'NamedType',
-        name: { kind: 'Name', value: 'Pokemon' },
-      },
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          { kind: 'Field', name: { kind: 'Name', value: 'weaknesses' } },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<PokQuery, PokQueryVariables>;
-export const PoDocument = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'OperationDefinition',
-      operation: 'query',
-      name: { kind: 'Name', value: 'Po' },
-      variableDefinitions: [
-        {
-          kind: 'VariableDefinition',
-          variable: { kind: 'Variable', name: { kind: 'Name', value: 'id' } },
-          type: {
-            kind: 'NonNullType',
-            type: { kind: 'NamedType', name: { kind: 'Name', value: 'ID' } },
-          },
-        },
-      ],
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'pokemon' },
-            arguments: [
-              {
-                kind: 'Argument',
-                name: { kind: 'Name', value: 'id' },
-                value: {
-                  kind: 'Variable',
-                  name: { kind: 'Name', value: 'id' },
-                },
-              },
-            ],
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-                { kind: 'Field', name: { kind: 'Name', value: 'fleeRate' } },
-                { kind: 'Field', name: { kind: 'Name', value: '__typename' } },
-              ],
-            },
-          },
-        ],
-      },
-    },
   ],
 } as unknown as DocumentNode<PoQuery, PoQueryVariables>;
-export const PokemonsAreAwesomeDocument = {
-  kind: 'Document',
-  definitions: [
-    {
-      kind: 'OperationDefinition',
-      operation: 'query',
-      name: { kind: 'Name', value: 'PokemonsAreAwesome' },
-      selectionSet: {
-        kind: 'SelectionSet',
-        selections: [
-          {
-            kind: 'Field',
-            name: { kind: 'Name', value: 'pokemons' },
-            selectionSet: {
-              kind: 'SelectionSet',
-              selections: [
-                { kind: 'Field', name: { kind: 'Name', value: 'id' } },
-              ],
-            },
-          },
-        ],
-      },
-    },
-  ],
-} as unknown as DocumentNode<
-  PokemonsAreAwesomeQuery,
-  PokemonsAreAwesomeQueryVariables
->;

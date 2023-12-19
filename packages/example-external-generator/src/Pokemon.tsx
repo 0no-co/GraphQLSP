@@ -14,12 +14,6 @@ export const PokemonFields = graphql(`
   }
 `)
 
-export const WeakFields = graphql(`
-  fragment weaknessFields on Pokemon {
-    weaknesses
-  }
-`)
-
 export const Pokemon = (data: any) => {
   const pokemon = useFragment(PokemonFields, data);
   return `hi ${pokemon.name}`;

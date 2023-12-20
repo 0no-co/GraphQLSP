@@ -7,7 +7,8 @@
         "disableTypegen": true,
         "shouldCheckForColocatedFragments": false,
         "template": "graphql",
-        "templateIsCallExpression": true
+        "templateIsCallExpression": true,
+        "trackFieldUsage": true
       }
     ],
     "jsx": "react-jsx",

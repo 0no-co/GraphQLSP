@@ -185,6 +185,31 @@ importers:
         specifier: ^5.3.3
         version: 5.3.3
 
+  test/e2e/fixture-project-unused-fields:
+    dependencies:
+      '@0no-co/graphqlsp':
+        specifier: workspace:*
+        version: link:../../../packages/graphqlsp
+      '@graphql-typed-document-node/core':
+        specifier: ^3.0.0
+        version: 3.2.0(graphql@16.8.1)
+      '@urql/core':
+        specifier: ^4.0.4
+        version: 4.2.2(graphql@16.8.1)
+      graphql:
+        specifier: ^16.0.0
+        version: 16.8.1
+      urql:
+        specifier: ^4.0.4
+        version: 4.0.6(graphql@16.8.1)(react@18.2.0)
+    devDependencies:
+      '@types/react':
+        specifier: 18.2.45
+        version: 18.2.45
+      typescript:
+        specifier: ^5.3.3
+        version: 5.3.3
+
 packages:
 
   /@0no-co/graphql.web@1.0.0(graphql@16.8.1):

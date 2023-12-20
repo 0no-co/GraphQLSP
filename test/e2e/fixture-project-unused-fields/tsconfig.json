@@ -1,0 +1,23 @@
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "./schema.graphql",
+        "disableTypegen": true,
+        "trackFieldUsage": true,
+        "shouldCheckForColocatedFragments": false,
+        "template": "graphql",
+        "templateIsCallExpression": true
+      }
+    ],
+    "target": "es2016",
+    "jsx": "react-jsx",
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true
+  },
+  "exclude": ["node_modules", "fixtures"]
+}

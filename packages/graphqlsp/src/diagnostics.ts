@@ -395,11 +395,17 @@ const crawlScope = (
     source.fileName,
     node.pos + 1
   );
+
   if (!references) return results;
 
+  // Go over all the references tied to the result of
+  // accessing our equery and collect them as fully
+  // qualified paths (ideally ending in a leaf-node)
   results = references.flatMap(ref => {
+    // If we get a reference to a different file we can bail
     if (ref.fileName !== source.fileName) return [];
-
+    // We don't want to end back at our document so we narrow
+    // the scope.
     if (
       node.getStart() <= ref.textSpan.start &&
       node.getEnd() >= ref.textSpan.start + ref.textSpan.length
@@ -410,6 +416,13 @@ const crawlScope = (
     if (!foundRef) return [];
 
     const pathParts = [...originalWip];
+    // In here we'll start crawling all the accessors of result
+    // and try to determine the total path
+    // - result.data.pokemon.name --> pokemon.name this is the easy route and never accesses
+    //   any of the recursive functions
+    // - const pokemon = result.data.pokemon --> this initiates a new crawl with a renewed scope
+    // - const { pokemon } = result.data --> this initiates a destructuring traversal which will
+    //   either end up in more destructuring traversals or a scope crawl
     while (
       ts.isIdentifier(foundRef) ||
       ts.isPropertyAccessExpression(foundRef) ||
@@ -419,8 +432,19 @@ const crawlScope = (
     ) {
       if (ts.isVariableDeclaration(foundRef)) {
         if (ts.isIdentifier(foundRef.name)) {
+          // We have already added the paths because of the right-hand expression,
+          // const pokemon = result.data.pokemon --> we have pokemon as our path,
+          // now re-crawling pokemon for all of its accessors should deliver us the usage
+          // patterns... This might get expensive though if we need to perform this deeply.
           return crawlScope(foundRef.name, pathParts, allFields, source, info);
         } else if (ts.isObjectBindingPattern(foundRef.name)) {
+          // First we need to traverse the left-hand side of the variable assignment,
+          // this could be tree-like as we could be dealing with
+          // - const { x: { y: z }, a: { b: { c, d }, e: { f } } } = result.data
+          // Which we will need several paths for...
+          // after doing that we need to re-crawl all of the resulting variables
+          // Crawl down until we have either a leaf node or an object/array that can
+          // be recrawled
           return traverseDestructuring(
             foundRef.name,
             pathParts,

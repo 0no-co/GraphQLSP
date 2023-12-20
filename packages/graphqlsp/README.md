@@ -60,6 +60,8 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 - `extraTypes` allows you to specify imports or declare types to help with `scalar` definitions
 - `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find
   unused fragments and provide a message notifying you about them
+- `trackFieldUsage` this only works with the client-preset, when turned on it will warn you about
+  unused fields within the same file.
 
 ### GraphQL Code Generator client-preset
 
@@ -74,6 +76,7 @@ For folks using the `client-preset` you can ues the following config
         "schema": "./schema.graphql",
         "disableTypegen": true,
         "templateIsCallExpression": true,
+        "trackFieldUsage": true,
         "template": "graphql"
       }
     ]

@@ -504,7 +504,7 @@ const checkFieldUsageInFile = (
 
     const references = info.languageService.getReferencesAtPosition(
       source.fileName,
-      variableDeclaration.name.pos
+      variableDeclaration.name.getStart()
     );
     if (!references) return;
 

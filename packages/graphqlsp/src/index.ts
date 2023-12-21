@@ -24,10 +24,14 @@ type Config = {
   schema: SchemaOrigin | string;
   template?: string;
   templateIsCallExpression?: boolean;
-  disableTypegen?: boolean;
+  // Up in the air whether we want to keep supporting
+  // this. Current limitation are barrel-file exports
+  // could be counter-acted with an opinion on
+  // fragment-naming.
+  shouldCheckForColocatedFragments?: boolean;
+  // These can return when we go with gql.tada
   extraTypes?: string;
   scalars?: Record<string, unknown>;
-  shouldCheckForColocatedFragments?: boolean;
 };
 
 function create(info: ts.server.PluginCreateInfo) {
@@ -43,36 +47,19 @@ function create(info: ts.server.PluginCreateInfo) {
 
   logger('Setting up the GraphQL Plugin');
 
-  const scalars = config.scalars || {};
-  const extraTypes = config.extraTypes || '';
-  const disableTypegen = config.disableTypegen ?? false;
-
   const proxy = createBasicDecorator(info);
-
-  const baseTypesPath =
-    info.project.getCurrentDirectory() + '/__generated__/baseGraphQLSP.ts';
 
   const schema = loadSchema(
     info.project.getProjectName(),
     config.schema,
-    logger,
-    baseTypesPath,
-    !disableTypegen,
-    scalars,
-    extraTypes
+    logger
   );
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics =
       info.languageService.getSemanticDiagnostics(filename);
 
-    const graphQLDiagnostics = getGraphQLDiagnostics(
-      originalDiagnostics.length > 0,
-      filename,
-      baseTypesPath,
-      schema,
-      info
-    );
+    const graphQLDiagnostics = getGraphQLDiagnostics(filename, schema, info);
 
     return graphQLDiagnostics
       ? [...graphQLDiagnostics, ...originalDiagnostics]

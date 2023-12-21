@@ -22,6 +22,7 @@ import {
 } from './ast';
 import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './graphql/generateTypes';
+import { Logger } from '.';
 
 const clientDirectives = new Set([
   'populate',
@@ -488,6 +489,8 @@ const checkFieldUsageInFile = (
   nodes: ts.NoSubstitutionTemplateLiteral[],
   info: ts.server.PluginCreateInfo
 ) => {
+  const logger: Logger = (msg: string) =>
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const diagnostics: ts.Diagnostic[] = [];
   const shouldTrackFieldUsage = info.config.trackFieldUsage ?? false;
   if (!shouldTrackFieldUsage) return diagnostics;
@@ -521,46 +524,6 @@ const checkFieldUsageInFile = (
       const [output] = found.declarationList.declarations;
 
       if (output.name.getText() === variableDeclaration.name.getText()) return;
-
-      let temp = output.name;
-      // TODO: this currently does not solve deep destructuring
-      // in the initial iteration this is probably not worth it and
-      // it might be better to support the three case that we do
-      //
-      // Supported cases:
-      // - const result = await client.query() || useFragment()
-      // - const [result] = useQuery() --> urql
-      // - const { data } = useQuery() --> Apollo
-      //
-      // Missing cases:
-      // - const { field } = useFragment()
-      // - const [{ data }] = useQuery()
-      // - const { data: { pokemon } } = useQuery()
-      if (
-        ts.isArrayBindingPattern(temp) &&
-        ts.isBindingElement(temp.elements[0])
-      ) {
-        temp = temp.elements[0].name;
-      } else if (ts.isObjectBindingPattern(temp)) {
-        const foundDataElement = temp.elements.find(el => {
-          if (
-            ts.isBindingElement(el) &&
-            ts.isIdentifier(el.name) &&
-            el.name.text === 'data'
-          )
-            return el;
-          if (
-            ts.isBindingElement(el) &&
-            el.propertyName &&
-            ts.isIdentifier(el.propertyName) &&
-            el.propertyName.text === 'data'
-          )
-            return el;
-        });
-
-        if (!foundDataElement) return;
-        temp = foundDataElement.name;
-      }
 
       const inProgress: string[] = [];
       const allPaths: string[] = [];
@@ -604,7 +567,27 @@ const checkFieldUsageInFile = (
         },
       });
 
-      const allAccess = crawlScope(temp, [], allFields, source, info);
+      let temp = output.name;
+      // Supported cases:
+      // - const result = await client.query() || useFragment()
+      // - const [result] = useQuery() --> urql
+      // - const { data } = useQuery() --> Apollo
+      // - const { field } = useFragment()
+      // - const [{ data }] = useQuery()
+      // - const { data: { pokemon } } = useQuery()
+      if (
+        ts.isArrayBindingPattern(temp) &&
+        ts.isBindingElement(temp.elements[0])
+      ) {
+        temp = temp.elements[0].name;
+      }
+
+      let allAccess: string[] = [];
+      if (ts.isObjectBindingPattern(temp)) {
+        allAccess = traverseDestructuring(temp, [], allFields, source, info);
+      } else {
+        allAccess = crawlScope(temp, [], allFields, source, info);
+      }
 
       const unused = allPaths.filter(x => !allAccess.includes(x));
       unused.forEach(unusedField => {

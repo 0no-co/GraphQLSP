@@ -1,27 +1,6 @@
 import { gql, createClient } from '@urql/core';
 import { Pokemon, PokemonFields, WeakFields } from './Pokemon';
 
-const x = gql`
-  query Pok($limit: Int!) {
-    pokemons(limit: $limit) @populate {
-      id
-      name
-      fleeRate
-      classification
-      ...pokemonFields
-      ...weaknessFields
-      __typename
-    }
-  }
-
-  ${PokemonFields}
-  ${WeakFields}
-` as typeof import('./index.generated').PokDocument;
-
-const client = createClient({
-  url: '',
-});
-
 const PokemonQuery = gql`
   query Po($id: ID!) {
     pokemon(id: $id) {
@@ -38,11 +17,3 @@ client
   .then(result => {
     result.data?.pokemon;
   });
-
-const myQuery = gql`
-  query PokemonsAreAwesome {
-    pokemons {
-      id
-    }
-  }
-`;

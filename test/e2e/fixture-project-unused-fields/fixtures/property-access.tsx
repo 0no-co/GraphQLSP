@@ -1,6 +1,8 @@
-import { createClient, useQuery } from 'urql';
+import { useQuery } from 'urql';
 import { graphql } from './gql';
-import { Pokemon } from './Pokemon';
+// @ts-expect-error
+import { Pokemon } from './fragment';
+import * as React from 'react';
 
 const PokemonQuery = graphql(`
   query Po($id: ID!) {
@@ -30,22 +32,11 @@ const Pokemons = () => {
     variables: { id: '' }
   });
   
-  // Works
+  const pokemon = result.data?.pokemon
   console.log(result.data?.pokemon?.attacks && result.data?.pokemon?.attacks.special && result.data?.pokemon?.attacks.special[0] && result.data?.pokemon?.attacks.special[0].name)
+  console.log(pokemon?.name)
 
-  // Works
-  const { fleeRate } = result.data?.pokemon || {};
-  console.log(fleeRate)
-  // Works
-  const po = result.data?.pokemon;
   // @ts-expect-error
-  const { pokemon: { weight: { minimum } } } = result.data || {};
-  console.log(po?.name, minimum)
-
-  // Works
-  const { pokemon } = result.data || {};
-  console.log(pokemon?.weight?.maximum)
-
   return <Pokemon data={result.data?.pokemon} />;
 }
 

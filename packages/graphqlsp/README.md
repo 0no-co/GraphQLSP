@@ -60,6 +60,8 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 - `extraTypes` allows you to specify imports or declare types to help with `scalar` definitions
 - `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find
   unused fragments and provide a message notifying you about them
+- `trackFieldUsage` this only works with the client-preset, when turned on it will warn you about
+  unused fields within the same file.
 
 ### GraphQL Code Generator client-preset
 
@@ -74,12 +76,35 @@ For folks using the `client-preset` you can ues the following config
         "schema": "./schema.graphql",
         "disableTypegen": true,
         "templateIsCallExpression": true,
+        "trackFieldUsage": true,
         "template": "graphql"
       }
     ]
   }
 }
 ```
+
+## Tracking unused fields
+
+Currently the tracking unused fields feature has a few caveats with regards to tracking, first and foremost
+it will only track in the same file to encourage [fragment co-location](https://www.apollographql.com/docs/react/data/fragments/#colocating-fragments).
+Secondly it supports a few patterns which we'll add to as time progresses:
+
+```ts
+// Supported cases:
+const result = (await client.query()) || useFragment();
+const [result] = useQuery(); // --> urql
+const { data } = useQuery(); // --> Apollo
+// Missing cases:
+const { field } = useFragment(); // can't destructure into your data from the start
+const [{ data }] = useQuery(); // can't follow array destructuring with object destructuring
+const {
+  data: { pokemon },
+} = useQuery(); // can't destructure into your data from the start
+```
+
+Lastly we don't track mutations/subscriptions as some folks will add additional fields to properly support
+normalised cache updates.
 
 ## Fragment masking
 

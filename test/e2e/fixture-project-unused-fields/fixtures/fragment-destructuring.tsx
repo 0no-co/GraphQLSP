@@ -15,13 +15,9 @@ export const PokemonFields = graphql(`
 `)
 
 export const Pokemon = (data: any) => {
-  const pokemon = useFragment(PokemonFields, data);
-  return `hi ${pokemon.name}`;
+  const { name } = useFragment(PokemonFields, data);
+  return `hi ${name}`;
 };
-
-type X = { hello: string };
-
-const x: X = { hello: '' };
 
 export function useFragment<Type>(
   _fragment: TypedDocumentNode<Type>,

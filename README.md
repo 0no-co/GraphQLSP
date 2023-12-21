@@ -92,6 +92,28 @@ For folks using the `client-preset` you can ues the following config
 }
 ```
 
+## Tracking unused fields
+
+Currently the tracking unused fields feature has a few caveats with regards to tracking, first and foremost
+it will only track in the same file to encourage [fragment co-location](https://www.apollographql.com/docs/react/data/fragments/#colocating-fragments).
+Secondly it supports a few patterns which we'll add to as time progresses:
+
+```ts
+// Supported cases:
+const result = (await client.query()) || useFragment();
+const [result] = useQuery(); // --> urql
+const { data } = useQuery(); // --> Apollo
+// Missing cases:
+const { field } = useFragment(); // can't destructure into your data from the start
+const [{ data }] = useQuery(); // can't follow array destructuring with object destructuring
+const {
+  data: { pokemon },
+} = useQuery(); // can't destructure into your data from the start
+```
+
+Lastly we don't track mutations/subscriptions as some folks will add additional fields to properly support
+normalised cache updates.
+
 ## Fragment masking
 
 When we use a `useQuery` that supports `TypedDocumentNode` it will automatically pick up the typings

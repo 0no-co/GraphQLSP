@@ -1,5 +1,17 @@
 # @0no-co/graphqlsp
 
+## 0.13.0
+
+### Minor Changes
+
+- Track field usage and warn when a field goes unused
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#146](https://github.com/0no-co/GraphQLSP/pull/146))
+
+### Patch Changes
+
+- Adjust documentation display
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#126](https://github.com/0no-co/GraphQLSP/pull/126))
+
 ## 0.12.1
 
 ### Patch Changes

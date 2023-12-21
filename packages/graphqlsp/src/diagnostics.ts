@@ -393,7 +393,7 @@ const crawlScope = (
 
   const references = info.languageService.getReferencesAtPosition(
     source.fileName,
-    node.pos + 1
+    node.getStart()
   );
 
   if (!references) return results;

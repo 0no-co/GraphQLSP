@@ -11,6 +11,7 @@ import {
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
+import { Logger } from '.';
 
 export function getGraphQLQuickInfo(
   filename: string,
@@ -18,6 +19,8 @@ export function getGraphQLQuickInfo(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.QuickInfo | undefined {
+  const logger: Logger = (msg: string) =>
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const tagTemplate = info.config.template || 'gql';
   const isCallExpression = info.config.templateIsCallExpression ?? false;
 
@@ -51,10 +54,10 @@ export function getGraphQLQuickInfo(
         start: cursorPosition,
         length: 1,
       },
-      kindModifiers: '',
-      displayParts: Array.isArray(hoverInfo)
-        ? hoverInfo.map(item => ({ kind: '', text: item as string }))
-        : [{ kind: '', text: hoverInfo as string }],
+      kindModifiers: 'text',
+      documentation: Array.isArray(hoverInfo)
+        ? hoverInfo.map(item => ({ kind: 'text', text: item as string }))
+        : [{ kind: 'text', text: hoverInfo as string }],
     };
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
@@ -87,16 +90,16 @@ export function getGraphQLQuickInfo(
     );
 
     return {
-      kind: ts.ScriptElementKind.string,
+      kind: ts.ScriptElementKind.label,
       textSpan: {
         start: cursorPosition,
         length: 1,
       },
-      kindModifiers: '',
-      displayParts: Array.isArray(hoverInfo)
-        ? hoverInfo.map(item => ({ kind: '', text: item as string }))
-        : [{ kind: '', text: hoverInfo as string }],
-    };
+      kindModifiers: 'text',
+      documentation: Array.isArray(hoverInfo)
+        ? hoverInfo.map(item => ({ kind: 'text', text: item as string }))
+        : [{ kind: 'text', text: hoverInfo as string }],
+    } as ts.QuickInfo;
   } else {
     return undefined;
   }

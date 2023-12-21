@@ -148,7 +148,7 @@ describe('Fragment + operations', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.displayString).toEqual(`Pokemon.name: String!`);
+    expect(res?.body.documentation).toEqual(`Pokemon.name: String!`);
   }, 30000);
 
   it('gives quick-info with documents', async () => {
@@ -174,7 +174,7 @@ describe('Fragment + operations', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.displayString).toEqual(
+    expect(res?.body.documentation).toEqual(
       `Query.pokemons: [Pokemon]
 
 List out all Pokémon, optionally in pages`

@@ -1,5 +1,5 @@
 import { TypedDocumentNode } from '@graphql-typed-document-node/core';
-import { gql } from '@urql/core';
+import { createClient, gql } from '@urql/core';
 
 export const PokemonFields = gql`
   fragment pokemonFields on Pokemon {

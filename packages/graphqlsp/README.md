@@ -1,15 +1,14 @@
 # GraphQLSP
 
 This is a TypeScript LSP Plugin that will recognise documents in your
-TypeScript code and help you out with hover-information, diagnostics,
-auto-complete and automatically generating [Typed-Document-nodes](https://the-guild.dev/graphql/codegen/plugins/typescript/typed-document-node)
+TypeScript code and help you out with hover-information, diagnostics and
+auto-complete.
 
 ## Features
 
 - Hover information showing the decriptions of fields
 - Diagnostics for adding fields that don't exist, are deprecated, missmatched argument types, ...
 - Auto-complete inside your editor for fields
-- When you save it will generate `typed-document-nodes` for your documents and cast them to the correct type
 - Will warn you when you are importing from a file that is exporting fragments that you're not using
 
 > Note that this plugin does not do syntax highlighting, for that you still need something like
@@ -42,7 +41,15 @@ now restart your TS-server and you should be good to go, ensure you are using th
 workspace version of TypeScript. In VSCode you can do so by clicking the bottom right
 when on a TypeScript file or adding a file like [this](https://github.com/0no-co/GraphQLSP/blob/main/packages/example/.vscode/settings.json).
 
-> If you are using VSCode ensure that your editor is using the Workspace Version of TypeScript
+> If you are using VSCode ensure that your editor is using [the Workspace Version of TypeScript](https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-the-workspace-version-of-typescript)
+> this can be done by manually selecting it or adding a `.vscode/config.json` with the contents of
+>
+> ```json
+> {
+>   "typescript.tsdk": "node_modules/typescript/lib",
+>   "typescript.enablePromptUseWorkspaceTsdk": true
+> }
+> ```
 
 ### Configuration
 
@@ -55,7 +62,6 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 
 - `template` the shape of your template, by default `gql`
 - `templateIsCallExpression` this tells our client that you are using `graphql('doc')`
-- `disableTypegen` disables type-generation in general, this could be needed if offset bugs are introduced
 - `scalars` allows you to pass an object of scalars that we'll feed into `graphql-code-generator`
 - `extraTypes` allows you to specify imports or declare types to help with `scalar` definitions
 - `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find

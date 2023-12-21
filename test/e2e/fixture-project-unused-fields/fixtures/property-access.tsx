@@ -1,5 +1,6 @@
-import { createClient, useQuery } from 'urql';
+import { useQuery } from 'urql';
 import { graphql } from './gql';
+// @ts-expect-error
 import { Pokemon } from './fragment';
 import * as React from 'react';
 
@@ -35,6 +36,7 @@ const Pokemons = () => {
   console.log(result.data?.pokemon?.attacks && result.data?.pokemon?.attacks.special && result.data?.pokemon?.attacks.special[0] && result.data?.pokemon?.attacks.special[0].name)
   console.log(pokemon?.name)
 
+  // @ts-expect-error
   return <Pokemon data={result.data?.pokemon} />;
 }
 

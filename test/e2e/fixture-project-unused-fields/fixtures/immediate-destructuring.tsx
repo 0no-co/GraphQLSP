@@ -27,23 +27,13 @@ const PokemonQuery = graphql(`
 `);
 
 const Pokemons = () => {
-  const [result] = useQuery({
+  // @ts-expect-error
+  const [{ data: { pokemon: { fleeRate, weight: { minimum, maximum } } } }] = useQuery({
     query: PokemonQuery,
     variables: { id: '' }
   });
-  
-  // Works
-  const { fleeRate } = result.data?.pokemon || {};
-  console.log(fleeRate)
-  // @ts-expect-error
-  const { pokemon: { weight: { minimum } } } = result.data || {};
-  console.log(minimum)
-
-  // Works
-  const { pokemon } = result.data || {};
-  console.log(pokemon?.weight?.maximum)
 
   // @ts-expect-error
-  return <Pokemon data={result.data?.pokemon} />;
+  return <Pokemon data={{ fleeRate, weight: { minimum, maximum } }} />;
 }
 

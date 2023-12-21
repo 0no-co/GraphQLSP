@@ -19,10 +19,6 @@ export const Pokemon = (data: any) => {
   return `hi ${pokemon.name}`;
 };
 
-type X = { hello: string };
-
-const x: X = { hello: '' };
-
 export function useFragment<Type>(
   _fragment: TypedDocumentNode<Type>,
   data: any

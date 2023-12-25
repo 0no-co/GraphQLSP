@@ -95,12 +95,11 @@ Secondly it supports a few patterns which we'll add to as time progresses:
 const result = (await client.query()) || useFragment();
 const [result] = useQuery(); // --> urql
 const { data } = useQuery(); // --> Apollo
-// Missing cases:
-const { field } = useFragment(); // can't destructure into your data from the start
-const [{ data }] = useQuery(); // can't follow array destructuring with object destructuring
+const { field } = useFragment();
+const [{ data }] = useQuery();
 const {
   data: { pokemon },
-} = useQuery(); // can't destructure into your data from the start
+} = useQuery();
 ```
 
 Lastly we don't track mutations/subscriptions as some folks will add additional fields to properly support

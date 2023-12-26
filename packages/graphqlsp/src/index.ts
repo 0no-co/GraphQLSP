@@ -125,6 +125,11 @@ function create(info: ts.server.PluginCreateInfo) {
     );
   };
 
+  // TODO: check out the following hooks
+  // - getSuggestionDiagnostics, can suggest refactors
+  // - getCompletionEntryDetails, this can build on the auto-complete for more information
+  // - getCodeFixesAtPosition
+
   logger('proxy: ' + JSON.stringify(proxy));
 
   return proxy;

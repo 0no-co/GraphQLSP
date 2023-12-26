@@ -11,7 +11,6 @@ import {
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
-import { Logger } from '.';
 
 export function getGraphQLQuickInfo(
   filename: string,
@@ -19,8 +18,6 @@ export function getGraphQLQuickInfo(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.QuickInfo | undefined {
-  const logger: Logger = (msg: string) =>
-    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const tagTemplate = info.config.template || 'gql';
   const isCallExpression = info.config.templateIsCallExpression ?? false;
 
@@ -34,6 +31,7 @@ export function getGraphQLQuickInfo(
     ? bubbleUpCallExpression(node)
     : bubbleUpTemplate(node);
 
+  let cursor, text;
   if (
     ts.isCallExpression(node) &&
     isCallExpression &&
@@ -44,21 +42,8 @@ export function getGraphQLQuickInfo(
     const foundToken = getToken(node.arguments[0], cursorPosition);
     if (!schema.current || !foundToken) return undefined;
 
-    const queryText = node.arguments[0].getText();
-    const cursor = new Cursor(foundToken.line, foundToken.start - 1);
-    const hoverInfo = getHoverInformation(schema.current, queryText, cursor);
-
-    return {
-      kind: ts.ScriptElementKind.string,
-      textSpan: {
-        start: cursorPosition,
-        length: 1,
-      },
-      kindModifiers: 'text',
-      documentation: Array.isArray(hoverInfo)
-        ? hoverInfo.map(item => ({ kind: 'text', text: item as string }))
-        : [{ kind: 'text', text: hoverInfo as string }],
-    };
+    text = node.arguments[0].getText();
+    cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
     if (!ts.isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
@@ -67,7 +52,7 @@ export function getGraphQLQuickInfo(
 
     if (!foundToken || !schema.current) return undefined;
 
-    const { combinedText: text, resolvedSpans } = resolveTemplate(
+    const { combinedText, resolvedSpans } = resolveTemplate(
       node,
       filename,
       info
@@ -82,25 +67,23 @@ export function getGraphQLQuickInfo(
       .reduce((acc, span) => acc + (span.lines - 1), 0);
 
     foundToken.line = foundToken.line + amountOfLines;
-
-    const hoverInfo = getHoverInformation(
-      schema.current,
-      text,
-      new Cursor(foundToken.line, foundToken.start - 1)
-    );
-
-    return {
-      kind: ts.ScriptElementKind.label,
-      textSpan: {
-        start: cursorPosition,
-        length: 1,
-      },
-      kindModifiers: 'text',
-      documentation: Array.isArray(hoverInfo)
-        ? hoverInfo.map(item => ({ kind: 'text', text: item as string }))
-        : [{ kind: 'text', text: hoverInfo as string }],
-    } as ts.QuickInfo;
+    text = combinedText;
+    cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else {
     return undefined;
   }
+
+  const hoverInfo = getHoverInformation(schema.current, text, cursor);
+
+  return {
+    kind: ts.ScriptElementKind.label,
+    textSpan: {
+      start: cursorPosition,
+      length: 1,
+    },
+    kindModifiers: 'text',
+    documentation: Array.isArray(hoverInfo)
+      ? hoverInfo.map(item => ({ kind: 'text', text: item as string }))
+      : [{ kind: 'text', text: hoverInfo as string }],
+  } as ts.QuickInfo;
 }

@@ -22,16 +22,22 @@ export type Logger = (msg: string) => void;
 
 type Config = {
   schema: SchemaOrigin | string;
+  // TODO: rename to tag or just remove entirely and always check for
+  // gql and graphql.
   template?: string;
+  // TODO: we need a bettername, gql.tada will also have
+  // call expressions, we can differentiate by means of
+  // tada having a second argument containing the fragments.
   templateIsCallExpression?: boolean;
   // Up in the air whether we want to keep supporting
   // this. Current limitation are barrel-file exports
   // could be counter-acted with an opinion on
-  // fragment-naming.
+  // fragment-naming. Could become more relevant
+  // with gql.tada and could be useful for
+  // client-preset as well however the component type-annotations
+  // can better indicate a missing spread for the
+  // client-preset.
   shouldCheckForColocatedFragments?: boolean;
-  // These can return when we go with gql.tada
-  extraTypes?: string;
-  scalars?: Record<string, unknown>;
 };
 
 function create(info: ts.server.PluginCreateInfo) {

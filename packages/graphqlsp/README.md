@@ -62,8 +62,6 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 
 - `template` the shape of your template, by default `gql`
 - `templateIsCallExpression` this tells our client that you are using `graphql('doc')`
-- `scalars` allows you to pass an object of scalars that we'll feed into `graphql-code-generator`
-- `extraTypes` allows you to specify imports or declare types to help with `scalar` definitions
 - `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find
   unused fragments and provide a message notifying you about them
 - `trackFieldUsage` this only works with the client-preset, when turned on it will warn you about

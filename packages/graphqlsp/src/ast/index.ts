@@ -55,14 +55,15 @@ export function findAllTaggedTemplateNodes(
 export function findAllCallExpressions(
   sourceFile: ts.SourceFile,
   template: string,
-  info: ts.server.PluginCreateInfo
+  info: ts.server.PluginCreateInfo,
+  shouldSearchFragments: boolean = true
 ): {
   nodes: Array<ts.NoSubstitutionTemplateLiteral>;
   fragments: Array<FragmentDefinitionNode>;
 } {
   const result: Array<ts.NoSubstitutionTemplateLiteral> = [];
   let fragments: Array<FragmentDefinitionNode> = [];
-  let hasTriedToFindFragments = false;
+  let hasTriedToFindFragments = shouldSearchFragments ? false : true;
   function find(node: ts.Node) {
     if (ts.isCallExpression(node) && node.expression.getText() === template) {
       if (!hasTriedToFindFragments) {

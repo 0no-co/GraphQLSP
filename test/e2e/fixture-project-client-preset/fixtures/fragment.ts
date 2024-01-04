@@ -5,6 +5,7 @@ export const PokemonFields = graphql(`
     id
     name
     fleeRate
-      
   }
 `);
+
+export const Pokemon = () => {};

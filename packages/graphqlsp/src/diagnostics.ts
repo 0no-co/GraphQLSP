@@ -7,6 +7,7 @@ import {
   OperationDefinitionNode,
   parse,
   print,
+  visit,
 } from 'graphql';
 import { LRUCache } from 'lru-cache';
 import fnv1a from '@sindresorhus/fnv1a';
@@ -20,7 +21,11 @@ import {
 import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './graphql/generateTypes';
 import { checkFieldUsageInFile } from './fieldUsage';
-import { checkImportsForFragments } from './checkImports';
+import {
+  MISSING_FRAGMENT_CODE,
+  checkImportsForFragments,
+  getColocatedFragmentNames,
+} from './checkImports';
 
 const clientDirectives = new Set([
   'populate',
@@ -304,15 +309,73 @@ const runDiagnostics = (
     messageText: diag.message.split('\n')[0],
   }));
 
-  const importDiagnostics = isCallExpression
-    ? checkFieldUsageInFile(
-        source,
-        nodes as ts.NoSubstitutionTemplateLiteral[],
-        info
-      )
-    : checkImportsForFragments(source, info);
+  if (isCallExpression) {
+    const usageDiagnostics = checkFieldUsageInFile(
+      source,
+      nodes as ts.NoSubstitutionTemplateLiteral[],
+      info
+    );
 
-  return [...tsDiagnostics, ...importDiagnostics];
+    const shouldCheckForColocatedFragments =
+      info.config.shouldCheckForColocatedFragments ?? false;
+    let fragmentDiagnostics: ts.Diagnostic[] = [];
+    console.log(
+      '[GraphhQLSP] Checking for colocated fragments ',
+      !!shouldCheckForColocatedFragments
+    );
+    if (shouldCheckForColocatedFragments) {
+      const moduleSpecifierToFragments = getColocatedFragmentNames(
+        source,
+        info
+      );
+      console.log(
+        '[GraphhQLSP] Checking for colocated fragments ',
+        JSON.stringify(moduleSpecifierToFragments, null, 2)
+      );
+
+      const usedFragments = new Set();
+      nodes.forEach(node => {
+        try {
+          const parsed = parse(node.getText().slice(1, -1), {
+            noLocation: true,
+          });
+          visit(parsed, {
+            FragmentSpread: node => {
+              usedFragments.add(node.name.value);
+            },
+          });
+        } catch (e) {}
+      });
+
+      Object.keys(moduleSpecifierToFragments).forEach(moduleSpecifier => {
+        const {
+          fragments: fragmentNames,
+          start,
+          length,
+        } = moduleSpecifierToFragments[moduleSpecifier];
+        const missingFragments = fragmentNames.filter(
+          x => !usedFragments.has(x)
+        );
+        if (missingFragments.length) {
+          fragmentDiagnostics.push({
+            file: source,
+            length,
+            start,
+            category: ts.DiagnosticCategory.Warning,
+            code: MISSING_FRAGMENT_CODE,
+            messageText: `Unused co-located fragment definition(s) "${missingFragments.join(
+              ', '
+            )}" in ${moduleSpecifier}`,
+          });
+        }
+      });
+    }
+
+    return [...tsDiagnostics, ...usageDiagnostics, ...fragmentDiagnostics];
+  } else {
+    const importDiagnostics = checkImportsForFragments(source, info);
+    return [...tsDiagnostics, ...importDiagnostics];
+  }
 };
 
 const runTypedDocumentNodes = (

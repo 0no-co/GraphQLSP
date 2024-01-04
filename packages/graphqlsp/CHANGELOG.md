@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.14.0
+
+### Minor Changes
+
+- Warn when an import defines a fragment that is unused in the current file
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#152](https://github.com/0no-co/GraphQLSP/pull/152))
+
 ## 0.13.0
 
 ### Minor Changes

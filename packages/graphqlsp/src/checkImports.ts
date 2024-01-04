@@ -122,15 +122,15 @@ export const checkImportsForFragments = (
 export const getColocatedFragmentNames = (
   source: ts.SourceFile,
   info: ts.server.PluginCreateInfo
-): {
-  names: Array<string>;
-  nameToLoc: Record<string, { start: number; length: number }>;
-} => {
+): Record<
+  string,
+  { start: number; length: number; fragments: Array<string> }
+> => {
   const imports = findAllImports(source);
-  const fragmentNames: Set<string> = new Set();
-  // TODO: this should be a module-specifier that maps to a loc and a list of fragment-names
-  // this to support duplicate fragment-names and showing the warning on the module-specifier.
-  const nameToLoc: Record<string, { start: number; length: number }> = {};
+  const importSpecifierToFragments: Record<
+    string,
+    { start: number; length: number; fragments: Array<string> }
+  > = {};
 
   if (imports.length) {
     imports.forEach(imp => {
@@ -149,13 +149,25 @@ export const getColocatedFragmentNames = (
           if (!externalSource) return;
 
           const fragmentsForImport = getFragmentsInSource(externalSource, info);
-          fragmentsForImport.forEach(fragment => {
-            nameToLoc[fragment.name.value] = {
+
+          const names = fragmentsForImport.map(fragment => fragment.name.value);
+          if (
+            names.length &&
+            !importSpecifierToFragments[imp.moduleSpecifier.getText()]
+          ) {
+            importSpecifierToFragments[imp.moduleSpecifier.getText()] = {
               start: imp.moduleSpecifier.getStart(),
-              length: imp.importClause!.getText().length,
+              length: imp.moduleSpecifier.getText().length,
+              fragments: names,
             };
-            fragmentNames.add(fragment.name.value);
-          });
+          } else if (names.length) {
+            importSpecifierToFragments[
+              imp.moduleSpecifier.getText()
+            ].fragments =
+              importSpecifierToFragments[
+                imp.moduleSpecifier.getText()
+              ].fragments.concat(names);
+          }
         }
       }
 
@@ -175,13 +187,24 @@ export const getColocatedFragmentNames = (
           if (!externalSource) return;
 
           const fragmentsForImport = getFragmentsInSource(externalSource, info);
-          fragmentsForImport.forEach(fragment => {
-            nameToLoc[fragment.name.value] = {
-              start: imp.importClause!.namedBindings!.getStart(),
-              length: imp.importClause!.namedBindings!.getText().length,
+          const names = fragmentsForImport.map(fragment => fragment.name.value);
+          if (
+            names.length &&
+            !importSpecifierToFragments[imp.moduleSpecifier.getText()]
+          ) {
+            importSpecifierToFragments[imp.moduleSpecifier.getText()] = {
+              start: imp.moduleSpecifier.getStart(),
+              length: imp.moduleSpecifier.getText().length,
+              fragments: names,
             };
-            fragmentNames.add(fragment.name.value);
-          });
+          } else if (names.length) {
+            importSpecifierToFragments[
+              imp.moduleSpecifier.getText()
+            ].fragments =
+              importSpecifierToFragments[
+                imp.moduleSpecifier.getText()
+              ].fragments.concat(names);
+          }
         }
       } else if (
         imp.importClause.namedBindings &&
@@ -203,23 +226,36 @@ export const getColocatedFragmentNames = (
               externalSource,
               info
             );
-            fragmentsForImport.forEach(fragment => {
-              nameToLoc[fragment.name.value] = {
-                start: el.getStart(),
-                length: el.getText().length,
+            const names = fragmentsForImport.map(
+              fragment => fragment.name.value
+            );
+            if (
+              names.length &&
+              !importSpecifierToFragments[imp.moduleSpecifier.getText()]
+            ) {
+              importSpecifierToFragments[imp.moduleSpecifier.getText()] = {
+                start: imp.moduleSpecifier.getStart(),
+                length: imp.moduleSpecifier.getText().length,
+                fragments: names,
               };
-              fragmentNames.add(fragment.name.value);
-            });
+            } else if (names.length) {
+              importSpecifierToFragments[
+                imp.moduleSpecifier.getText()
+              ].fragments =
+                importSpecifierToFragments[
+                  imp.moduleSpecifier.getText()
+                ].fragments.concat(names);
+            }
           }
         });
       }
     });
   }
 
-  return { names: Array.from(fragmentNames), nameToLoc };
+  return importSpecifierToFragments;
 };
 
-export function getFragmentsInSource(
+function getFragmentsInSource(
   src: ts.SourceFile,
   info: ts.server.PluginCreateInfo
 ): Array<FragmentDefinitionNode> {

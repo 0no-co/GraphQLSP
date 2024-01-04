@@ -319,11 +319,20 @@ const runDiagnostics = (
     const shouldCheckForColocatedFragments =
       info.config.shouldCheckForColocatedFragments ?? false;
     let fragmentDiagnostics: ts.Diagnostic[] = [];
+    console.log(
+      '[GraphhQLSP] Checking for colocated fragments ',
+      !!shouldCheckForColocatedFragments
+    );
     if (shouldCheckForColocatedFragments) {
-      const { names: fragmentNames, nameToLoc } = getColocatedFragmentNames(
+      const moduleSpecifierToFragments = getColocatedFragmentNames(
         source,
         info
       );
+      console.log(
+        '[GraphhQLSP] Checking for colocated fragments ',
+        JSON.stringify(moduleSpecifierToFragments, null, 2)
+      );
+
       const usedFragments = new Set();
       nodes.forEach(node => {
         try {
@@ -338,18 +347,27 @@ const runDiagnostics = (
         } catch (e) {}
       });
 
-      const missingFragments = fragmentNames.filter(x => !usedFragments.has(x));
-
-      fragmentDiagnostics = missingFragments.map(unusedFragment => {
-        const loc = nameToLoc[unusedFragment];
-        return {
-          file: source,
-          length: loc.length,
-          start: loc.start,
-          category: ts.DiagnosticCategory.Warning,
-          code: MISSING_FRAGMENT_CODE,
-          messageText: `Unused co-located fragment definition "${unusedFragment}"`,
-        };
+      Object.keys(moduleSpecifierToFragments).forEach(moduleSpecifier => {
+        const {
+          fragments: fragmentNames,
+          start,
+          length,
+        } = moduleSpecifierToFragments[moduleSpecifier];
+        const missingFragments = fragmentNames.filter(
+          x => !usedFragments.has(x)
+        );
+        if (missingFragments.length) {
+          fragmentDiagnostics.push({
+            file: source,
+            length,
+            start,
+            category: ts.DiagnosticCategory.Warning,
+            code: MISSING_FRAGMENT_CODE,
+            messageText: `Unused co-located fragment definition(s) "${missingFragments.join(
+              ', '
+            )}" in ${moduleSpecifier}`,
+          });
+        }
       });
     }
 

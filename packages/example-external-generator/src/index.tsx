@@ -20,6 +20,7 @@ const PokemonQuery = graphql(`
       }
       name
       __typename
+
     }
   }
 `);

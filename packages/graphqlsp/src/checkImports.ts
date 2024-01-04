@@ -126,10 +126,6 @@ export const getColocatedFragmentNames = (
   names: Array<string>;
   nameToLoc: Record<string, { start: number; length: number }>;
 } => {
-  const shouldCheckForColocatedFragments =
-    info.config.shouldCheckForColocatedFragments ?? false;
-  if (!shouldCheckForColocatedFragments) return { names: [], nameToLoc: {} };
-
   const imports = findAllImports(source);
   const fragmentNames: Set<string> = new Set();
   // TODO: this should be a module-specifier that maps to a loc and a list of fragment-names

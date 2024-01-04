@@ -316,26 +316,31 @@ const runDiagnostics = (
       info
     );
 
-    const { names: fragmentNames, nameToLoc } = getColocatedFragmentNames(
-      source,
-      info
-    );
-    const usedFragments = new Set();
-    nodes.forEach(node => {
-      try {
-        const parsed = parse(node.getText().slice(1, -1), { noLocation: true });
-        visit(parsed, {
-          FragmentSpread: node => {
-            usedFragments.add(node.name.value);
-          },
-        });
-      } catch (e) {}
-    });
+    const shouldCheckForColocatedFragments =
+      info.config.shouldCheckForColocatedFragments ?? false;
+    let fragmentDiagnostics: ts.Diagnostic[] = [];
+    if (shouldCheckForColocatedFragments) {
+      const { names: fragmentNames, nameToLoc } = getColocatedFragmentNames(
+        source,
+        info
+      );
+      const usedFragments = new Set();
+      nodes.forEach(node => {
+        try {
+          const parsed = parse(node.getText().slice(1, -1), {
+            noLocation: true,
+          });
+          visit(parsed, {
+            FragmentSpread: node => {
+              usedFragments.add(node.name.value);
+            },
+          });
+        } catch (e) {}
+      });
 
-    const missingFragments = fragmentNames.filter(x => !usedFragments.has(x));
+      const missingFragments = fragmentNames.filter(x => !usedFragments.has(x));
 
-    const fragmentDiagnostics: ts.Diagnostic[] = missingFragments.map(
-      unusedFragment => {
+      fragmentDiagnostics = missingFragments.map(unusedFragment => {
         const loc = nameToLoc[unusedFragment];
         return {
           file: source,
@@ -345,8 +350,9 @@ const runDiagnostics = (
           code: MISSING_FRAGMENT_CODE,
           messageText: `Unused co-located fragment definition "${unusedFragment}"`,
         };
-      }
-    );
+      });
+    }
+
     return [...tsDiagnostics, ...usageDiagnostics, ...fragmentDiagnostics];
   } else {
     const importDiagnostics = checkImportsForFragments(source, info);

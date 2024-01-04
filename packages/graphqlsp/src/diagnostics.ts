@@ -7,6 +7,7 @@ import {
   OperationDefinitionNode,
   parse,
   print,
+  visit,
 } from 'graphql';
 import { LRUCache } from 'lru-cache';
 import fnv1a from '@sindresorhus/fnv1a';
@@ -20,7 +21,11 @@ import {
 import { resolveTemplate } from './ast/resolve';
 import { generateTypedDocumentNodes } from './graphql/generateTypes';
 import { checkFieldUsageInFile } from './fieldUsage';
-import { checkImportsForFragments } from './checkImports';
+import {
+  MISSING_FRAGMENT_CODE,
+  checkImportsForFragments,
+  getColocatedFragmentNames,
+} from './checkImports';
 
 const clientDirectives = new Set([
   'populate',
@@ -304,15 +309,47 @@ const runDiagnostics = (
     messageText: diag.message.split('\n')[0],
   }));
 
-  const importDiagnostics = isCallExpression
-    ? checkFieldUsageInFile(
-        source,
-        nodes as ts.NoSubstitutionTemplateLiteral[],
-        info
-      )
-    : checkImportsForFragments(source, info);
+  if (isCallExpression) {
+    const usageDiagnostics = checkFieldUsageInFile(
+      source,
+      nodes as ts.NoSubstitutionTemplateLiteral[],
+      info
+    );
+    const { names: fragmentNames, nameToLoc } = getColocatedFragmentNames(
+      source,
+      info
+    );
+    const usedFragments = new Set();
+    nodes.forEach(node => {
+      try {
+        const parsed = parse(node.getText().slice(1, -1), { noLocation: true });
+        visit(parsed, {
+          FragmentSpread: node => {
+            usedFragments.add(node.name.value);
+          },
+        });
+      } catch (e) {}
+    });
 
-  return [...tsDiagnostics, ...importDiagnostics];
+    const missingFragments = fragmentNames.filter(x => !usedFragments.has(x));
+    const fragmentDiagnostics: ts.Diagnostic[] = missingFragments.map(
+      unusedFragment => {
+        const loc = nameToLoc[unusedFragment];
+        return {
+          file: source,
+          length: loc.length,
+          start: loc.start,
+          category: ts.DiagnosticCategory.Warning,
+          code: MISSING_FRAGMENT_CODE,
+          messageText: `Missing fragment spread "${unusedFragment}"`,
+        };
+      }
+    );
+    return [...tsDiagnostics, ...usageDiagnostics, ...fragmentDiagnostics];
+  } else {
+    const importDiagnostics = checkImportsForFragments(source, info);
+    return [...tsDiagnostics, ...importDiagnostics];
+  }
 };
 
 const runTypedDocumentNodes = (

@@ -76,6 +76,7 @@ For folks using the `client-preset` you can ues the following config
         "schema": "./schema.graphql",
         "disableTypegen": true,
         "templateIsCallExpression": true,
+        "shouldCheckForColocatedFragments": true,
         "trackFieldUsage": true,
         "template": "graphql"
       }

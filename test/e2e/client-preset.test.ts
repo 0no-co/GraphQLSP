@@ -10,6 +10,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const projectPath = path.resolve(__dirname, 'fixture-project-client-preset');
 describe('Fragment + operations', () => {
   const outfileCombo = path.join(projectPath, 'simple.ts');
+  const outfileUnusedFragment = path.join(projectPath, 'unused-fragment.ts');
   const outfileCombinations = path.join(projectPath, 'fragment.ts');
   const outfileGql = path.join(projectPath, 'gql', 'gql.ts');
   const outfileGraphql = path.join(projectPath, 'gql', 'graphql.ts');
@@ -25,6 +26,11 @@ describe('Fragment + operations', () => {
     } satisfies ts.server.protocol.OpenRequestArgs);
     server.sendCommand('open', {
       file: outfileCombinations,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+    server.sendCommand('open', {
+      file: outfileUnusedFragment,
       fileContent: '// empty',
       scriptKindName: 'TS',
     } satisfies ts.server.protocol.OpenRequestArgs);
@@ -69,6 +75,13 @@ describe('Fragment + operations', () => {
             'utf-8'
           ),
         },
+        {
+          file: outfileUnusedFragment,
+          fileContent: fs.readFileSync(
+            path.join(projectPath, 'fixtures/unused-fragment.ts'),
+            'utf-8'
+          ),
+        },
       ],
     } satisfies ts.server.protocol.UpdateOpenRequestArgs);
 
@@ -88,10 +101,15 @@ describe('Fragment + operations', () => {
       file: outfileCombinations,
       tmpfile: outfileCombinations,
     } satisfies ts.server.protocol.SavetoRequestArgs);
+    server.sendCommand('saveto', {
+      file: outfileUnusedFragment,
+      tmpfile: outfileUnusedFragment,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
   });
 
   afterAll(() => {
     try {
+      fs.unlinkSync(outfileUnusedFragment);
       fs.unlinkSync(outfileCombinations);
       fs.unlinkSync(outfileCombo);
       fs.unlinkSync(outfileGql);
@@ -104,7 +122,10 @@ describe('Fragment + operations', () => {
       e => e.type === 'event' && e.event === 'semanticDiag'
     );
     const res = server.responses.filter(
-      resp => resp.type === 'event' && resp.event === 'semanticDiag'
+      resp =>
+        resp.type === 'event' &&
+        resp.event === 'semanticDiag' &&
+        resp.body?.file === outfileCombo
     );
     expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
       [
@@ -340,6 +361,44 @@ List out all Pokémon, optionally in pages`
           },
           "name": "__typename",
           "sortText": "14__typename",
+        },
+      ]
+    `);
+  }, 30000);
+
+  it('gives semantic-diagnostics with unused fragments', async () => {
+    server.sendCommand('saveto', {
+      file: outfileUnusedFragment,
+      tmpfile: outfileUnusedFragment,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfileUnusedFragment
+    );
+
+    const res = server.responses.filter(
+      resp =>
+        resp.type === 'event' &&
+        resp.event === 'semanticDiag' &&
+        resp.body?.file === outfileUnusedFragment
+    );
+    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+      [
+        {
+          "category": "warning",
+          "code": 52003,
+          "end": {
+            "line": 2,
+            "offset": 17,
+          },
+          "start": {
+            "line": 2,
+            "offset": 10,
+          },
+          "text": "Missing fragment spread \\"pokemonFields\\"",
         },
       ]
     `);

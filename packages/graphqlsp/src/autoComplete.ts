@@ -64,10 +64,10 @@ export function getGraphQLCompletions(
     const foundToken = getToken(node.arguments[0], cursorPosition);
     if (!schema.current || !foundToken) return undefined;
 
-    const queryText = node.arguments[0].getText();
+    const queryText = node.arguments[0].getText().slice(1, -1);
     const fragments = getAllFragments(filename, node, info);
 
-    text = `${queryText}\m${fragments.map(x => print(x)).join('\n')}`;
+    text = `${queryText}\n${fragments.map(x => print(x)).join('\n')}`;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
@@ -151,7 +151,10 @@ export function getSuggestionsInternal(
     fragments = parsed.definitions.filter(
       x => x.kind === Kind.FRAGMENT_DEFINITION
     ) as Array<FragmentDefinitionNode>;
-  } catch (e) {}
+  } catch (e) {
+    console.log('[GraphQLSP] ', e);
+  }
+  console.log('fraggers', fragments.map(x => print(x)).join('\n'));
 
   let suggestions = getAutocompleteSuggestions(schema, queryText, cursor);
   let spreadSuggestions = getSuggestionsForFragmentSpread(
@@ -161,6 +164,7 @@ export function getSuggestionsInternal(
     queryText,
     fragments
   );
+  console.log(JSON.stringify(spreadSuggestions, null, 2));
 
   const state =
     token.state.kind === 'Invalid' ? token.state.prevState : token.state;

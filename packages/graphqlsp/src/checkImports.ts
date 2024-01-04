@@ -126,8 +126,14 @@ export const getColocatedFragmentNames = (
   names: Array<string>;
   nameToLoc: Record<string, { start: number; length: number }>;
 } => {
+  const shouldCheckForColocatedFragments =
+    info.config.shouldCheckForColocatedFragments ?? false;
+  if (!shouldCheckForColocatedFragments) return { names: [], nameToLoc: {} };
+
   const imports = findAllImports(source);
   const fragmentNames: Set<string> = new Set();
+  // TODO: this should be a module-specifier that maps to a loc and a list of fragment-names
+  // this to support duplicate fragment-names and showing the warning on the module-specifier.
   const nameToLoc: Record<string, { start: number; length: number }> = {};
 
   if (imports.length) {
@@ -149,7 +155,7 @@ export const getColocatedFragmentNames = (
           const fragmentsForImport = getFragmentsInSource(externalSource, info);
           fragmentsForImport.forEach(fragment => {
             nameToLoc[fragment.name.value] = {
-              start: imp.importClause!.getStart(),
+              start: imp.moduleSpecifier.getStart(),
               length: imp.importClause!.getText().length,
             };
             fragmentNames.add(fragment.name.value);

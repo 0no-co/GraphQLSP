@@ -315,6 +315,7 @@ const runDiagnostics = (
       nodes as ts.NoSubstitutionTemplateLiteral[],
       info
     );
+
     const { names: fragmentNames, nameToLoc } = getColocatedFragmentNames(
       source,
       info
@@ -332,6 +333,7 @@ const runDiagnostics = (
     });
 
     const missingFragments = fragmentNames.filter(x => !usedFragments.has(x));
+
     const fragmentDiagnostics: ts.Diagnostic[] = missingFragments.map(
       unusedFragment => {
         const loc = nameToLoc[unusedFragment];
@@ -341,7 +343,7 @@ const runDiagnostics = (
           start: loc.start,
           category: ts.DiagnosticCategory.Warning,
           code: MISSING_FRAGMENT_CODE,
-          messageText: `Missing fragment spread "${unusedFragment}"`,
+          messageText: `Unused co-located fragment definition "${unusedFragment}"`,
         };
       }
     );

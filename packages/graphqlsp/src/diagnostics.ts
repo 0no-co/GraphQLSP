@@ -76,7 +76,7 @@ export function getGraphQLDiagnostics(
     fragments = result.fragments;
     nodes = result.nodes;
   } else {
-    nodes = findAllTaggedTemplateNodes(source);
+    nodes = findAllTaggedTemplateNodes(source, tagTemplate);
   }
 
   const texts = nodes.map(node => {

@@ -16,6 +16,7 @@ export const checkImportsForFragments = (
   info: ts.server.PluginCreateInfo
 ) => {
   const imports = findAllImports(source);
+  const tagTemplate = info.config.template || 'gql';
 
   const shouldCheckForColocatedFragments =
     info.config.shouldCheckForColocatedFragments ?? false;
@@ -66,7 +67,10 @@ export const checkImportsForFragments = (
 
           if (!declaration) return;
 
-          const [template] = findAllTaggedTemplateNodes(declaration);
+          const [template] = findAllTaggedTemplateNodes(
+            declaration,
+            tagTemplate
+          );
           if (template) {
             let node = template;
             if (

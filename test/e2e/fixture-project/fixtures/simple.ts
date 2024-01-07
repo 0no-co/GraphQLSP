@@ -8,3 +8,6 @@ const PostsQuery = gql`
     }
   }
 `;
+
+const sql = (x: string | TemplateStringsArray) => x;
+const x = sql`'{}'`;

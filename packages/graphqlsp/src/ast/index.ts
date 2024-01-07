@@ -32,15 +32,19 @@ export function findNode(
 }
 
 export function findAllTaggedTemplateNodes(
-  sourceFile: ts.SourceFile | ts.Node
+  sourceFile: ts.SourceFile | ts.Node,
+  template: string
 ): Array<ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral> {
   const result: Array<
     ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral
   > = [];
   function find(node: ts.Node) {
     if (
-      ts.isTaggedTemplateExpression(node) ||
-      ts.isNoSubstitutionTemplateLiteral(node)
+      (ts.isTaggedTemplateExpression(node) &&
+        node.tag.getText() === template) ||
+      (ts.isNoSubstitutionTemplateLiteral(node) &&
+        ts.isTaggedTemplateExpression(node.parent) &&
+        node.parent.tag.getText() === template)
     ) {
       result.push(node);
       return;

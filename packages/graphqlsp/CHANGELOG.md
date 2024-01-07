@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.14.1
+
+### Patch Changes
+
+- Check whether we are on the correct template tag
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#157](https://github.com/0no-co/GraphQLSP/pull/157))
+
 ## 0.14.0
 
 ### Minor Changes

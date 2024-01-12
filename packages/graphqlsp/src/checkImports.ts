@@ -16,7 +16,6 @@ export const checkImportsForFragments = (
   info: ts.server.PluginCreateInfo
 ) => {
   const imports = findAllImports(source);
-  const tagTemplate = info.config.template || 'gql';
 
   const shouldCheckForColocatedFragments =
     info.config.shouldCheckForColocatedFragments ?? false;
@@ -67,7 +66,7 @@ export const checkImportsForFragments = (
 
         if (!declaration) return;
 
-        const [template] = findAllTaggedTemplateNodes(declaration, tagTemplate);
+        const [template] = findAllTaggedTemplateNodes(declaration);
         if (template) {
           let node = template;
           if (
@@ -259,8 +258,7 @@ function getFragmentsInSource(
   info: ts.server.PluginCreateInfo
 ): Array<FragmentDefinitionNode> {
   let fragments: Array<FragmentDefinitionNode> = [];
-  const tagTemplate = info.config.template || 'gql';
-  const callExpressions = findAllCallExpressions(src, tagTemplate, info, false);
+  const callExpressions = findAllCallExpressions(src, info, false);
 
   callExpressions.nodes.forEach(node => {
     const text = resolveTemplate(node, src.fileName, info).combinedText;

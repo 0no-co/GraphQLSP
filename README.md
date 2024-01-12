@@ -61,7 +61,7 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 
 **Optional**
 
-- `template` the shape of your template, by default `gql`
+- `template` the shape of your template, by default `gql` and `graphql` are respected
 - `templateIsCallExpression` this tells our client that you are using `graphql('doc')`
 - `disableTypegen` disables type-generation in general, this could be needed if offset bugs are introduced
 - `scalars` allows you to pass an object of scalars that we'll feed into `graphql-code-generator`
@@ -83,10 +83,8 @@ For folks using the `client-preset` you can ues the following config
         "name": "@0no-co/graphqlsp",
         "schema": "./schema.graphql",
         "disableTypegen": true,
-        "templateIsCallExpression": true,
         "shouldCheckForColocatedFragments": true,
-        "trackFieldUsage": true,
-        "template": "graphql"
+        "trackFieldUsage": true
       }
     ]
   }

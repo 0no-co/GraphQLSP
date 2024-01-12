@@ -20,14 +20,17 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
 
 export type Logger = (msg: string) => void;
 
+export const templates = new Set(['gql', 'graphql']);
+
 type Config = {
   schema: SchemaOrigin | string;
-  template?: string;
   templateIsCallExpression?: boolean;
   disableTypegen?: boolean;
   extraTypes?: string;
   scalars?: Record<string, unknown>;
   shouldCheckForColocatedFragments?: boolean;
+  template?: string;
+  trackFieldUsage?: boolean;
 };
 
 function create(info: ts.server.PluginCreateInfo) {
@@ -46,6 +49,10 @@ function create(info: ts.server.PluginCreateInfo) {
   const scalars = config.scalars || {};
   const extraTypes = config.extraTypes || '';
   const disableTypegen = config.disableTypegen ?? false;
+
+  if (config.template) {
+    templates.add(config.template);
+  }
 
   const proxy = createBasicDecorator(info);
 

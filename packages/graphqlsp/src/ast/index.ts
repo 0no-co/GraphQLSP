@@ -1,6 +1,7 @@
 import ts from 'typescript/lib/tsserverlibrary';
 import fs from 'fs';
 import { FragmentDefinitionNode, parse } from 'graphql';
+import { Logger } from '..';
 
 export function isFileDirty(fileName: string, source: ts.SourceFile) {
   const contents = fs.readFileSync(fileName, 'utf-8');
@@ -56,6 +57,67 @@ export function findAllTaggedTemplateNodes(
   return result;
 }
 
+function unrollFragment(
+  element: ts.Identifier,
+  template: string,
+  info: ts.server.PluginCreateInfo
+): Array<FragmentDefinitionNode> {
+  const logger: Logger = (msg: string) =>
+    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
+
+  const fragments: Array<FragmentDefinitionNode> = [];
+  const definitions = info.languageService.getDefinitionAtPosition(
+    element.getSourceFile().fileName,
+    element.getStart()
+  );
+
+  if (!definitions) return fragments;
+
+  const [fragment] = definitions;
+  logger(`Found fragment ${JSON.stringify(fragment)}`);
+
+  const externalSource = getSource(info, fragment.fileName);
+  logger(`Found source ${!!externalSource} ${fragment.fileName}`);
+  if (!externalSource) return fragments;
+
+  let found = findNode(externalSource, fragment.textSpan.start);
+  logger(`Found node ${!!found} ${fragment.textSpan.start}`);
+  if (!found) return fragments;
+
+  if (
+    ts.isVariableDeclaration(found.parent) &&
+    found.parent.initializer &&
+    ts.isCallExpression(found.parent.initializer)
+  ) {
+    found = found.parent.initializer;
+  }
+
+  logger(`Found node ${found.getText()}`);
+  if (ts.isCallExpression(found) && found.expression.getText() === template) {
+    const [arg, arg2] = found.arguments;
+    if (arg2 && ts.isArrayLiteralExpression(arg2)) {
+      arg2.elements.forEach(element => {
+        if (ts.isIdentifier(element)) {
+          fragments.push(...unrollFragment(element, template, info));
+        }
+      });
+    }
+
+    try {
+      const parsed = parse(arg.getText().slice(1, -1), { noLocation: true });
+      parsed.definitions.forEach(definition => {
+        if (definition.kind === 'FragmentDefinition') {
+          fragments.push(definition);
+        }
+      });
+    } catch (e) {
+      logger(`Failed to parse fragment ${arg.getText().slice(1, -1)}`);
+    }
+  }
+
+  return fragments;
+}
+
 export function findAllCallExpressions(
   sourceFile: ts.SourceFile,
   template: string,
@@ -70,11 +132,19 @@ export function findAllCallExpressions(
   let hasTriedToFindFragments = shouldSearchFragments ? false : true;
   function find(node: ts.Node) {
     if (ts.isCallExpression(node) && node.expression.getText() === template) {
-      if (!hasTriedToFindFragments) {
+      const [arg, arg2] = node.arguments;
+
+      if (!hasTriedToFindFragments && !arg2) {
         hasTriedToFindFragments = true;
         fragments = getAllFragments(sourceFile.fileName, node, info);
+      } else if (arg2 && ts.isArrayLiteralExpression(arg2)) {
+        arg2.elements.forEach(element => {
+          if (ts.isIdentifier(element)) {
+            fragments.push(...unrollFragment(element, template, info));
+          }
+        });
       }
-      const [arg] = node.arguments;
+
       if (arg && ts.isNoSubstitutionTemplateLiteral(arg)) {
         result.push(arg);
       }

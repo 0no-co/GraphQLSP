@@ -107,6 +107,43 @@ importers:
         specifier: ^5.3.3
         version: 5.3.3
 
+  packages/example-tada:
+    dependencies:
+      '@graphql-typed-document-node/core':
+        specifier: ^3.2.0
+        version: 3.2.0(graphql@16.8.1)
+      '@urql/core':
+        specifier: ^3.0.0
+        version: 3.2.2(graphql@16.8.1)
+      gql.tada:
+        specifier: '*'
+        version: 1.0.0-beta.1(graphql@16.8.1)
+      graphql:
+        specifier: ^16.8.1
+        version: 16.8.1
+      urql:
+        specifier: ^4.0.6
+        version: 4.0.6(graphql@16.8.1)(react@18.2.0)
+    devDependencies:
+      '@0no-co/graphqlsp':
+        specifier: file:../graphqlsp
+        version: file:packages/graphqlsp(graphql@16.8.1)
+      '@graphql-codegen/cli':
+        specifier: ^5.0.0
+        version: 5.0.0(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.3.3)
+      '@graphql-codegen/client-preset':
+        specifier: ^4.1.0
+        version: 4.1.0(graphql@16.8.1)
+      '@types/react':
+        specifier: ^18.2.45
+        version: 18.2.45
+      ts-node:
+        specifier: ^10.9.1
+        version: 10.9.1(@types/node@18.15.11)(typescript@5.3.3)
+      typescript:
+        specifier: ^5.3.3
+        version: 5.3.3
+
   packages/graphqlsp:
     dependencies:
       '@graphql-codegen/add':
@@ -1898,13 +1935,13 @@ packages:
       '@graphql-tools/executor-graphql-ws': 1.1.0(graphql@16.8.1)
       '@graphql-tools/executor-http': 1.0.3(@types/node@18.15.11)(graphql@16.8.1)
       '@graphql-tools/executor-legacy-ws': 1.0.4(graphql@16.8.1)
-      '@graphql-tools/utils': 10.0.1(graphql@16.8.1)
+      '@graphql-tools/utils': 10.0.11(graphql@16.8.1)
       '@graphql-tools/wrap': 10.0.1(graphql@16.8.1)
       '@types/ws': 8.5.10
       '@whatwg-node/fetch': 0.9.14
       graphql: 16.8.1
       isomorphic-ws: 5.0.0(ws@8.14.2)
-      tslib: 2.5.0
+      tslib: 2.6.2
       value-or-promise: 1.0.12
       ws: 8.14.2
     transitivePeerDependencies:
@@ -3619,6 +3656,14 @@ packages:
     dependencies:
       get-intrinsic: 1.2.0
     dev: true
+
+  /gql.tada@1.0.0-beta.1(graphql@16.8.1):
+    resolution: {integrity: sha512-jodWt1sV8ORYp8FyY8+bGXAalRoyAqjk6kAZfewZgTuFZ8v/F70yujqxQ0KSdajzFK2SLsOSPEI+QXv+Nln9EQ==}
+    dependencies:
+      '@0no-co/graphql.web': 1.0.4(graphql@16.8.1)
+    transitivePeerDependencies:
+      - graphql
+    dev: false
 
   /graceful-fs@4.2.11:
     resolution: {integrity: sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==}

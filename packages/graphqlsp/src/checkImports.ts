@@ -52,67 +52,62 @@ export const checkImportsForFragments = (
       const moduleExports = typeChecker?.getExportsOfModule(symbol);
       if (!moduleExports) return;
 
-      const missingImports = moduleExports
-        .map(exp => {
-          if (importedNames.includes(exp.name)) {
-            return;
-          }
+      const missingImports = new Set<string>();
+      moduleExports.forEach(exp => {
+        if (importedNames.includes(exp.name)) {
+          return;
+        }
 
-          const declarations = exp.getDeclarations();
-          const declaration = declarations?.find(x => {
-            // TODO: check whether the sourceFile.fileName resembles the module
-            // specifier
-            return true;
-          });
+        const declarations = exp.getDeclarations();
+        const declaration = declarations?.find(x => {
+          // TODO: check whether the sourceFile.fileName resembles the module
+          // specifier
+          return true;
+        });
 
-          if (!declaration) return;
+        if (!declaration) return;
 
-          const [template] = findAllTaggedTemplateNodes(
-            declaration,
-            tagTemplate
-          );
-          if (template) {
-            let node = template;
-            if (
-              ts.isNoSubstitutionTemplateLiteral(node) ||
-              ts.isTemplateExpression(node)
-            ) {
-              if (ts.isTaggedTemplateExpression(node.parent)) {
-                node = node.parent;
-              } else {
-                return;
-              }
-            }
-
-            const text = resolveTemplate(
-              node,
-              node.getSourceFile().fileName,
-              info
-            ).combinedText;
-            try {
-              const parsed = parse(text, { noLocation: true });
-              if (
-                parsed.definitions.every(
-                  x => x.kind === Kind.FRAGMENT_DEFINITION
-                )
-              ) {
-                return `'${exp.name}'`;
-              }
-            } catch (e) {
+        const [template] = findAllTaggedTemplateNodes(declaration, tagTemplate);
+        if (template) {
+          let node = template;
+          if (
+            ts.isNoSubstitutionTemplateLiteral(node) ||
+            ts.isTemplateExpression(node)
+          ) {
+            if (ts.isTaggedTemplateExpression(node.parent)) {
+              node = node.parent;
+            } else {
               return;
             }
           }
-        })
-        .filter(Boolean);
 
-      if (missingImports.length) {
+          const text = resolveTemplate(
+            node,
+            node.getSourceFile().fileName,
+            info
+          ).combinedText;
+          try {
+            const parsed = parse(text, { noLocation: true });
+            if (
+              parsed.definitions.every(x => x.kind === Kind.FRAGMENT_DEFINITION)
+            ) {
+              missingImports.add(`'${exp.name}'`);
+            }
+          } catch (e) {
+            return;
+          }
+        }
+      });
+
+      const missing = Array.from(missingImports);
+      if (missing.length) {
         tsDiagnostics.push({
           file: source,
           length: imp.getText().length,
           start: imp.getStart(),
           category: ts.DiagnosticCategory.Message,
           code: MISSING_FRAGMENT_CODE,
-          messageText: `Missing Fragment import(s) ${missingImports.join(
+          messageText: `Missing Fragment import(s) ${missing.join(
             ', '
           )} from ${imp.moduleSpecifier.getText()}.`,
         });

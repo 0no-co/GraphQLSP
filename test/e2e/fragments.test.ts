@@ -4,7 +4,6 @@ import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
 import ts from 'typescript/lib/tsserverlibrary';
-import { waitForExpect } from './util';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 
@@ -12,9 +11,6 @@ const projectPath = path.resolve(__dirname, 'fixture-project');
 describe('Fragments', () => {
   const outFilePost = path.join(projectPath, 'Post.ts');
   const outFilePosts = path.join(projectPath, 'Posts.ts');
-  const genFilePost = path.join(projectPath, 'Post.generated.ts');
-  const genFilePosts = path.join(projectPath, 'Posts.generated.ts');
-  const baseGenFile = path.join(projectPath, '__generated__/baseGraphQLSP.ts');
 
   let server: TSServer;
   beforeAll(async () => {
@@ -25,9 +21,6 @@ describe('Fragments', () => {
     try {
       fs.unlinkSync(outFilePost);
       fs.unlinkSync(outFilePosts);
-      fs.unlinkSync(genFilePost);
-      fs.unlinkSync(genFilePosts);
-      fs.unlinkSync(baseGenFile);
     } catch {}
   });
 
@@ -68,22 +61,6 @@ describe('Fragments', () => {
       tmpfile: outFilePost,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
-    await waitForExpect(() => {
-      expect(fs.readFileSync(outFilePost, 'utf-8')).toContain(
-        `as typeof import('./Post.generated').PostFieldsFragmentDoc`
-      );
-    });
-
-    await waitForExpect(() => {
-      const generatedPostFileContents = fs.readFileSync(genFilePost, 'utf-8');
-      expect(generatedPostFileContents).toContain(
-        'export const PostFieldsFragmentDoc = '
-      );
-      expect(generatedPostFileContents).toContain(
-        'import * as Types from "./__generated__/baseGraphQLSP"'
-      );
-    });
-
     server.sendCommand('saveto', {
       file: outFilePosts,
       tmpfile: outFilePosts,
@@ -94,21 +71,12 @@ describe('Fragments', () => {
       tmpfile: outFilePosts,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
-    await waitForExpect(() => {
-      expect(fs.readFileSync(outFilePosts, 'utf-8')).toContain(
-        `as typeof import('./Posts.generated').PostsListDocument`
-      );
-    });
-
-    await waitForExpect(() => {
-      const generatedPostsFileContents = fs.readFileSync(genFilePosts, 'utf-8');
-      expect(generatedPostsFileContents).toContain(
-        'export const PostsListDocument = '
-      );
-      expect(generatedPostsFileContents).toContain(
-        'import * as Types from "./__generated__/baseGraphQLSP"'
-      );
-    });
+    await server.waitForResponse(
+      response =>
+        response.type === 'event' &&
+        response.event === 'semanticDiag' &&
+        response.body.file === outFilePosts
+    );
 
     const res = server.responses
       .reverse()

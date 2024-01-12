@@ -22,11 +22,21 @@ export type Logger = (msg: string) => void;
 
 type Config = {
   schema: SchemaOrigin | string;
+  // TODO: rename to tag or just remove entirely and always check for
+  // gql and graphql.
   template?: string;
+  // TODO: we need a bettername, gql.tada will also have
+  // call expressions, we can differentiate by means of
+  // tada having a second argument containing the fragments.
   templateIsCallExpression?: boolean;
-  disableTypegen?: boolean;
-  extraTypes?: string;
-  scalars?: Record<string, unknown>;
+  // Up in the air whether we want to keep supporting
+  // this. Current limitation are barrel-file exports
+  // could be counter-acted with an opinion on
+  // fragment-naming. Could become more relevant
+  // with gql.tada and could be useful for
+  // client-preset as well however the component type-annotations
+  // can better indicate a missing spread for the
+  // client-preset.
   shouldCheckForColocatedFragments?: boolean;
 };
 
@@ -43,36 +53,19 @@ function create(info: ts.server.PluginCreateInfo) {
 
   logger('Setting up the GraphQL Plugin');
 
-  const scalars = config.scalars || {};
-  const extraTypes = config.extraTypes || '';
-  const disableTypegen = config.disableTypegen ?? false;
-
   const proxy = createBasicDecorator(info);
-
-  const baseTypesPath =
-    info.project.getCurrentDirectory() + '/__generated__/baseGraphQLSP.ts';
 
   const schema = loadSchema(
     info.project.getProjectName(),
     config.schema,
-    logger,
-    baseTypesPath,
-    !disableTypegen,
-    scalars,
-    extraTypes
+    logger
   );
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics =
       info.languageService.getSemanticDiagnostics(filename);
 
-    const graphQLDiagnostics = getGraphQLDiagnostics(
-      originalDiagnostics.length > 0,
-      filename,
-      baseTypesPath,
-      schema,
-      info
-    );
+    const graphQLDiagnostics = getGraphQLDiagnostics(filename, schema, info);
 
     return graphQLDiagnostics
       ? [...graphQLDiagnostics, ...originalDiagnostics]

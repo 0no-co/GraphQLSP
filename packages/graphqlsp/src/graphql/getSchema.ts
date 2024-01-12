@@ -10,7 +10,6 @@ import path from 'path';
 import fs from 'fs';
 
 import { Logger } from '../index';
-import { generateBaseTypes } from './generateTypes';
 
 export type SchemaOrigin = {
   url: string;
@@ -20,11 +19,7 @@ export type SchemaOrigin = {
 export const loadSchema = (
   root: string,
   schema: SchemaOrigin | string,
-  logger: Logger,
-  baseTypesPath: string,
-  shouldTypegen: boolean,
-  scalars: Record<string, unknown>,
-  extraTypes?: string
+  logger: Logger
 ): { current: GraphQLSchema | null; version: number } => {
   const ref: { current: GraphQLSchema | null; version: number } = {
     current: null,
@@ -81,13 +76,6 @@ export const loadSchema = (
               );
               ref.version = ref.version + 1;
               logger(`Got schema for ${url!.toString()}`);
-              if (shouldTypegen)
-                generateBaseTypes(
-                  ref.current,
-                  baseTypesPath,
-                  scalars,
-                  extraTypes
-                );
             } catch (e: any) {
               logger(`Got schema error for ${e.message}`);
             }
@@ -113,8 +101,6 @@ export const loadSchema = (
         ? buildClientSchema(JSON.parse(contents))
         : buildSchema(contents);
       ref.version = ref.version + 1;
-
-      if (shouldTypegen) generateBaseTypes(ref.current, baseTypesPath, scalars);
     });
 
     ref.current = isJson
@@ -122,8 +108,6 @@ export const loadSchema = (
       : buildSchema(contents);
     ref.version = ref.version + 1;
 
-    if (shouldTypegen)
-      generateBaseTypes(ref.current, baseTypesPath, scalars, extraTypes);
     logger(`Got schema and initialized watcher for ${schema}`);
   }
 

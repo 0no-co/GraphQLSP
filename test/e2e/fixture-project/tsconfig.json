@@ -4,7 +4,8 @@
       {
         "name": "@0no-co/graphqlsp",
         "schema": "./schema.graphql",
-        "shouldCheckForColocatedFragments": true
+        "shouldCheckForColocatedFragments": true,
+        "templateIsCallExpression": false
       }
     ],
     "target": "es2016",

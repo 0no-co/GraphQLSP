@@ -1,4 +1,4 @@
-import ts from 'typescript/lib/tsserverlibrary';
+import ts, { TaggedTemplateExpression } from 'typescript/lib/tsserverlibrary';
 import { Diagnostic, getDiagnostics } from 'graphql-language-service';
 import {
   FragmentDefinitionNode,
@@ -57,8 +57,7 @@ export function getGraphQLDiagnostics(
   schema: { current: GraphQLSchema | null; version: number },
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
-  const tagTemplate = info.config.template || 'gql';
-  const isCallExpression = info.config.templateIsCallExpression ?? false;
+  const isCallExpression = info.config.templateIsCallExpression ?? true;
 
   let source = getSource(info, filename);
   if (!source) return undefined;
@@ -66,11 +65,11 @@ export function getGraphQLDiagnostics(
   let fragments: Array<FragmentDefinitionNode> = [],
     nodes: (ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral)[];
   if (isCallExpression) {
-    const result = findAllCallExpressions(source, tagTemplate, info);
+    const result = findAllCallExpressions(source, info);
     fragments = result.fragments;
     nodes = result.nodes;
   } else {
-    nodes = findAllTaggedTemplateNodes(source, tagTemplate);
+    nodes = findAllTaggedTemplateNodes(source);
   }
 
   const texts = nodes.map(node => {
@@ -123,9 +122,8 @@ const runDiagnostics = (
   schema: { current: GraphQLSchema | null; version: number },
   info: ts.server.PluginCreateInfo
 ) => {
-  const tagTemplate = info.config.template || 'gql';
   const filename = source.fileName;
-  const isCallExpression = info.config.templateIsCallExpression ?? false;
+  const isCallExpression = info.config.templateIsCallExpression ?? true;
 
   const diagnostics = nodes
     .map(originalNode => {
@@ -159,9 +157,13 @@ const runDiagnostics = (
       }
       // When we are dealing with a plain gql statement we have to add two these can be recognised
       // by the fact that the parent is an expressionStatement
+
       let startingPosition =
         node.pos +
-        (isCallExpression ? 0 : tagTemplate.length + (isExpression ? 2 : 1));
+        (isCallExpression
+          ? 0
+          : (node as TaggedTemplateExpression).tag.getText().length +
+            (isExpression ? 2 : 1));
       const endPosition = startingPosition + node.getText().length;
 
       let docFragments = [...fragments];
@@ -336,9 +338,9 @@ const runDiagnostics = (
           start,
           length,
         } = moduleSpecifierToFragments[moduleSpecifier];
-        const missingFragments = Array.from(new Set(fragmentNames.filter(
-          x => !usedFragments.has(x)
-        )));
+        const missingFragments = Array.from(
+          new Set(fragmentNames.filter(x => !usedFragments.has(x)))
+        );
         if (missingFragments.length) {
           fragmentDiagnostics.push({
             file: source,

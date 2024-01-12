@@ -30,6 +30,7 @@ import { Cursor } from './ast/cursor';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { getSuggestionsForFragmentSpread } from './graphql/getFragmentSpreadSuggestions';
+import { templates } from './ast/templates';
 
 export function getGraphQLCompletions(
   filename: string,
@@ -37,8 +38,7 @@ export function getGraphQLCompletions(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.WithMetadata<ts.CompletionInfo> | undefined {
-  const tagTemplate = info.config.template || 'gql';
-  const isCallExpression = info.config.templateIsCallExpression ?? false;
+  const isCallExpression = info.config.templateIsCallExpression ?? true;
 
   const source = getSource(info, filename);
   if (!source) return undefined;
@@ -54,7 +54,7 @@ export function getGraphQLCompletions(
   if (
     ts.isCallExpression(node) &&
     isCallExpression &&
-    node.expression.getText() === tagTemplate &&
+    templates.has(node.expression.getText()) &&
     node.arguments.length > 0 &&
     ts.isNoSubstitutionTemplateLiteral(node.arguments[0])
   ) {
@@ -69,7 +69,7 @@ export function getGraphQLCompletions(
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
 
-    if (!ts.isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
+    if (!ts.isIdentifier(tag) || !templates.has(tag.text)) return undefined;
 
     const foundToken = getToken(template, cursorPosition);
     if (!foundToken || !schema.current) return undefined;

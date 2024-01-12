@@ -11,6 +11,7 @@ import {
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
+import { templates } from './ast/templates';
 
 export function getGraphQLQuickInfo(
   filename: string,
@@ -18,8 +19,7 @@ export function getGraphQLQuickInfo(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.QuickInfo | undefined {
-  const tagTemplate = info.config.template || 'gql';
-  const isCallExpression = info.config.templateIsCallExpression ?? false;
+  const isCallExpression = info.config.templateIsCallExpression ?? true;
 
   const source = getSource(info, filename);
   if (!source) return undefined;
@@ -35,7 +35,7 @@ export function getGraphQLQuickInfo(
   if (
     ts.isCallExpression(node) &&
     isCallExpression &&
-    node.expression.getText() === tagTemplate &&
+    templates.has(node.expression.getText()) &&
     node.arguments.length > 0 &&
     ts.isNoSubstitutionTemplateLiteral(node.arguments[0])
   ) {
@@ -46,7 +46,7 @@ export function getGraphQLQuickInfo(
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
-    if (!ts.isIdentifier(tag) || tag.text !== tagTemplate) return undefined;
+    if (!ts.isIdentifier(tag) || !templates.has(tag.text)) return undefined;
 
     const foundToken = getToken(template, cursorPosition);
 

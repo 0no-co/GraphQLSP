@@ -1,6 +1,6 @@
 import ts from 'typescript/lib/tsserverlibrary';
 import { FragmentDefinitionNode, parse } from 'graphql';
-import { Logger } from '..';
+import { templates } from './templates';
 
 export function getSource(info: ts.server.PluginCreateInfo, filename: string) {
   const program = info.languageService.getProgram();
@@ -25,8 +25,7 @@ export function findNode(
 }
 
 export function findAllTaggedTemplateNodes(
-  sourceFile: ts.SourceFile | ts.Node,
-  template: string
+  sourceFile: ts.SourceFile | ts.Node
 ): Array<ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral> {
   const result: Array<
     ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral
@@ -34,10 +33,10 @@ export function findAllTaggedTemplateNodes(
   function find(node: ts.Node) {
     if (
       (ts.isTaggedTemplateExpression(node) &&
-        node.tag.getText() === template) ||
+        templates.has(node.tag.getText())) ||
       (ts.isNoSubstitutionTemplateLiteral(node) &&
         ts.isTaggedTemplateExpression(node.parent) &&
-        node.parent.tag.getText() === template)
+        templates.has(node.parent.tag.getText()))
     ) {
       result.push(node);
       return;
@@ -51,7 +50,6 @@ export function findAllTaggedTemplateNodes(
 
 function unrollFragment(
   element: ts.Identifier,
-  template: string,
   info: ts.server.PluginCreateInfo
 ): Array<FragmentDefinitionNode> {
   const fragments: Array<FragmentDefinitionNode> = [];
@@ -78,12 +76,12 @@ function unrollFragment(
     found = found.parent.initializer;
   }
 
-  if (ts.isCallExpression(found) && found.expression.getText() === template) {
+  if (ts.isCallExpression(found) && templates.has(found.expression.getText())) {
     const [arg, arg2] = found.arguments;
     if (arg2 && ts.isArrayLiteralExpression(arg2)) {
       arg2.elements.forEach(element => {
         if (ts.isIdentifier(element)) {
-          fragments.push(...unrollFragment(element, template, info));
+          fragments.push(...unrollFragment(element, info));
         }
       });
     }
@@ -103,7 +101,6 @@ function unrollFragment(
 
 export function findAllCallExpressions(
   sourceFile: ts.SourceFile,
-  template: string,
   info: ts.server.PluginCreateInfo,
   shouldSearchFragments: boolean = true
 ): {
@@ -114,7 +111,7 @@ export function findAllCallExpressions(
   let fragments: Array<FragmentDefinitionNode> = [];
   let hasTriedToFindFragments = shouldSearchFragments ? false : true;
   function find(node: ts.Node) {
-    if (ts.isCallExpression(node) && node.expression.getText() === template) {
+    if (ts.isCallExpression(node) && templates.has(node.expression.getText())) {
       const [arg, arg2] = node.arguments;
 
       if (!hasTriedToFindFragments && !arg2) {
@@ -123,7 +120,7 @@ export function findAllCallExpressions(
       } else if (arg2 && ts.isArrayLiteralExpression(arg2)) {
         arg2.elements.forEach(element => {
           if (ts.isIdentifier(element)) {
-            fragments.push(...unrollFragment(element, template, info));
+            fragments.push(...unrollFragment(element, info));
           }
         });
       }
@@ -145,7 +142,6 @@ export function getAllFragments(
   node: ts.CallExpression,
   info: ts.server.PluginCreateInfo
 ) {
-  const template = info.config.template || 'gql';
   let fragments: Array<FragmentDefinitionNode> = [];
 
   const definitions = info.languageService.getDefinitionAtPosition(
@@ -158,7 +154,7 @@ export function getAllFragments(
     const arg2 = node.arguments[1] as ts.ArrayLiteralExpression;
     arg2.elements.forEach(element => {
       if (ts.isIdentifier(element)) {
-        fragments.push(...unrollFragment(element, template, info));
+        fragments.push(...unrollFragment(element, info));
       }
     });
     return fragments;

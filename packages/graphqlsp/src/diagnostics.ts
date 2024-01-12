@@ -194,12 +194,6 @@ const runDiagnostics = (
         } catch (e) {}
       }
 
-      const logger: any = (msg: string) =>
-        info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-
-      logger(`Running diagnostics for ${text}`);
-      logger(`Running diagnostics with fragments ${docFragments}`);
-
       const graphQLDiagnostics = getDiagnostics(
         text,
         schema.current,
@@ -334,10 +328,6 @@ const runDiagnostics = (
         source,
         info
       );
-      console.log(
-        '[GraphhQLSP] Checking for colocated fragments ',
-        JSON.stringify(moduleSpecifierToFragments, null, 2)
-      );
 
       const usedFragments = new Set();
       nodes.forEach(node => {
@@ -359,9 +349,9 @@ const runDiagnostics = (
           start,
           length,
         } = moduleSpecifierToFragments[moduleSpecifier];
-        const missingFragments = fragmentNames.filter(
+        const missingFragments = Array.from(new Set(fragmentNames.filter(
           x => !usedFragments.has(x)
-        );
+        )));
         if (missingFragments.length) {
           fragmentDiagnostics.push({
             file: source,

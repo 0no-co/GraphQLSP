@@ -62,9 +62,6 @@ function unrollFragment(
   template: string,
   info: ts.server.PluginCreateInfo
 ): Array<FragmentDefinitionNode> {
-  const logger: Logger = (msg: string) =>
-    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-
   const fragments: Array<FragmentDefinitionNode> = [];
   const definitions = info.languageService.getDefinitionAtPosition(
     element.getSourceFile().fileName,
@@ -74,14 +71,11 @@ function unrollFragment(
   if (!definitions) return fragments;
 
   const [fragment] = definitions;
-  logger(`Found fragment ${JSON.stringify(fragment)}`);
 
   const externalSource = getSource(info, fragment.fileName);
-  logger(`Found source ${!!externalSource} ${fragment.fileName}`);
   if (!externalSource) return fragments;
 
   let found = findNode(externalSource, fragment.textSpan.start);
-  logger(`Found node ${!!found} ${fragment.textSpan.start}`);
   if (!found) return fragments;
 
   if (
@@ -92,7 +86,6 @@ function unrollFragment(
     found = found.parent.initializer;
   }
 
-  logger(`Found node ${found.getText()}`);
   if (ts.isCallExpression(found) && found.expression.getText() === template) {
     const [arg, arg2] = found.arguments;
     if (arg2 && ts.isArrayLiteralExpression(arg2)) {
@@ -110,9 +103,7 @@ function unrollFragment(
           fragments.push(definition);
         }
       });
-    } catch (e) {
-      logger(`Failed to parse fragment ${arg.getText().slice(1, -1)}`);
-    }
+    } catch (e) {}
   }
 
   return fragments;
@@ -162,6 +153,7 @@ export function getAllFragments(
   node: ts.CallExpression,
   info: ts.server.PluginCreateInfo
 ) {
+  const template = info.config.template || 'gql';
   let fragments: Array<FragmentDefinitionNode> = [];
 
   const definitions = info.languageService.getDefinitionAtPosition(
@@ -169,6 +161,16 @@ export function getAllFragments(
     node.expression.getStart()
   );
   if (!definitions) return fragments;
+
+  if (node.arguments[1] && ts.isArrayLiteralExpression(node.arguments[1])) {
+    const arg2 = node.arguments[1] as ts.ArrayLiteralExpression;
+    arg2.elements.forEach(element => {
+      if (ts.isIdentifier(element)) {
+        fragments.push(...unrollFragment(element, template, info));
+      }
+    });
+    return fragments;
+  }
 
   const def = definitions[0];
   const src = getSource(info, def.fileName);

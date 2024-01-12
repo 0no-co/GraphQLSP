@@ -13,7 +13,7 @@ interface Props {
   data: FragmentOf<typeof PokemonFields> | null;
 }
 
-const PokemonItem = ({ data }: Props) => {
+export const Pokemon = ({ data }: Props) => {
   const pokemon = readFragment(PokemonFields, data);
   if (!pokemon) {
     return null;
@@ -25,5 +25,3 @@ const PokemonItem = ({ data }: Props) => {
     </li>
   );
 };
-
-export { PokemonItem };

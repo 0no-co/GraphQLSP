@@ -37,9 +37,6 @@ export function getGraphQLCompletions(
   schema: { current: GraphQLSchema | null },
   info: ts.server.PluginCreateInfo
 ): ts.WithMetadata<ts.CompletionInfo> | undefined {
-  const logger: any = (msg: string) =>
-    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-
   const tagTemplate = info.config.template || 'gql';
   const isCallExpression = info.config.templateIsCallExpression ?? false;
 

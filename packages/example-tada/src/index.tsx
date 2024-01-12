@@ -1,12 +1,13 @@
 import { createClient, useQuery } from 'urql';
 import { graphql } from './graphql';
-import { PokemonItem, PokemonFields } from './Pokemon';
+import { Pokemon, PokemonFields } from './Pokemon';
 
 const PokemonQuery = graphql(`
   query Po($id: ID!) {
     pokemon(id: $id) {
       id
       fleeRate
+      ...pokemonFields
       attacks {
         special {
           name
@@ -45,6 +46,6 @@ const Pokemons = () => {
   const { pokemon } = result.data || {};
   console.log(pokemon?.weight?.maximum)
 
-  return <Pokemon data={result.data?.pokemon} />;
+  return <Pokemon data={result.data!.pokemon} />;
 }
 

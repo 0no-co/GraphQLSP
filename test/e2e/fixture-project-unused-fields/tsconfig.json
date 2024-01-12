@@ -6,9 +6,7 @@
         "schema": "./schema.graphql",
         "disableTypegen": true,
         "trackFieldUsage": true,
-        "shouldCheckForColocatedFragments": false,
-        "template": "graphql",
-        "templateIsCallExpression": true
+        "shouldCheckForColocatedFragments": false
       }
     ],
     "target": "es2016",

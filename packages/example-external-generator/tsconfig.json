@@ -6,8 +6,6 @@
         "schema": "./schema.graphql",
         "disableTypegen": true,
         "shouldCheckForColocatedFragments": true,
-        "template": "graphql",
-        "templateIsCallExpression": true,
         "trackFieldUsage": true
       }
     ],

@@ -24,9 +24,6 @@ export type Logger = (msg: string) => void;
 type Config = {
   schema: SchemaOrigin | string;
   templateIsCallExpression?: boolean;
-  disableTypegen?: boolean;
-  extraTypes?: string;
-  scalars?: Record<string, unknown>;
   shouldCheckForColocatedFragments?: boolean;
   template?: string;
   trackFieldUsage?: boolean;
@@ -45,40 +42,22 @@ function create(info: ts.server.PluginCreateInfo) {
 
   logger('Setting up the GraphQL Plugin');
 
-  const scalars = config.scalars || {};
-  const extraTypes = config.extraTypes || '';
-  const disableTypegen = config.disableTypegen ?? false;
-
   if (config.template) {
     templates.add(config.template);
   }
-
   const proxy = createBasicDecorator(info);
-
-  const baseTypesPath =
-    info.project.getCurrentDirectory() + '/__generated__/baseGraphQLSP.ts';
 
   const schema = loadSchema(
     info.project.getProjectName(),
     config.schema,
-    logger,
-    baseTypesPath,
-    !disableTypegen,
-    scalars,
-    extraTypes
+    logger
   );
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics =
       info.languageService.getSemanticDiagnostics(filename);
 
-    const graphQLDiagnostics = getGraphQLDiagnostics(
-      originalDiagnostics.length > 0,
-      filename,
-      baseTypesPath,
-      schema,
-      info
-    );
+    const graphQLDiagnostics = getGraphQLDiagnostics(filename, schema, info);
 
     return graphQLDiagnostics
       ? [...graphQLDiagnostics, ...originalDiagnostics]

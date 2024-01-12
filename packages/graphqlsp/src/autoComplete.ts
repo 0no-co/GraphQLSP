@@ -30,7 +30,7 @@ import { Cursor } from './ast/cursor';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { getSuggestionsForFragmentSpread } from './graphql/getFragmentSpreadSuggestions';
-import { templates } from '.';
+import { templates } from './ast/templates';
 
 export function getGraphQLCompletions(
   filename: string,

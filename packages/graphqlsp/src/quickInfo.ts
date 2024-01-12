@@ -11,7 +11,7 @@ import {
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
-import { templates } from '.';
+import { templates } from './ast/templates';
 
 export function getGraphQLQuickInfo(
   filename: string,

@@ -1,7 +1,7 @@
 import ts from 'typescript/lib/tsserverlibrary';
 import fs from 'fs';
 import { FragmentDefinitionNode, parse } from 'graphql';
-import { Logger, templates } from '..';
+import { templates } from './templates';
 
 export function isFileDirty(fileName: string, source: ts.SourceFile) {
   const contents = fs.readFileSync(fileName, 'utf-8');

@@ -4,6 +4,7 @@ import { SchemaOrigin, loadSchema } from './graphql/getSchema';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
 import { getGraphQLDiagnostics } from './diagnostics';
+import { templates } from './ast/templates';
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -19,8 +20,6 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
 }
 
 export type Logger = (msg: string) => void;
-
-export const templates = new Set(['gql', 'graphql']);
 
 type Config = {
   schema: SchemaOrigin | string;

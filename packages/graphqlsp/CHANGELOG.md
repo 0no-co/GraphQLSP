@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 0.15.0
+
+### Minor Changes
+
+- Make the LSP work with [`gql.tada`](https://github.com/0no-co/gql.tada)
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#160](https://github.com/0no-co/GraphQLSP/pull/160))
+
 ## 0.14.1
 
 ### Patch Changes

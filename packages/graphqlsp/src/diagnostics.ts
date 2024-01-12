@@ -194,6 +194,12 @@ const runDiagnostics = (
         } catch (e) {}
       }
 
+      const logger: any = (msg: string) =>
+        info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
+
+      logger(`Running diagnostics for ${text}`);
+      logger(`Running diagnostics with fragments ${docFragments}`);
+
       const graphQLDiagnostics = getDiagnostics(
         text,
         schema.current,

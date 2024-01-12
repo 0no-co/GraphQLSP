@@ -1,13 +1,12 @@
 import { createClient, useQuery } from 'urql';
 import { graphql } from './graphql';
-import { Pokemon, PokemonFields } from './Pokemon';
+import { PokemonItem, PokemonFields } from './Pokemon';
 
 const PokemonQuery = graphql(`
   query Po($id: ID!) {
     pokemon(id: $id) {
       id
       fleeRate
-      ...pokemonFields
       attacks {
         special {
           name

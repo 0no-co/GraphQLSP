@@ -1,20 +1,29 @@
-import { TypedDocumentNode } from '@graphql-typed-document-node/core';
 import { FragmentOf, graphql, readFragment } from './graphql';
 
 export const PokemonFields = graphql(`
   fragment pokemonFields on Pokemon {
-    id
     name
-    attacks {
-      fast {
-        damage
-        name
-      }
+    weight { 
+      minimum
     }
   }
-`)
+`);
 
-export const Pokemon = (data: FragmentOf<typeof PokemonFields>) => {
+interface Props {
+  data: FragmentOf<typeof PokemonFields> | null;
+}
+
+const PokemonItem = ({ data }: Props) => {
   const pokemon = readFragment(PokemonFields, data);
-  return `hi ${pokemon.name}`;
+  if (!pokemon) {
+    return null;
+  }
+
+  return (
+    <li>
+      {pokemon.name}
+    </li>
+  );
 };
+
+export { PokemonItem };

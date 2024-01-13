@@ -60,32 +60,14 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 
 **Optional**
 
-- `template` the shape of your template, by default `gql` and `graphql` are respected
+- `template` the shape of your template, by default `gql`
 - `templateIsCallExpression` this tells our client that you are using `graphql('doc')`
 - `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find
   unused fragments and provide a message notifying you about them
 - `trackFieldUsage` this only works with the client-preset, when turned on it will warn you about
   unused fields within the same file.
-
-### GraphQL Code Generator client-preset
-
-For folks using the `client-preset` you can ues the following config
-
-```json
-{
-  "compilerOptions": {
-    "plugins": [
-      {
-        "name": "@0no-co/graphqlsp",
-        "schema": "./schema.graphql",
-        "disableTypegen": true,
-        "shouldCheckForColocatedFragments": true,
-        "trackFieldUsage": true
-      }
-    ]
-  }
-}
-```
+- `tadaOutputLocation` when using `gql.tada` this can be convenient as it automatically generates
+  an `introspection.ts` file for you, just give it the directory to output to and you're done
 
 ## Tracking unused fields
 

@@ -1,6 +1,5 @@
 export const introspection = {
   __schema: {
-    description: null,
     queryType: {
       name: 'Query',
     },
@@ -8,24 +7,131 @@ export const introspection = {
     subscriptionType: null,
     types: [
       {
+        kind: 'ENUM',
+        name: 'PokemonType',
+        description:
+          'Elemental property associated with either a Pokémon or one of their moves.',
+        fields: null,
+        inputFields: null,
+        interfaces: null,
+        enumValues: [
+          {
+            name: 'Grass',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Poison',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Fire',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Flying',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Water',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Bug',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Normal',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Electric',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Ground',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Fairy',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Fighting',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Psychic',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Rock',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Steel',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Ice',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Ghost',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Dragon',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'Dark',
+            description: null,
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+        ],
+        possibleTypes: null,
+      },
+      {
         kind: 'OBJECT',
         name: 'Attack',
         description:
           'Move a Pokémon can perform with the associated damage and type.',
-        specifiedByURL: null,
         fields: [
-          {
-            name: 'damage',
-            description: null,
-            args: [],
-            type: {
-              kind: 'SCALAR',
-              name: 'Int',
-              ofType: null,
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
           {
             name: 'name',
             description: null,
@@ -50,6 +156,18 @@ export const introspection = {
             isDeprecated: false,
             deprecationReason: null,
           },
+          {
+            name: 'damage',
+            description: null,
+            args: [],
+            type: {
+              kind: 'SCALAR',
+              name: 'Int',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
         ],
         inputFields: null,
         interfaces: [],
@@ -58,10 +176,9 @@ export const introspection = {
       },
       {
         kind: 'SCALAR',
-        name: 'Int',
+        name: 'String',
         description:
-          'The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.',
-        specifiedByURL: null,
+          'The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.',
         fields: null,
         inputFields: null,
         interfaces: null,
@@ -70,10 +187,9 @@ export const introspection = {
       },
       {
         kind: 'SCALAR',
-        name: 'String',
+        name: 'Int',
         description:
-          'The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.',
-        specifiedByURL: null,
+          'The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.',
         fields: null,
         inputFields: null,
         interfaces: null,
@@ -82,9 +198,79 @@ export const introspection = {
       },
       {
         kind: 'OBJECT',
+        name: 'EvolutionRequirement',
+        description:
+          'Requirement that prevents an evolution through regular means of levelling up.',
+        fields: [
+          {
+            name: 'amount',
+            description: null,
+            args: [],
+            type: {
+              kind: 'SCALAR',
+              name: 'Int',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'name',
+            description: null,
+            args: [],
+            type: {
+              kind: 'SCALAR',
+              name: 'String',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+        ],
+        inputFields: null,
+        interfaces: [],
+        enumValues: null,
+        possibleTypes: null,
+      },
+      {
+        kind: 'OBJECT',
+        name: 'PokemonDimension',
+        description: null,
+        fields: [
+          {
+            name: 'minimum',
+            description: null,
+            args: [],
+            type: {
+              kind: 'SCALAR',
+              name: 'String',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'maximum',
+            description: null,
+            args: [],
+            type: {
+              kind: 'SCALAR',
+              name: 'String',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+        ],
+        inputFields: null,
+        interfaces: [],
+        enumValues: null,
+        possibleTypes: null,
+      },
+      {
+        kind: 'OBJECT',
         name: 'AttacksConnection',
         description: null,
-        specifiedByURL: null,
         fields: [
           {
             name: 'fast',
@@ -126,127 +312,9 @@ export const introspection = {
       },
       {
         kind: 'OBJECT',
-        name: 'EvolutionRequirement',
-        description:
-          'Requirement that prevents an evolution through regular means of levelling up.',
-        specifiedByURL: null,
-        fields: [
-          {
-            name: 'amount',
-            description: null,
-            args: [],
-            type: {
-              kind: 'SCALAR',
-              name: 'Int',
-              ofType: null,
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'name',
-            description: null,
-            args: [],
-            type: {
-              kind: 'SCALAR',
-              name: 'String',
-              ofType: null,
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-        ],
-        inputFields: null,
-        interfaces: [],
-        enumValues: null,
-        possibleTypes: null,
-      },
-      {
-        kind: 'OBJECT',
         name: 'Pokemon',
         description: null,
-        specifiedByURL: null,
         fields: [
-          {
-            name: 'attacks',
-            description: null,
-            args: [],
-            type: {
-              kind: 'OBJECT',
-              name: 'AttacksConnection',
-              ofType: null,
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'classification',
-            description: null,
-            args: [],
-            type: {
-              kind: 'SCALAR',
-              name: 'String',
-              ofType: null,
-            },
-            isDeprecated: true,
-            deprecationReason: 'And this is the reason why',
-          },
-          {
-            name: 'evolutionRequirements',
-            description: null,
-            args: [],
-            type: {
-              kind: 'LIST',
-              name: null,
-              ofType: {
-                kind: 'OBJECT',
-                name: 'EvolutionRequirement',
-                ofType: null,
-              },
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'evolutions',
-            description: null,
-            args: [],
-            type: {
-              kind: 'LIST',
-              name: null,
-              ofType: {
-                kind: 'OBJECT',
-                name: 'Pokemon',
-                ofType: null,
-              },
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'fleeRate',
-            description: 'Likelihood of an attempt to catch a Pokémon to fail.',
-            args: [],
-            type: {
-              kind: 'SCALAR',
-              name: 'Float',
-              ofType: null,
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'height',
-            description: null,
-            args: [],
-            type: {
-              kind: 'OBJECT',
-              name: 'PokemonDimension',
-              ofType: null,
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
           {
             name: 'id',
             description: null,
@@ -259,32 +327,6 @@ export const introspection = {
                 name: 'ID',
                 ofType: null,
               },
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'maxCP',
-            description:
-              'Maximum combat power a Pokémon may achieve at max level.',
-            args: [],
-            type: {
-              kind: 'SCALAR',
-              name: 'Int',
-              ofType: null,
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'maxHP',
-            description:
-              'Maximum health points a Pokémon may achieve at max level.',
-            args: [],
-            type: {
-              kind: 'SCALAR',
-              name: 'Int',
-              ofType: null,
             },
             isDeprecated: false,
             deprecationReason: null,
@@ -306,7 +348,19 @@ export const introspection = {
             deprecationReason: null,
           },
           {
-            name: 'resistant',
+            name: 'classification',
+            description: null,
+            args: [],
+            type: {
+              kind: 'SCALAR',
+              name: 'String',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'types',
             description: null,
             args: [],
             type: {
@@ -322,7 +376,7 @@ export const introspection = {
             deprecationReason: null,
           },
           {
-            name: 'types',
+            name: 'resistant',
             description: null,
             args: [],
             type: {
@@ -354,6 +408,22 @@ export const introspection = {
             deprecationReason: null,
           },
           {
+            name: 'evolutionRequirements',
+            description: null,
+            args: [],
+            type: {
+              kind: 'LIST',
+              name: null,
+              ofType: {
+                kind: 'OBJECT',
+                name: 'EvolutionRequirement',
+                ofType: null,
+              },
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
             name: 'weight',
             description: null,
             args: [],
@@ -365,258 +435,72 @@ export const introspection = {
             isDeprecated: false,
             deprecationReason: null,
           },
-        ],
-        inputFields: null,
-        interfaces: [],
-        enumValues: null,
-        possibleTypes: null,
-      },
-      {
-        kind: 'SCALAR',
-        name: 'Float',
-        description:
-          'The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point).',
-        specifiedByURL: null,
-        fields: null,
-        inputFields: null,
-        interfaces: null,
-        enumValues: null,
-        possibleTypes: null,
-      },
-      {
-        kind: 'SCALAR',
-        name: 'ID',
-        description:
-          'The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `"4"`) or integer (such as `4`) input value will be accepted as an ID.',
-        specifiedByURL: null,
-        fields: null,
-        inputFields: null,
-        interfaces: null,
-        enumValues: null,
-        possibleTypes: null,
-      },
-      {
-        kind: 'OBJECT',
-        name: 'PokemonDimension',
-        description: null,
-        specifiedByURL: null,
-        fields: [
           {
-            name: 'maximum',
+            name: 'height',
             description: null,
             args: [],
-            type: {
-              kind: 'SCALAR',
-              name: 'String',
-              ofType: null,
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'minimum',
-            description: null,
-            args: [],
-            type: {
-              kind: 'SCALAR',
-              name: 'String',
-              ofType: null,
-            },
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-        ],
-        inputFields: null,
-        interfaces: [],
-        enumValues: null,
-        possibleTypes: null,
-      },
-      {
-        kind: 'ENUM',
-        name: 'PokemonType',
-        description:
-          'Elemental property associated with either a Pokémon or one of their moves.',
-        specifiedByURL: null,
-        fields: null,
-        inputFields: null,
-        interfaces: null,
-        enumValues: [
-          {
-            name: 'Bug',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Dark',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Dragon',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Electric',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Fairy',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Fighting',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Fire',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Flying',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Ghost',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Grass',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Ground',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Ice',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Normal',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Poison',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Psychic',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Rock',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Steel',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-          {
-            name: 'Water',
-            description: null,
-            isDeprecated: false,
-            deprecationReason: null,
-          },
-        ],
-        possibleTypes: null,
-      },
-      {
-        kind: 'OBJECT',
-        name: 'Query',
-        description: null,
-        specifiedByURL: null,
-        fields: [
-          {
-            name: 'pokemon',
-            description:
-              'Get a single Pokémon by its ID, a three character long identifier padded with zeroes',
-            args: [
-              {
-                name: 'id',
-                description: null,
-                type: {
-                  kind: 'NON_NULL',
-                  name: null,
-                  ofType: {
-                    kind: 'SCALAR',
-                    name: 'ID',
-                    ofType: null,
-                  },
-                },
-                defaultValue: null,
-                isDeprecated: false,
-                deprecationReason: null,
-              },
-            ],
             type: {
               kind: 'OBJECT',
-              name: 'Pokemon',
+              name: 'PokemonDimension',
               ofType: null,
             },
             isDeprecated: false,
             deprecationReason: null,
           },
           {
-            name: 'pokemons',
-            description: 'List out all Pokémon, optionally in pages',
-            args: [
-              {
-                name: 'limit',
-                description: null,
-                type: {
-                  kind: 'SCALAR',
-                  name: 'Int',
-                  ofType: null,
-                },
-                defaultValue: null,
-                isDeprecated: false,
-                deprecationReason: null,
-              },
-              {
-                name: 'skip',
-                description: null,
-                type: {
-                  kind: 'SCALAR',
-                  name: 'Int',
-                  ofType: null,
-                },
-                defaultValue: null,
-                isDeprecated: false,
-                deprecationReason: null,
-              },
-            ],
+            name: 'attacks',
+            description: null,
+            args: [],
+            type: {
+              kind: 'OBJECT',
+              name: 'AttacksConnection',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'fleeRate',
+            description: 'Likelihood of an attempt to catch a Pokémon to fail.',
+            args: [],
+            type: {
+              kind: 'SCALAR',
+              name: 'Float',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'maxCP',
+            description:
+              'Maximum combat power a Pokémon may achieve at max level.',
+            args: [],
+            type: {
+              kind: 'SCALAR',
+              name: 'Int',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'maxHP',
+            description:
+              'Maximum health points a Pokémon may achieve at max level.',
+            args: [],
+            type: {
+              kind: 'SCALAR',
+              name: 'Int',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'evolutions',
+            description: null,
+            args: [],
             type: {
               kind: 'LIST',
               name: null,
@@ -637,9 +521,106 @@ export const introspection = {
       },
       {
         kind: 'SCALAR',
+        name: 'ID',
+        description:
+          'The `ID` scalar type represents a unique identifier, often used to refetch an object or as key for a cache. The ID type appears in a JSON response as a String; however, it is not intended to be human-readable. When expected as an input type, any string (such as `"4"`) or integer (such as `4`) input value will be accepted as an ID.',
+        fields: null,
+        inputFields: null,
+        interfaces: null,
+        enumValues: null,
+        possibleTypes: null,
+      },
+      {
+        kind: 'SCALAR',
+        name: 'Float',
+        description:
+          'The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point).',
+        fields: null,
+        inputFields: null,
+        interfaces: null,
+        enumValues: null,
+        possibleTypes: null,
+      },
+      {
+        kind: 'OBJECT',
+        name: 'Query',
+        description: null,
+        fields: [
+          {
+            name: 'pokemons',
+            description: 'List out all Pokémon, optionally in pages',
+            args: [
+              {
+                name: 'limit',
+                description: null,
+                type: {
+                  kind: 'SCALAR',
+                  name: 'Int',
+                  ofType: null,
+                },
+                defaultValue: null,
+              },
+              {
+                name: 'skip',
+                description: null,
+                type: {
+                  kind: 'SCALAR',
+                  name: 'Int',
+                  ofType: null,
+                },
+                defaultValue: null,
+              },
+            ],
+            type: {
+              kind: 'LIST',
+              name: null,
+              ofType: {
+                kind: 'OBJECT',
+                name: 'Pokemon',
+                ofType: null,
+              },
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+          {
+            name: 'pokemon',
+            description:
+              'Get a single Pokémon by its ID, a three character long identifier padded with zeroes',
+            args: [
+              {
+                name: 'id',
+                description: null,
+                type: {
+                  kind: 'NON_NULL',
+                  name: null,
+                  ofType: {
+                    kind: 'SCALAR',
+                    name: 'ID',
+                    ofType: null,
+                  },
+                },
+                defaultValue: null,
+              },
+            ],
+            type: {
+              kind: 'OBJECT',
+              name: 'Pokemon',
+              ofType: null,
+            },
+            isDeprecated: false,
+            deprecationReason: null,
+          },
+        ],
+        inputFields: null,
+        interfaces: [],
+        enumValues: null,
+        possibleTypes: null,
+      },
+      {
+        kind: 'SCALAR',
         name: 'Boolean',
         description: 'The `Boolean` scalar type represents `true` or `false`.',
-        specifiedByURL: null,
         fields: null,
         inputFields: null,
         interfaces: null,
@@ -651,7 +632,6 @@ export const introspection = {
         name: '__Schema',
         description:
           'A GraphQL Schema defines the capabilities of a GraphQL server. It exposes all available types and directives on the server, as well as the entry points for query, mutation, and subscription operations.',
-        specifiedByURL: null,
         fields: [
           {
             name: 'description',
@@ -765,8 +745,7 @@ export const introspection = {
         kind: 'OBJECT',
         name: '__Type',
         description:
-          'The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.\n\nDepending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name, description and optional `specifiedByURL`, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.',
-        specifiedByURL: null,
+          'The fundamental unit of any GraphQL Schema is the type. There are many kinds of types in GraphQL as represented by the `__TypeKind` enum.\n\nDepending on the kind of a type, certain fields describe information about that type. Scalar types provide no information beyond a name, description and optional `specifiedByUrl`, while Enum types provide their values. Object and Interface types provide the fields they describe. Abstract types, Union and Interface, provide the Object types possible at runtime. List and NonNull types compose other types.',
         fields: [
           {
             name: 'kind',
@@ -809,7 +788,7 @@ export const introspection = {
             deprecationReason: null,
           },
           {
-            name: 'specifiedByURL',
+            name: 'specifiedByUrl',
             description: null,
             args: [],
             type: {
@@ -833,8 +812,6 @@ export const introspection = {
                   ofType: null,
                 },
                 defaultValue: 'false',
-                isDeprecated: false,
-                deprecationReason: null,
               },
             ],
             type: {
@@ -906,8 +883,6 @@ export const introspection = {
                   ofType: null,
                 },
                 defaultValue: 'false',
-                isDeprecated: false,
-                deprecationReason: null,
               },
             ],
             type: {
@@ -939,8 +914,6 @@ export const introspection = {
                   ofType: null,
                 },
                 defaultValue: 'false',
-                isDeprecated: false,
-                deprecationReason: null,
               },
             ],
             type: {
@@ -982,7 +955,6 @@ export const introspection = {
         name: '__TypeKind',
         description:
           'An enum describing what kind of type a given `__Type` is.',
-        specifiedByURL: null,
         fields: null,
         inputFields: null,
         interfaces: null,
@@ -1050,7 +1022,6 @@ export const introspection = {
         name: '__Field',
         description:
           'Object and Interface types are described by a list of Fields, each of which has a name, potentially a list of arguments, and a return type.',
-        specifiedByURL: null,
         fields: [
           {
             name: 'name',
@@ -1093,8 +1064,6 @@ export const introspection = {
                   ofType: null,
                 },
                 defaultValue: 'false',
-                isDeprecated: false,
-                deprecationReason: null,
               },
             ],
             type: {
@@ -1172,7 +1141,6 @@ export const introspection = {
         name: '__InputValue',
         description:
           'Arguments provided to Fields or Directives and the input fields of an InputObject are represented as Input Values which describe their type and optionally a default value.',
-        specifiedByURL: null,
         fields: [
           {
             name: 'name',
@@ -1270,7 +1238,6 @@ export const introspection = {
         name: '__EnumValue',
         description:
           'One possible value for a given Enum. Enum values are unique values, not a placeholder for a string or numeric value. However an Enum value is returned in a JSON response as a string.',
-        specifiedByURL: null,
         fields: [
           {
             name: 'name',
@@ -1339,7 +1306,6 @@ export const introspection = {
         name: '__Directive',
         description:
           "A Directive provides a way to describe alternate runtime execution and type validation behavior in a GraphQL document.\n\nIn some cases, you need to provide options to alter GraphQL's execution behavior in ways field arguments will not suffice, such as conditionally including or skipping a field. Directives provide this by describing additional information to the executor.",
-        specifiedByURL: null,
         fields: [
           {
             name: 'name',
@@ -1412,20 +1378,7 @@ export const introspection = {
           {
             name: 'args',
             description: null,
-            args: [
-              {
-                name: 'includeDeprecated',
-                description: null,
-                type: {
-                  kind: 'SCALAR',
-                  name: 'Boolean',
-                  ofType: null,
-                },
-                defaultValue: 'false',
-                isDeprecated: false,
-                deprecationReason: null,
-              },
-            ],
+            args: [],
             type: {
               kind: 'NON_NULL',
               name: null,
@@ -1457,7 +1410,6 @@ export const introspection = {
         name: '__DirectiveLocation',
         description:
           'A Directive can be adjacent to many parts of the GraphQL language, a __DirectiveLocation describes one such possible adjacencies.',
-        specifiedByURL: null,
         fields: null,
         inputFields: null,
         interfaces: null,
@@ -1587,7 +1539,6 @@ export const introspection = {
         name: 'include',
         description:
           'Directs the executor to include this field or fragment only when the `if` argument is true.',
-        isRepeatable: false,
         locations: ['FIELD', 'FRAGMENT_SPREAD', 'INLINE_FRAGMENT'],
         args: [
           {
@@ -1603,8 +1554,6 @@ export const introspection = {
               },
             },
             defaultValue: null,
-            isDeprecated: false,
-            deprecationReason: null,
           },
         ],
       },
@@ -1612,7 +1561,6 @@ export const introspection = {
         name: 'skip',
         description:
           'Directs the executor to skip this field or fragment when the `if` argument is true.',
-        isRepeatable: false,
         locations: ['FIELD', 'FRAGMENT_SPREAD', 'INLINE_FRAGMENT'],
         args: [
           {
@@ -1628,8 +1576,6 @@ export const introspection = {
               },
             },
             defaultValue: null,
-            isDeprecated: false,
-            deprecationReason: null,
           },
         ],
       },
@@ -1637,7 +1583,6 @@ export const introspection = {
         name: 'deprecated',
         description:
           'Marks an element of a GraphQL schema as no longer supported.',
-        isRepeatable: false,
         locations: [
           'FIELD_DEFINITION',
           'ARGUMENT_DEFINITION',
@@ -1655,21 +1600,18 @@ export const introspection = {
               ofType: null,
             },
             defaultValue: '"No longer supported"',
-            isDeprecated: false,
-            deprecationReason: null,
           },
         ],
       },
       {
         name: 'specifiedBy',
         description:
-          'Exposes a URL that specifies the behavior of this scalar.',
-        isRepeatable: false,
+          'Exposes a URL that specifies the behaviour of this scalar.',
         locations: ['SCALAR'],
         args: [
           {
             name: 'url',
-            description: 'The URL that specifies the behavior of this scalar.',
+            description: 'The URL that specifies the behaviour of this scalar.',
             type: {
               kind: 'NON_NULL',
               name: null,
@@ -1680,8 +1622,6 @@ export const introspection = {
               },
             },
             defaultValue: null,
-            isDeprecated: false,
-            deprecationReason: null,
           },
         ],
       },

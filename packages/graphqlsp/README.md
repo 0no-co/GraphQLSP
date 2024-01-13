@@ -66,28 +66,8 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
   unused fragments and provide a message notifying you about them
 - `trackFieldUsage` this only works with the client-preset, when turned on it will warn you about
   unused fields within the same file.
-
-### GraphQL Code Generator client-preset
-
-For folks using the `client-preset` you can ues the following config
-
-```json
-{
-  "compilerOptions": {
-    "plugins": [
-      {
-        "name": "@0no-co/graphqlsp",
-        "schema": "./schema.graphql",
-        "disableTypegen": true,
-        "templateIsCallExpression": true,
-        "shouldCheckForColocatedFragments": true,
-        "trackFieldUsage": true,
-        "template": "graphql"
-      }
-    ]
-  }
-}
-```
+- `tadaOutputLocation` when using `gql.tada` this can be convenient as it automatically generates
+  an `introspection.ts` file for you, just give it the directory to output to and you're done
 
 ## Tracking unused fields
 

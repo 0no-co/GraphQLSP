@@ -4,6 +4,7 @@ import {
   buildClientSchema,
   getIntrospectionQuery,
   IntrospectionQuery,
+  introspectionFromSchema,
 } from 'graphql';
 import fetch from 'node-fetch';
 import path from 'path';
@@ -19,6 +20,7 @@ export type SchemaOrigin = {
 export const loadSchema = (
   root: string,
   schema: SchemaOrigin | string,
+  tadaOutputLocation: string | undefined,
   logger: Logger
 ): { current: GraphQLSchema | null; version: number } => {
   const ref: { current: GraphQLSchema | null; version: number } = {
@@ -71,6 +73,23 @@ export const loadSchema = (
             logger(`Got error while fetching introspection ${result}`);
           } else if (result.data) {
             try {
+              if (tadaOutputLocation) {
+                fs.promises.writeFile(
+                  path.resolve(
+                    root,
+                    '..',
+                    tadaOutputLocation,
+                    'introspection.ts'
+                  ),
+                  `export const introspection = ${JSON.stringify(
+                    result.data,
+                    undefined,
+                    2
+                  )} as const`,
+                  'utf-8'
+                );
+              }
+
               ref.current = buildClientSchema(
                 (result as { data: IntrospectionQuery }).data
               );
@@ -100,6 +119,17 @@ export const loadSchema = (
       ref.current = isJson
         ? buildClientSchema(JSON.parse(contents))
         : buildSchema(contents);
+
+      if (tadaOutputLocation) {
+        const introspection = isJson
+          ? contents
+          : JSON.stringify(introspectionFromSchema(ref.current), undefined, 2);
+        fs.promises.writeFile(
+          path.resolve(root, '..', tadaOutputLocation, 'introspection.ts'),
+          `export const introspection = ${introspection} as const`,
+          'utf-8'
+        );
+      }
       ref.version = ref.version + 1;
     });
 
@@ -107,6 +137,17 @@ export const loadSchema = (
       ? buildClientSchema(JSON.parse(contents))
       : buildSchema(contents);
     ref.version = ref.version + 1;
+
+    if (tadaOutputLocation) {
+      const introspection = isJson
+        ? contents
+        : JSON.stringify(introspectionFromSchema(ref.current), undefined, 2);
+      fs.promises.writeFile(
+        path.resolve(root, '..', tadaOutputLocation, 'introspection.ts'),
+        `export const introspection = ${introspection} as const`,
+        'utf-8'
+      );
+    }
 
     logger(`Got schema and initialized watcher for ${schema}`);
   }

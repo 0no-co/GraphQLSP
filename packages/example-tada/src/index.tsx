@@ -38,6 +38,8 @@ const Pokemons = () => {
   console.log(fleeRate)
   // Works
   const po = result.data?.pokemon;
+
+  // @ts-expect-error
   const { pokemon: { weight: { minimum } } } = result.data || {};
   console.log(po?.name, minimum)
 

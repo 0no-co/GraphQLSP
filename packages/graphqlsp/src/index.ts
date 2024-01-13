@@ -5,6 +5,7 @@ import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
 import { getGraphQLDiagnostics } from './diagnostics';
 import { templates } from './ast/templates';
+import { Kind, buildClientSchema, printIntrospectionSchema } from 'graphql';
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -27,6 +28,7 @@ type Config = {
   shouldCheckForColocatedFragments?: boolean;
   template?: string;
   trackFieldUsage?: boolean;
+  tadaOutputLocation?: string;
 };
 
 function create(info: ts.server.PluginCreateInfo) {
@@ -45,11 +47,16 @@ function create(info: ts.server.PluginCreateInfo) {
   if (config.template) {
     templates.add(config.template);
   }
+
   const proxy = createBasicDecorator(info);
 
   const schema = loadSchema(
     info.project.getProjectName(),
     config.schema,
+    // TODO: either we check here for the client having a package.json
+    // with gql.tada and use a default file loc or we use a config
+    // option with a location
+    config.tadaOutputLocation,
     logger
   );
 

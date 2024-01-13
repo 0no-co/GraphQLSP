@@ -6,7 +6,8 @@
         "schema": "./schema.graphql",
         "disableTypegen": true,
         "shouldCheckForColocatedFragments": true,
-        "trackFieldUsage": true
+        "trackFieldUsage": true,
+        "tadaOutputLocation": "."
       }
     ],
     "jsx": "react-jsx",

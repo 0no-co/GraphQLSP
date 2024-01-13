@@ -21,6 +21,8 @@ const normalize = name => []
 const extension = name => {
   if (/\.d.ts$/.test(name)) {
     return '.d.ts';
+  } else if (/\.module.js$/.test(name)) {
+    return '.module.js';
   } else {
     return path.extname(name);
   }

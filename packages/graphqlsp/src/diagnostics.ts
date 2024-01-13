@@ -21,7 +21,6 @@ import { resolveTemplate } from './ast/resolve';
 import { checkFieldUsageInFile } from './fieldUsage';
 import {
   MISSING_FRAGMENT_CODE,
-  checkImportsForFragments,
   getColocatedFragmentNames,
 } from './checkImports';
 
@@ -306,12 +305,8 @@ const runDiagnostics = (
     );
 
     const shouldCheckForColocatedFragments =
-      info.config.shouldCheckForColocatedFragments ?? false;
+      info.config.shouldCheckForColocatedFragments ?? true;
     let fragmentDiagnostics: ts.Diagnostic[] = [];
-    console.log(
-      '[GraphhQLSP] Checking for colocated fragments ',
-      !!shouldCheckForColocatedFragments
-    );
     if (shouldCheckForColocatedFragments) {
       const moduleSpecifierToFragments = getColocatedFragmentNames(
         source,
@@ -358,7 +353,6 @@ const runDiagnostics = (
 
     return [...tsDiagnostics, ...usageDiagnostics, ...fragmentDiagnostics];
   } else {
-    const importDiagnostics = checkImportsForFragments(source, info);
-    return [...tsDiagnostics, ...importDiagnostics];
+    return tsDiagnostics;
   }
 };

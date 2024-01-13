@@ -1,7 +1,4 @@
-let ts;
-
-export function init(value) {
-  ts = value.typescript;
+export var ts;
+export function init(modules) {
+  ts = modules.typescript;
 }
-
-export default ts;

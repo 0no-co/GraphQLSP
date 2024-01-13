@@ -1,4 +1,4 @@
-import ts, { init as initTypeScript } from './ts';
+import { ts, init as initTypeScript } from './ts';
 import { SchemaOrigin, loadSchema } from './graphql/getSchema';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';

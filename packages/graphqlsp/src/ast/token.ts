@@ -1,4 +1,4 @@
-import ts from '../ts';
+import { ts } from '../ts';
 import { onlineParser, State, CharacterStream } from 'graphql-language-service';
 
 export interface Token {

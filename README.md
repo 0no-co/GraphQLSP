@@ -60,12 +60,13 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 
 **Optional**
 
-- `template` the shape of your template, by default `gql` and `graphql` are respected
-- `templateIsCallExpression` this tells our client that you are using `graphql('doc')`
+- `template` add an additional template to the defaults `gql` and `graphql`
+- `templateIsCallExpression` this tells our client that you are using `graphql('doc')` (default: true)
+  when using `false` it will look for tagged template literals
 - `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find
-  unused fragments and provide a message notifying you about them
+  unused fragments and provide a message notifying you about them (only works with call-expressions, default: true)
 - `trackFieldUsage` this only works with the client-preset, when turned on it will warn you about
-  unused fields within the same file.
+  unused fields within the same file. (only works with call-expressions, default: true)
 
 ### GraphQL Code Generator client-preset
 
@@ -79,8 +80,10 @@ For folks using the `client-preset` you can ues the following config
         "name": "@0no-co/graphqlsp",
         "schema": "./schema.graphql",
         "disableTypegen": true,
+        "templateIsCallExpression": true,
         "shouldCheckForColocatedFragments": true,
-        "trackFieldUsage": true
+        "trackFieldUsage": true,
+        "template": "graphql"
       }
     ]
   }

@@ -62,6 +62,7 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 
 - `template` add an additional template to the defaults `gql` and `graphql`
 - `templateIsCallExpression` this tells our client that you are using `graphql('doc')` (default: true)
+  when using `false` it will look for tagged template literals
 - `shouldCheckForColocatedFragments` when turned on, this will scan your imports to find
   unused fragments and provide a message notifying you about them (only works with call-expressions, default: true)
 - `trackFieldUsage` this only works with the client-preset, when turned on it will warn you about

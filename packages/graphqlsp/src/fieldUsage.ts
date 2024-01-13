@@ -1,4 +1,4 @@
-import ts from 'typescript/lib/tsserverlibrary';
+import ts from './ts';
 import { parse, visit } from 'graphql';
 
 import { findNode } from './ast';

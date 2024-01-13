@@ -1,4 +1,4 @@
-import ts from 'typescript/lib/tsserverlibrary';
+import ts from './ts';
 import { getHoverInformation } from 'graphql-language-service';
 import { GraphQLSchema } from 'graphql';
 

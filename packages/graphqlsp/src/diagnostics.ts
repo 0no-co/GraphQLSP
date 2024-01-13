@@ -1,4 +1,4 @@
-import ts, { TaggedTemplateExpression } from 'typescript/lib/tsserverlibrary';
+import ts, { TaggedTemplateExpression } from './ts';
 import { Diagnostic, getDiagnostics } from 'graphql-language-service';
 import {
   FragmentDefinitionNode,

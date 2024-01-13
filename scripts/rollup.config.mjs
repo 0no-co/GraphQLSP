@@ -32,6 +32,7 @@ const meta = JSON.parse(readFileSync('package.json'));
 const name = normalize(meta.name);
 
 const externalModules = [
+  'typescript',
   ...Object.keys(meta.dependencies || {}),
   ...Object.keys(meta.peerDependencies || {}),
 ];

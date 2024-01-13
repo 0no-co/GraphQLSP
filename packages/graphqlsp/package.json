@@ -2,10 +2,20 @@
   "name": "@0no-co/graphqlsp",
   "version": "0.15.0",
   "description": "TypeScript LSP plugin that finds GraphQL documents in your code and provides hints and auto-generates types.",
-  "main": "./dist/index.js",
-  "module": "./dist/index.module.js",
+  "main": "./dist/graphqlsp.js",
+  "module": "./dist/graphqlsp.module.js",
+  "types": "./dist/graphqlsp.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/graphqlsp.d.ts",
+      "import": "./dist/graphqlsp.module.js",
+      "require": "./dist/graphqlsp.js",
+      "source": "./src/index.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "scripts": {
-    "build": "rollup -c ../../scripts/build.mjs",
+    "build": "rollup -c ../../scripts/rollup.config.mjs",
     "dev": "NODE_ENV=development pnpm build --watch",
     "prepublishOnly": "pnpm build"
   },
@@ -36,12 +46,12 @@
   "devDependencies": {
     "@types/node": "^18.15.11",
     "@types/node-fetch": "^2.6.3",
+    "graphql-language-service": "^5.2.0",
     "graphql": "^16.8.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {
     "@sindresorhus/fnv1a": "^2.0.0",
-    "graphql-language-service": "^5.2.0",
     "lru-cache": "^10.0.1",
     "node-fetch": "^2.0.0"
   },

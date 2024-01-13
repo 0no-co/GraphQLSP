@@ -4,7 +4,6 @@
       {
         "name": "@0no-co/graphqlsp",
         "schema": "./schema.graphql",
-        "shouldCheckForColocatedFragments": true,
         "templateIsCallExpression": false
       }
     ],

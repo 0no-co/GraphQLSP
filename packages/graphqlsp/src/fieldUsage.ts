@@ -176,7 +176,7 @@ export const checkFieldUsageInFile = (
   info: ts.server.PluginCreateInfo
 ) => {
   const diagnostics: ts.Diagnostic[] = [];
-  const shouldTrackFieldUsage = info.config.trackFieldUsage ?? false;
+  const shouldTrackFieldUsage = info.config.trackFieldUsage ?? true;
   if (!shouldTrackFieldUsage) return diagnostics;
 
   nodes.forEach(node => {

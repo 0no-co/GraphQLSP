@@ -68,10 +68,10 @@ async function saveTadaIntrospection(
 
   const json = JSON.stringify(minified, null, 2);
 
-  let contents = `const introspection = ${json} as const;`;
   let output = path.resolve(path.dirname(root), tadaOutputLocation);
-
   let stat: fs.Stats;
+  let contents = '';
+
   try {
     stat = await fs.promises.stat(output);
   } catch (error) {
@@ -79,7 +79,6 @@ async function saveTadaIntrospection(
     return;
   }
 
-  let fileContents = '';
   if (stat.isDirectory()) {
     output = path.join(output, 'introspection.d.ts');
   } else if (!stat.isFile()) {
@@ -91,7 +90,8 @@ async function saveTadaIntrospection(
     contents = [
       dtsAnnotationComment,
       contents,
-      '\n',
+      `declare const introspection: ${json};\n`,
+      "import * as gqlTada from 'gql.tada';\n",
       "declare module 'gql.tada' {",
       '  interface setupSchema {',
       '    introspection: typeof introspection',
@@ -101,7 +101,7 @@ async function saveTadaIntrospection(
   } else if (path.extname(output) === '.ts') {
     contents = [
       tsAnnotationComment,
-      contents,
+      `const introspection = ${json} as const;\n`,
       'export { introspection };',
     ].join('\n');
   } else {

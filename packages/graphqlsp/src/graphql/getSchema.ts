@@ -6,6 +6,8 @@ import {
   IntrospectionQuery,
   introspectionFromSchema,
 } from 'graphql';
+
+import { minifyIntrospectionQuery } from '@urql/introspection';
 import fetch from 'node-fetch';
 import path from 'path';
 import fs from 'fs';
@@ -21,7 +23,14 @@ async function saveTadaIntrospection(
     ? introspectionFromSchema(schema, { descriptions: false })
     : schema;
 
-  const json = JSON.stringify(introspection, null, 2);
+  const minified = minifyIntrospectionQuery(introspection, {
+    includeDirectives: false,
+    includeEnums: true,
+    includeInputs: true,
+    includeScalars: true,
+  });
+
+  const json = JSON.stringify(minified, null, 2);
   const contents = `export const introspection = ${json} as const;`;
 
   await fs.promises.writeFile(

@@ -36,7 +36,7 @@ const tsAnnotationComment = [
   ' * @example',
   ' * ```',
   " * import { initGraphQLTada } from 'gql.tada';",
-  " * import { introspection } from './introspection';",
+  " * import type { introspection } from './introspection';",
   ' *',
   ' * export const graphql = initGraphQLTada<{',
   ' *   introspection: typeof introspection;',

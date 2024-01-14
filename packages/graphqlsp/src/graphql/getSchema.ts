@@ -12,6 +12,24 @@ import fs from 'fs';
 
 import { Logger } from '../index';
 
+async function saveTadaIntrospection(
+  root: string,
+  schema: GraphQLSchema | IntrospectionQuery,
+  tadaOutputLocation: string
+) {
+  const introspection = !('__schema' in schema)
+    ? introspectionFromSchema(schema, { descriptions: false })
+    : schema;
+
+  const json = JSON.stringify(introspection, null, 2);
+  const contents = `export const introspection = ${json} as const;`;
+
+  await fs.promises.writeFile(
+    path.resolve(path.dirname(root), tadaOutputLocation, 'introspection.ts'),
+    contents
+  );
+}
+
 export type SchemaOrigin = {
   url: string;
   headers: Record<string, unknown>;
@@ -68,25 +86,17 @@ export const loadSchema = (
           else return response.text();
         })
         .then(result => {
+          // TODO: Prevent logging entire result or disable logging by default
           logger(`Got result ${JSON.stringify(result)}`);
           if (typeof result === 'string') {
             logger(`Got error while fetching introspection ${result}`);
           } else if (result.data) {
             try {
               if (tadaOutputLocation) {
-                fs.promises.writeFile(
-                  path.resolve(
-                    root,
-                    '..',
-                    tadaOutputLocation,
-                    'introspection.ts'
-                  ),
-                  `export const introspection = ${JSON.stringify(
-                    result.data,
-                    undefined,
-                    2
-                  )} as const`,
-                  'utf-8'
+                saveTadaIntrospection(
+                  root,
+                  result.data as IntrospectionQuery,
+                  tadaOutputLocation
                 );
               }
 
@@ -109,45 +119,32 @@ export const loadSchema = (
       pollSchema();
     }, 1000 * 60);
   } else if (typeof schema === 'string') {
-    const isJson = schema.endsWith('json');
+    const isJson = path.extname(schema) === '.json';
     const resolvedPath = path.resolve(path.dirname(root), schema);
     logger(`Getting schema from ${resolvedPath}`);
-    const contents = fs.readFileSync(resolvedPath, 'utf-8');
 
-    fs.watchFile(resolvedPath, () => {
+    async function readSchema() {
       const contents = fs.readFileSync(resolvedPath, 'utf-8');
-      ref.current = isJson
-        ? buildClientSchema(JSON.parse(contents))
+
+      const schemaOrIntrospection = isJson
+        ? (JSON.parse(contents) as IntrospectionQuery)
         : buildSchema(contents);
 
-      if (tadaOutputLocation) {
-        const introspection = isJson
-          ? contents
-          : JSON.stringify(introspectionFromSchema(ref.current), undefined, 2);
-        fs.promises.writeFile(
-          path.resolve(root, '..', tadaOutputLocation, 'introspection.ts'),
-          `export const introspection = ${introspection} as const`,
-          'utf-8'
-        );
-      }
       ref.version = ref.version + 1;
-    });
+      ref.current =
+        '__schema' in schemaOrIntrospection
+          ? buildClientSchema(schemaOrIntrospection)
+          : schemaOrIntrospection;
 
-    ref.current = isJson
-      ? buildClientSchema(JSON.parse(contents))
-      : buildSchema(contents);
-    ref.version = ref.version + 1;
-
-    if (tadaOutputLocation) {
-      const introspection = isJson
-        ? contents
-        : JSON.stringify(introspectionFromSchema(ref.current), undefined, 2);
-      fs.promises.writeFile(
-        path.resolve(root, '..', tadaOutputLocation, 'introspection.ts'),
-        `export const introspection = ${introspection} as const`,
-        'utf-8'
-      );
+      if (tadaOutputLocation) {
+        saveTadaIntrospection(root, schemaOrIntrospection, tadaOutputLocation);
+      }
     }
+
+    readSchema();
+    fs.watchFile(resolvedPath, () => {
+      readSchema();
+    });
 
     logger(`Got schema and initialized watcher for ${schema}`);
   }

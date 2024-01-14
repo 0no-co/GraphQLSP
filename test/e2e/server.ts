@@ -27,6 +27,10 @@ export class TSServer {
     const server = fork(tsserverPath, ['--logVerbosity', 'verbose'], {
       stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
       cwd: projectPath,
+      env: {
+        TSS_LOG:
+          '-level verbose -traceToConsole false -logToFile true -file ./tsserver.log',
+      },
     });
 
     if (!server?.stdout) {

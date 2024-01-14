@@ -1,4 +1,4 @@
-import ts, { TaggedTemplateExpression } from 'typescript/lib/tsserverlibrary';
+import { ts } from './ts';
 import { Diagnostic, getDiagnostics } from 'graphql-language-service';
 import {
   FragmentDefinitionNode,
@@ -161,7 +161,7 @@ const runDiagnostics = (
         node.pos +
         (isCallExpression
           ? 0
-          : (node as TaggedTemplateExpression).tag.getText().length +
+          : (node as ts.TaggedTemplateExpression).tag.getText().length +
             (isExpression ? 2 : 1));
       const endPosition = startingPosition + node.getText().length;
 

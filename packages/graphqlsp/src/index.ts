@@ -1,5 +1,4 @@
-import ts from 'typescript/lib/tsserverlibrary';
-
+import { ts, init as initTypeScript } from './ts';
 import { SchemaOrigin, loadSchema } from './graphql/getSchema';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
@@ -127,7 +126,8 @@ function create(info: ts.server.PluginCreateInfo) {
   return proxy;
 }
 
-const init: ts.server.PluginModuleFactory = () => {
+const init: ts.server.PluginModuleFactory = ts => {
+  initTypeScript(ts);
   return { create };
 };
 

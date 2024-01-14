@@ -69,17 +69,27 @@ async function saveTadaIntrospection(
   const json = JSON.stringify(minified, null, 2);
 
   let output = path.resolve(path.dirname(root), tadaOutputLocation);
-  let stat: fs.Stats;
+  let stat: fs.Stats | undefined;
   let contents = '';
 
   try {
     stat = await fs.promises.stat(output);
   } catch (error) {
     logger(`Failed to resolve path @ ${output}`);
-    return;
   }
 
-  if (stat.isDirectory()) {
+  if (!stat) {
+    try {
+      stat = await fs.promises.stat(path.dirname(output));
+      if (!stat.isDirectory()) {
+        logger(`Output file is not inside a directory @ ${output}`);
+        return;
+      }
+    } catch (error) {
+      logger(`Directory does not exist @ ${output}`);
+      return;
+    }
+  } else if (stat.isDirectory()) {
     output = path.join(output, 'introspection.d.ts');
   } else if (!stat.isFile()) {
     logger(`No file or directory found on path @ ${output}`);

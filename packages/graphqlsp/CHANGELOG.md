@@ -1,5 +1,40 @@
 # @0no-co/graphqlsp
 
+## 1.0.0
+
+### Major Changes
+
+- Look for `gql` and `graphql` by default as well as change the default for call-expressions to true.
+  If you are using TaggedTemplateExpressions you can migrate by adding the following to your tsconfig file
+  ```json
+  {
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "...",
+        "templateIsCallExpression": false
+      }
+    ]
+  }
+  ```
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#162](https://github.com/0no-co/GraphQLSP/pull/162))
+- Retire automatic typegen with tagged-templates, we encourage folks to either try out
+  [gql.tada](https://github.com/0no-co/gql.tada) or the [client-preset](https://the-guild.dev/graphql/codegen/docs/guides/react-vue)
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#148](https://github.com/0no-co/GraphQLSP/pull/148))
+- Remove `fragment-checking` from tagged-templates due to issues with barrel-file exports and flip defaults for field usage and import tracking with call-expressions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#166](https://github.com/0no-co/GraphQLSP/pull/166))
+
+### Minor Changes
+
+- Add option named `tadaOutputLocation` to automatically write the `introspection.ts` file
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#165](https://github.com/0no-co/GraphQLSP/pull/165))
+- Update build process to output typings and to bundle more dependencies
+  Submitted by [@kitten](https://github.com/kitten) (See [#167](https://github.com/0no-co/GraphQLSP/pull/167))
+- Use `ts` namespace passed to plugin by TypeScript instance, rather than re-requiring/importing it
+  Submitted by [@kitten](https://github.com/kitten) (See [#167](https://github.com/0no-co/GraphQLSP/pull/167))
+- Allow `tadaOutputLocation` to contain filename targets and switch between a `.d.ts` and `.ts` output mode
+  Submitted by [@kitten](https://github.com/kitten) (See [#169](https://github.com/0no-co/GraphQLSP/pull/169))
+
 ## 0.15.0
 
 ### Minor Changes

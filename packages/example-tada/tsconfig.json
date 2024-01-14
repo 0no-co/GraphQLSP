@@ -7,7 +7,7 @@
         "disableTypegen": true,
         "shouldCheckForColocatedFragments": true,
         "trackFieldUsage": true,
-        "tadaOutputLocation": "."
+        "tadaOutputLocation": "./introspection.ts"
       }
     ],
     "jsx": "react-jsx",

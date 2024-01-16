@@ -35,14 +35,6 @@
     "url": "https://github.com/0no-co/GraphQLSP/issues"
   },
   "homepage": "https://github.com/0no-co/GraphQLSP#readme",
-  "prettier": {
-    "singleQuote": true,
-    "arrowParens": "avoid",
-    "trailingComma": "es5"
-  },
-  "lint-staged": {
-    "*.{js,ts,json,md}": "prettier --write"
-  },
   "devDependencies": {
     "@sindresorhus/fnv1a": "^2.0.0",
     "@types/node": "^18.15.11",

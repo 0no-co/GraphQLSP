@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.0.1
+
+### Patch Changes
+
+- Ensure we track usage across all references
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#170](https://github.com/0no-co/GraphQLSP/pull/170))
+
 ## 1.0.0
 
 ### Major Changes

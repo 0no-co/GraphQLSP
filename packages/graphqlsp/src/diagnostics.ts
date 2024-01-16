@@ -43,8 +43,6 @@ export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const MISSING_OPERATION_NAME_CODE = 52002;
 export const USING_DEPRECATED_FIELD_CODE = 52004;
 
-let isGeneratingTypes = false;
-
 const cache = new LRUCache<number, ts.Diagnostic[]>({
   // how long to live in ms
   ttl: 1000 * 60 * 15,
@@ -95,16 +93,59 @@ export function getGraphQLDiagnostics(
       : texts.join('-') + schema.version
   );
 
+  let tsDiagnostics;
   if (cache.has(cacheKey)) {
-    return cache.get(cacheKey)!;
+    tsDiagnostics = cache.get(cacheKey)!;
   } else {
-    const tsDiagnostics = runDiagnostics(
-      source,
-      { nodes, fragments },
-      schema,
-      info
-    );
+    tsDiagnostics = runDiagnostics(source, { nodes, fragments }, schema, info);
     cache.set(cacheKey, tsDiagnostics);
+  }
+
+  const shouldCheckForColocatedFragments =
+    info.config.shouldCheckForColocatedFragments ?? true;
+  let fragmentDiagnostics: ts.Diagnostic[] = [];
+  if (isCallExpression && shouldCheckForColocatedFragments) {
+    const moduleSpecifierToFragments = getColocatedFragmentNames(source, info);
+
+    const usedFragments = new Set();
+    nodes.forEach(node => {
+      try {
+        const parsed = parse(node.getText().slice(1, -1), {
+          noLocation: true,
+        });
+        visit(parsed, {
+          FragmentSpread: node => {
+            usedFragments.add(node.name.value);
+          },
+        });
+      } catch (e) {}
+    });
+
+    Object.keys(moduleSpecifierToFragments).forEach(moduleSpecifier => {
+      const {
+        fragments: fragmentNames,
+        start,
+        length,
+      } = moduleSpecifierToFragments[moduleSpecifier];
+      const missingFragments = Array.from(
+        new Set(fragmentNames.filter(x => !usedFragments.has(x)))
+      );
+      if (missingFragments.length) {
+        fragmentDiagnostics.push({
+          file: source,
+          length,
+          start,
+          category: ts.DiagnosticCategory.Warning,
+          code: MISSING_FRAGMENT_CODE,
+          messageText: `Unused co-located fragment definition(s) "${missingFragments.join(
+            ', '
+          )}" in ${moduleSpecifier}`,
+        });
+      }
+    });
+
+    return [...tsDiagnostics, ...fragmentDiagnostics];
+  } else {
     return tsDiagnostics;
   }
 }
@@ -304,54 +345,7 @@ const runDiagnostics = (
       info
     );
 
-    const shouldCheckForColocatedFragments =
-      info.config.shouldCheckForColocatedFragments ?? true;
-    let fragmentDiagnostics: ts.Diagnostic[] = [];
-    if (shouldCheckForColocatedFragments) {
-      const moduleSpecifierToFragments = getColocatedFragmentNames(
-        source,
-        info
-      );
-
-      const usedFragments = new Set();
-      nodes.forEach(node => {
-        try {
-          const parsed = parse(node.getText().slice(1, -1), {
-            noLocation: true,
-          });
-          visit(parsed, {
-            FragmentSpread: node => {
-              usedFragments.add(node.name.value);
-            },
-          });
-        } catch (e) {}
-      });
-
-      Object.keys(moduleSpecifierToFragments).forEach(moduleSpecifier => {
-        const {
-          fragments: fragmentNames,
-          start,
-          length,
-        } = moduleSpecifierToFragments[moduleSpecifier];
-        const missingFragments = Array.from(
-          new Set(fragmentNames.filter(x => !usedFragments.has(x)))
-        );
-        if (missingFragments.length) {
-          fragmentDiagnostics.push({
-            file: source,
-            length,
-            start,
-            category: ts.DiagnosticCategory.Warning,
-            code: MISSING_FRAGMENT_CODE,
-            messageText: `Unused co-located fragment definition(s) "${missingFragments.join(
-              ', '
-            )}" in ${moduleSpecifier}`,
-          });
-        }
-      });
-    }
-
-    return [...tsDiagnostics, ...usageDiagnostics, ...fragmentDiagnostics];
+    return [...tsDiagnostics, ...usageDiagnostics];
   } else {
     return tsDiagnostics;
   }

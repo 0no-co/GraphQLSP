@@ -4,7 +4,6 @@ import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
 import { getGraphQLDiagnostics } from './diagnostics';
 import { templates } from './ast/templates';
-import { Kind, buildClientSchema, printIntrospectionSchema } from 'graphql';
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);

@@ -12,13 +12,8 @@ import {
   CharacterStream,
   ContextToken,
 } from 'graphql-language-service';
-import {
-  FragmentDefinitionNode,
-  GraphQLSchema,
-  Kind,
-  parse,
-  print,
-} from 'graphql';
+import { FragmentDefinitionNode, GraphQLSchema, Kind, parse } from 'graphql';
+import { print } from '@0no-co/graphql.web';
 
 import {
   bubbleUpCallExpression,
@@ -149,10 +144,7 @@ export function getSuggestionsInternal(
     fragments = parsed.definitions.filter(
       x => x.kind === Kind.FRAGMENT_DEFINITION
     ) as Array<FragmentDefinitionNode>;
-  } catch (e) {
-    console.log('[GraphQLSP] ', e);
-  }
-  console.log('fraggers', fragments.map(x => print(x)).join('\n'));
+  } catch (e) {}
 
   let suggestions = getAutocompleteSuggestions(schema, queryText, cursor);
   let spreadSuggestions = getSuggestionsForFragmentSpread(
@@ -162,7 +154,6 @@ export function getSuggestionsInternal(
     queryText,
     fragments
   );
-  console.log(JSON.stringify(spreadSuggestions, null, 2));
 
   const state =
     token.state.kind === 'Invalid' ? token.state.prevState : token.state;

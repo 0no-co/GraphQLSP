@@ -6,11 +6,11 @@ import {
   Kind,
   OperationDefinitionNode,
   parse,
-  print,
   visit,
 } from 'graphql';
 import { LRUCache } from 'lru-cache';
 import fnv1a from '@sindresorhus/fnv1a';
+import { print } from '@0no-co/graphql.web';
 
 import {
   findAllCallExpressions,

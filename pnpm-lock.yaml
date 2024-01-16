@@ -137,8 +137,8 @@ importers:
         specifier: ^3.0.0
         version: 3.2.2(graphql@16.8.1)
       gql.tada:
-        specifier: '*'
-        version: 1.0.0-beta.2(graphql@16.8.1)
+        specifier: ^1.0.0
+        version: 1.0.0(graphql@16.8.1)
       graphql:
         specifier: ^16.8.1
         version: 16.8.1
@@ -3622,8 +3622,8 @@ packages:
       get-intrinsic: 1.2.2
     dev: true
 
-  /gql.tada@1.0.0-beta.2(graphql@16.8.1):
-    resolution: {integrity: sha512-P8K2zGEitLoYZzTJhOqfKX0sdFH17E+9wnQv/zLRJl+FORRdi70JtFxLslkez+vhVLSA57sccRyWICbI/Z70hA==}
+  /gql.tada@1.0.0(graphql@16.8.1):
+    resolution: {integrity: sha512-bmZUHxXGXJNW8fPtXyWIwbLKbEjnKK3PF6XinZFK2PgcxSFJ/9p5fVDseE1xiCkf3nOA4aiSxY5OQ3xWNjCzvg==}
     dependencies:
       '@0no-co/graphql.web': 1.0.4(graphql@16.8.1)
     transitivePeerDependencies:

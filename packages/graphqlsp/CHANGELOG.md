@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.0.2
+
+### Patch Changes
+
+- Use `@0no-co/graphql.web` for better `visit` perf
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#172](https://github.com/0no-co/GraphQLSP/pull/172))
+
 ## 1.0.1
 
 ### Patch Changes

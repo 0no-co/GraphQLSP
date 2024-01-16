@@ -1,7 +1,5 @@
 import { ChildProcess, fork } from 'node:child_process';
-import path from 'node:path';
 import readline from 'node:readline';
-import fs from 'node:fs';
 import ts from 'typescript/lib/tsserverlibrary';
 
 type Command = `${ts.server.protocol.CommandTypes}`;

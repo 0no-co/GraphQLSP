@@ -195,6 +195,49 @@ export const checkFieldUsageInFile = (
     );
     if (!references) return;
 
+    const allAccess: string[] = [];
+    const inProgress: string[] = [];
+    const allPaths: string[] = [];
+    const allFields: string[] = [];
+    const reserved = ['id', '__typename'];
+    const fieldToLoc = new Map<string, { start: number; length: number }>();
+    // This visitor gets all the leaf-paths in the document
+    // as well as all fields that are part of the document
+    // We need the leaf-paths to check usage and we need the
+    // fields to validate whether an access on a given reference
+    // is valid given the current document...
+    visit(parse(node.getText().slice(1, -1)), {
+      Field: {
+        enter: node => {
+          if (!reserved.includes(node.name.value)) {
+            allFields.push(node.name.value);
+          }
+
+          if (!node.selectionSet && !reserved.includes(node.name.value)) {
+            let p;
+            if (inProgress.length) {
+              p = inProgress.join('.') + '.' + node.name.value;
+            } else {
+              p = node.name.value;
+            }
+            allPaths.push(p);
+
+            fieldToLoc.set(p, {
+              start: node.name.loc!.start,
+              length: node.name.loc!.end - node.name.loc!.start,
+            });
+          } else if (node.selectionSet) {
+            inProgress.push(node.name.value);
+          }
+        },
+        leave: node => {
+          if (node.selectionSet) {
+            inProgress.pop();
+          }
+        },
+      },
+    });
+
     references.forEach(ref => {
       if (ref.fileName !== source.fileName) return;
 
@@ -208,48 +251,6 @@ export const checkFieldUsageInFile = (
       const [output] = found.declarationList.declarations;
 
       if (output.name.getText() === variableDeclaration.name.getText()) return;
-
-      const inProgress: string[] = [];
-      const allPaths: string[] = [];
-      const allFields: string[] = [];
-      const reserved = ['id', '__typename'];
-      const fieldToLoc = new Map<string, { start: number; length: number }>();
-      // This visitor gets all the leaf-paths in the document
-      // as well as all fields that are part of the document
-      // We need the leaf-paths to check usage and we need the
-      // fields to validate whether an access on a given reference
-      // is valid given the current document...
-      visit(parse(node.getText().slice(1, -1)), {
-        Field: {
-          enter: node => {
-            if (!reserved.includes(node.name.value)) {
-              allFields.push(node.name.value);
-            }
-
-            if (!node.selectionSet && !reserved.includes(node.name.value)) {
-              let p;
-              if (inProgress.length) {
-                p = inProgress.join('.') + '.' + node.name.value;
-              } else {
-                p = node.name.value;
-              }
-              allPaths.push(p);
-
-              fieldToLoc.set(p, {
-                start: node.name.loc!.start,
-                length: node.name.loc!.end - node.name.loc!.start,
-              });
-            } else if (node.selectionSet) {
-              inProgress.push(node.name.value);
-            }
-          },
-          leave: node => {
-            if (node.selectionSet) {
-              inProgress.pop();
-            }
-          },
-        },
-      });
 
       let temp = output.name;
       // Supported cases:
@@ -266,26 +267,28 @@ export const checkFieldUsageInFile = (
         temp = temp.elements[0].name;
       }
 
-      let allAccess: string[] = [];
       if (ts.isObjectBindingPattern(temp)) {
-        allAccess = traverseDestructuring(temp, [], allFields, source, info);
+        const result = traverseDestructuring(temp, [], allFields, source, info);
+        allAccess.push(...result);
       } else {
-        allAccess = crawlScope(temp, [], allFields, source, info);
+        const result = crawlScope(temp, [], allFields, source, info);
+        allAccess.push(...result);
       }
+    });
 
-      const unused = allPaths.filter(x => !allAccess.includes(x));
-      unused.forEach(unusedField => {
-        const loc = fieldToLoc.get(unusedField);
-        if (!loc) return;
+    const unused = allPaths.filter(x => !allAccess.includes(x));
 
-        diagnostics.push({
-          file: source,
-          length: loc.length,
-          start: node.getStart() + loc.start + 1,
-          category: ts.DiagnosticCategory.Warning,
-          code: UNUSED_FIELD_CODE,
-          messageText: `Field '${unusedField}' is not used.`,
-        });
+    unused.forEach(unusedField => {
+      const loc = fieldToLoc.get(unusedField);
+      if (!loc) return;
+
+      diagnostics.push({
+        file: source,
+        length: loc.length,
+        start: node.getStart() + loc.start + 1,
+        category: ts.DiagnosticCategory.Warning,
+        code: UNUSED_FIELD_CODE,
+        messageText: `Field '${unusedField}' is not used.`,
       });
     });
   });

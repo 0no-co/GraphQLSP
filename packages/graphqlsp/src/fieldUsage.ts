@@ -2,7 +2,6 @@ import { ts } from './ts';
 import { parse, visit } from 'graphql';
 
 import { findNode } from './ast';
-import { Logger } from '.';
 
 export const UNUSED_FIELD_CODE = 52005;
 
@@ -176,14 +175,10 @@ export const checkFieldUsageInFile = (
   nodes: ts.NoSubstitutionTemplateLiteral[],
   info: ts.server.PluginCreateInfo
 ) => {
-  const logger: Logger = (msg: string) =>
-    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const diagnostics: ts.Diagnostic[] = [];
   const shouldTrackFieldUsage = info.config.trackFieldUsage ?? true;
   if (!shouldTrackFieldUsage) return diagnostics;
 
-  logger(`Checking field usage in ${source.fileName}`);
-  logger(`Found: ${nodes.map(n => n.getText()).join(', ')}`);
   nodes.forEach(node => {
     const nodeText = node.getText();
     // Bailing for mutations/subscriptions as these could have small details
@@ -244,7 +239,6 @@ export const checkFieldUsageInFile = (
     });
 
     references.forEach(ref => {
-      logger(`file: ${ref.fileName}`);
       if (ref.fileName !== source.fileName) return;
 
       let found = findNode(source, ref.textSpan.start);

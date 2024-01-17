@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 1.0.3
+
+### Patch Changes
+
+- Stop caching diagnostics for fragment imports and field-usage as these can be controlled externally
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#174](https://github.com/0no-co/GraphQLSP/pull/174))
+- Add fix for nonNullAssertion and using Array.at
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#177](https://github.com/0no-co/GraphQLSP/pull/177))
+
 ## 1.0.2
 
 ### Patch Changes

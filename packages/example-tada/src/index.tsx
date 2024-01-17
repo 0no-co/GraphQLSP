@@ -25,6 +25,7 @@ const PokemonQuery = graphql(`
       name
       maxCP
       maxHP
+      types
     }
   }
 `, [PokemonFields]);
@@ -40,6 +41,8 @@ const Pokemons = () => {
   console.log(selected.maxHP)
   const names = result.data?.pokemons?.map(x => x?.name)
   console.log(names)
+  const pos = result.data?.pokemons?.map(x => ({ ...x }))
+  console.log(pos && pos[0].types)
   
   // Works
   console.log(result.data?.pokemon?.attacks && result.data?.pokemon?.attacks.special && result.data?.pokemon?.attacks.special[0] && result.data?.pokemon?.attacks.special[0].name)

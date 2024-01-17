@@ -22,6 +22,7 @@ const PokemonQuery = graphql(`
       __typename
     }
     pokemons {
+      name
       maxCP
       maxHP
     }
@@ -37,7 +38,9 @@ const Pokemons = () => {
   const selected = result.data?.pokemons?.at(0)!
   console.log(result.data?.pokemons?.at(0)?.maxCP)
   console.log(selected.maxHP)
-
+  const names = result.data?.pokemons?.map(x => x?.name)
+  console.log(names)
+  
   // Works
   console.log(result.data?.pokemon?.attacks && result.data?.pokemon?.attacks.special && result.data?.pokemon?.attacks.special[0] && result.data?.pokemon?.attacks.special[0].name)
 

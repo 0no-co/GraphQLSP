@@ -69,6 +69,7 @@ const traverseDestructuring = (
   return results;
 };
 
+const arrayMethods = ['map', 'filter', 'forEach', 'reduce'];
 const crawlScope = (
   node: ts.Identifier | ts.BindingName,
   originalWip: Array<string>,
@@ -152,6 +153,20 @@ const crawlScope = (
         ts.isCallExpression(foundRef.parent)
       ) {
         foundRef = foundRef.parent;
+      } else if (
+        ts.isPropertyAccessExpression(foundRef) &&
+        arrayMethods.includes(foundRef.name.text) &&
+        ts.isCallExpression(foundRef.parent)
+      ) {
+        const isReduce = foundRef.name.text === 'reduce';
+        const callExpression = foundRef.parent;
+        const func = callExpression.arguments[0];
+        if (ts.isFunctionExpression(func) || ts.isArrowFunction(func)) {
+          const param = func.parameters[isReduce ? 1 : 0];
+          return crawlScope(param.name, pathParts, allFields, source, info);
+        } else if (ts.isIdentifier(func)) {
+          // TODO: get the function and do the same as the above
+        }
       } else if (
         ts.isPropertyAccessExpression(foundRef) &&
         allFields.includes(foundRef.name.text) &&

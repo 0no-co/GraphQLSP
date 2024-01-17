@@ -69,6 +69,17 @@ const traverseDestructuring = (
   return results;
 };
 
+const arrayMethods = new Set([
+  'map',
+  'filter',
+  'forEach',
+  'reduce',
+  'every',
+  'some',
+  'find',
+  'flatMap',
+  'sort',
+]);
 const crawlScope = (
   node: ts.Identifier | ts.BindingName,
   originalWip: Array<string>,
@@ -148,6 +159,52 @@ const crawlScope = (
         pathParts.push(foundRef.text);
       } else if (
         ts.isPropertyAccessExpression(foundRef) &&
+        foundRef.name.text === 'at' &&
+        ts.isCallExpression(foundRef.parent)
+      ) {
+        foundRef = foundRef.parent;
+      } else if (
+        ts.isPropertyAccessExpression(foundRef) &&
+        arrayMethods.has(foundRef.name.text) &&
+        ts.isCallExpression(foundRef.parent)
+      ) {
+        const isReduce = foundRef.name.text === 'reduce';
+        const isSomeOrEvery =
+          foundRef.name.text === 'every' || foundRef.name.text === 'some';
+        const callExpression = foundRef.parent;
+        const func = callExpression.arguments[0];
+        if (ts.isFunctionExpression(func) || ts.isArrowFunction(func)) {
+          const param = func.parameters[isReduce ? 1 : 0];
+          const res = crawlScope(
+            param.name,
+            pathParts,
+            allFields,
+            source,
+            info
+          );
+
+          // TODO: do we need to support variable destructuring here like
+          // .map being used in const [x] = list.map()?
+          if (
+            ts.isVariableDeclaration(callExpression.parent) &&
+            !isSomeOrEvery
+          ) {
+            const varRes = crawlScope(
+              callExpression.parent.name,
+              pathParts,
+              allFields,
+              source,
+              info
+            );
+            res.push(...varRes);
+          }
+
+          return res;
+        } else if (ts.isIdentifier(func)) {
+          // TODO: get the function and do the same as the above
+        }
+      } else if (
+        ts.isPropertyAccessExpression(foundRef) &&
         allFields.includes(foundRef.name.text) &&
         !pathParts.includes(foundRef.name.text)
       ) {
@@ -161,7 +218,11 @@ const crawlScope = (
         pathParts.push(foundRef.argumentExpression.text);
       }
 
-      foundRef = foundRef.parent;
+      if (ts.isNonNullExpression(foundRef.parent)) {
+        foundRef = foundRef.parent.parent;
+      } else {
+        foundRef = foundRef.parent;
+      }
     }
 
     return pathParts.join('.');

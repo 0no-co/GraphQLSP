@@ -36,6 +36,7 @@
   },
   "homepage": "https://github.com/0no-co/GraphQLSP#readme",
   "devDependencies": {
+    "@0no-co/graphql.web": "^1.0.4",
     "@sindresorhus/fnv1a": "^2.0.0",
     "@types/node": "^18.15.11",
     "@types/node-fetch": "^2.6.3",

@@ -21,6 +21,12 @@ const PokemonQuery = graphql(`
       name
       __typename
     }
+    pokemons {
+      name
+      maxCP
+      maxHP
+      types
+    }
   }
 `, [PokemonFields]);
 
@@ -29,6 +35,14 @@ const Pokemons = () => {
     query: PokemonQuery,
     variables: { id: '' }
   });
+  
+  const selected = result.data?.pokemons?.at(0)!
+  console.log(result.data?.pokemons?.at(0)?.maxCP)
+  console.log(selected.maxHP)
+  const names = result.data?.pokemons?.map(x => x?.name)
+  console.log(names)
+  const pos = result.data?.pokemons?.map(x => ({ ...x }))
+  console.log(pos && pos[0].types)
   
   // Works
   console.log(result.data?.pokemon?.attacks && result.data?.pokemon?.attacks.special && result.data?.pokemon?.attacks.special[0] && result.data?.pokemon?.attacks.special[0].name)
@@ -49,4 +63,3 @@ const Pokemons = () => {
 
   return <Pokemon data={result.data!.pokemon} />;
 }
-

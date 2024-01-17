@@ -4,9 +4,6 @@
       {
         "name": "@0no-co/graphqlsp",
         "schema": "./schema.graphql",
-        "disableTypegen": true,
-        "shouldCheckForColocatedFragments": true,
-        "trackFieldUsage": true,
         "tadaOutputLocation": "./introspection.ts"
       }
     ],

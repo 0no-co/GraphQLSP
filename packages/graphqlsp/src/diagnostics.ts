@@ -240,6 +240,8 @@ const runDiagnostics = (
           return !clientDirectives.has(directiveNmae);
         })
         .map(x => {
+          // TODO: there is a bug here when we have multiple
+          // nodes in a file
           const { start, end } = x.range;
 
           // We add the start.line to account for newline characters which are

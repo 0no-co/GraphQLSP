@@ -148,6 +148,12 @@ const crawlScope = (
         pathParts.push(foundRef.text);
       } else if (
         ts.isPropertyAccessExpression(foundRef) &&
+        foundRef.name.text === 'at' &&
+        ts.isCallExpression(foundRef.parent)
+      ) {
+        foundRef = foundRef.parent;
+      } else if (
+        ts.isPropertyAccessExpression(foundRef) &&
         allFields.includes(foundRef.name.text) &&
         !pathParts.includes(foundRef.name.text)
       ) {
@@ -161,7 +167,11 @@ const crawlScope = (
         pathParts.push(foundRef.argumentExpression.text);
       }
 
-      foundRef = foundRef.parent;
+      if (ts.isNonNullExpression(foundRef.parent)) {
+        foundRef = foundRef.parent.parent;
+      } else {
+        foundRef = foundRef.parent;
+      }
     }
 
     return pathParts.join('.');

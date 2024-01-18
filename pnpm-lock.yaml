@@ -184,8 +184,8 @@ importers:
         specifier: ^2.6.3
         version: 2.6.3
       '@urql/introspection':
-        specifier: ^1.0.2
-        version: 1.0.2(graphql@16.8.1)
+        specifier: ^1.0.3
+        version: 1.0.3(graphql@16.8.1)
       graphql:
         specifier: ^16.8.1
         version: 16.8.1
@@ -2343,8 +2343,8 @@ packages:
       - graphql
     dev: false
 
-  /@urql/introspection@1.0.2(graphql@16.8.1):
-    resolution: {integrity: sha512-vPuX+DjbmL5EUsvwgAMV8dkxc7JKuuNTzDfsNvtCuVmbAED4Nx39p08HImjTWAewSatjyzZZs+fAhU7z/4P+UQ==}
+  /@urql/introspection@1.0.3(graphql@16.8.1):
+    resolution: {integrity: sha512-5zgnfUDV10c3qudqYvfZ/rOtWVB2QvqanmoDMttqpt+TCCPkSUZdb2qcLCEB6DL7ph8mQRTZhXI29J57nTnqKg==}
     peerDependencies:
       graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
     dependencies:

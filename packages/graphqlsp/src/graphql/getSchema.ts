@@ -99,7 +99,7 @@ async function saveTadaIntrospection(
   if (/\.d\.ts$/.test(output)) {
     contents = [
       dtsAnnotationComment,
-      `export const type introspection = ${json};\n`,
+      `export type introspection = ${json};\n`,
       "import * as gqlTada from 'gql.tada';\n",
       "declare module 'gql.tada' {",
       '  interface setupSchema {',

@@ -1,5 +1,41 @@
 # @0no-co/graphqlsp
 
+## 1.0.4
+
+### Patch Changes
+
+- When we have a query like the following
+
+  ```graphql
+  query {
+    pokemon(id: 1) {
+      id
+      name
+    }
+    pokemons {
+      id
+      fleeRate
+    }
+  }
+  ```
+
+  and we perform
+
+  ```ts
+  const Pokemons = () => {
+    const [result] = useQuery({
+      query: PokemonQuery,
+    });
+
+    return result.data.pokemons.map(pokemon => pokemon.fleeRate);
+  };
+  ```
+
+  Then it will see `pokemon` the variable inside our function closure as an
+  allowed field due to `Query.pokemon` this PR fixes that by refining our search
+  algorithm to only include valid built paths.
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#182](https://github.com/0no-co/GraphQLSP/pull/182))
+
 ## 1.0.3
 
 ### Patch Changes

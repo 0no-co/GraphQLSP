@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 1.0.5
+
+### Patch Changes
+
+- When creating a `d.ts` file, export the introspection type to make it reusable
+  Submitted by [@kitten](https://github.com/kitten) (See [#184](https://github.com/0no-co/GraphQLSP/pull/184))
+- Upgrade to `@urql/introspection@1.0.3`
+  Submitted by [@kitten](https://github.com/kitten) (See [#185](https://github.com/0no-co/GraphQLSP/pull/185))
+
 ## 1.0.4
 
 ### Patch Changes

@@ -28,10 +28,12 @@ const traverseDestructuring = (
       const wip = [...originalWip];
       if (
         binding.propertyName &&
-        allFields.includes(binding.propertyName.getText()) &&
         !originalWip.includes(binding.propertyName.getText())
       ) {
-        wip.push(binding.propertyName.getText());
+        const joined = [...wip, binding.propertyName.getText()].join('.');
+        if (allFields.find(x => x.startsWith(joined))) {
+          wip.push(binding.propertyName.getText());
+        }
       }
       const traverseResult = traverseDestructuring(
         binding.name,
@@ -46,12 +48,17 @@ const traverseDestructuring = (
       const wip = [...originalWip];
       if (
         binding.propertyName &&
-        allFields.includes(binding.propertyName.getText()) &&
         !originalWip.includes(binding.propertyName.getText())
       ) {
-        wip.push(binding.propertyName.getText());
+        const joined = [...wip, binding.propertyName.getText()].join('.');
+        if (allFields.find(x => x.startsWith(joined))) {
+          wip.push(binding.propertyName.getText());
+        }
       } else {
-        wip.push(binding.name.getText());
+        const joined = [...wip, binding.name.getText()].join('.');
+        if (allFields.find(x => x.startsWith(joined))) {
+          wip.push(binding.name.getText());
+        }
       }
 
       const crawlResult = crawlScope(
@@ -153,10 +160,14 @@ const crawlScope = (
         }
       } else if (
         ts.isIdentifier(foundRef) &&
-        allFields.includes(foundRef.text) &&
         !pathParts.includes(foundRef.text)
       ) {
-        pathParts.push(foundRef.text);
+        const joined = [...pathParts, foundRef.text].join('.');
+        console.log('joined', JSON.stringify(joined, null, 2));
+        console.log('allFields', JSON.stringify(allFields, null, 2));
+        if (allFields.find(x => x.startsWith(joined))) {
+          pathParts.push(foundRef.text);
+        }
       } else if (
         ts.isPropertyAccessExpression(foundRef) &&
         foundRef.name.text === 'at' &&
@@ -168,11 +179,13 @@ const crawlScope = (
         arrayMethods.has(foundRef.name.text) &&
         ts.isCallExpression(foundRef.parent)
       ) {
+        console.log('found array method', foundRef.getText());
         const isReduce = foundRef.name.text === 'reduce';
         const isSomeOrEvery =
           foundRef.name.text === 'every' || foundRef.name.text === 'some';
         const callExpression = foundRef.parent;
         const func = callExpression.arguments[0];
+        console.log('found func', func.getText());
         if (ts.isFunctionExpression(func) || ts.isArrowFunction(func)) {
           const param = func.parameters[isReduce ? 1 : 0];
           const res = crawlScope(
@@ -182,6 +195,7 @@ const crawlScope = (
             source,
             info
           );
+          console.log('res scope', JSON.stringify(res, null, 2));
 
           // TODO: do we need to support variable destructuring here like
           // .map being used in const [x] = list.map()?
@@ -205,17 +219,27 @@ const crawlScope = (
         }
       } else if (
         ts.isPropertyAccessExpression(foundRef) &&
-        allFields.includes(foundRef.name.text) &&
         !pathParts.includes(foundRef.name.text)
       ) {
-        pathParts.push(foundRef.name.text);
+        const joined = [...pathParts, foundRef.name.text].join('.');
+        console.log('joined', JSON.stringify(joined, null, 2));
+        console.log('allFields', JSON.stringify(allFields, null, 2));
+        if (allFields.find(x => x.startsWith(joined))) {
+          pathParts.push(foundRef.name.text);
+        }
       } else if (
         ts.isElementAccessExpression(foundRef) &&
         ts.isStringLiteral(foundRef.argumentExpression) &&
-        allFields.includes(foundRef.argumentExpression.text) &&
         !pathParts.includes(foundRef.argumentExpression.text)
       ) {
-        pathParts.push(foundRef.argumentExpression.text);
+        const joined = [...pathParts, foundRef.argumentExpression.text].join(
+          '.'
+        );
+        console.log('joined', JSON.stringify(joined, null, 2));
+        console.log('allFields', JSON.stringify(allFields, null, 2));
+        if (allFields.find(x => x.startsWith(joined))) {
+          pathParts.push(foundRef.argumentExpression.text);
+        }
       }
 
       if (ts.isNonNullExpression(foundRef.parent)) {
@@ -259,7 +283,6 @@ export const checkFieldUsageInFile = (
     const allAccess: string[] = [];
     const inProgress: string[] = [];
     const allPaths: string[] = [];
-    const allFields: string[] = [];
     const reserved = ['id', '__typename'];
     const fieldToLoc = new Map<string, { start: number; length: number }>();
     // This visitor gets all the leaf-paths in the document
@@ -270,10 +293,6 @@ export const checkFieldUsageInFile = (
     visit(parse(node.getText().slice(1, -1)), {
       Field: {
         enter: node => {
-          if (!reserved.includes(node.name.value)) {
-            allFields.push(node.name.value);
-          }
-
           if (!node.selectionSet && !reserved.includes(node.name.value)) {
             let p;
             if (inProgress.length) {
@@ -329,10 +348,10 @@ export const checkFieldUsageInFile = (
       }
 
       if (ts.isObjectBindingPattern(temp)) {
-        const result = traverseDestructuring(temp, [], allFields, source, info);
+        const result = traverseDestructuring(temp, [], allPaths, source, info);
         allAccess.push(...result);
       } else {
-        const result = crawlScope(temp, [], allFields, source, info);
+        const result = crawlScope(temp, [], allPaths, source, info);
         allAccess.push(...result);
       }
     });

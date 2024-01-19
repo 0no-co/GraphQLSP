@@ -178,8 +178,6 @@ export const loadSchema = (
           else return response.text();
         })
         .then(result => {
-          // TODO: Prevent logging entire result or disable logging by default
-          logger(`Got result ${JSON.stringify(result)}`);
           if (typeof result === 'string') {
             logger(`Got error while fetching introspection ${result}`);
           } else if (result.data) {

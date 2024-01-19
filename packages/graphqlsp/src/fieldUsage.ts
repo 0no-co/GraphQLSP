@@ -163,8 +163,6 @@ const crawlScope = (
         !pathParts.includes(foundRef.text)
       ) {
         const joined = [...pathParts, foundRef.text].join('.');
-        console.log('joined', JSON.stringify(joined, null, 2));
-        console.log('allFields', JSON.stringify(allFields, null, 2));
         if (allFields.find(x => x.startsWith(joined))) {
           pathParts.push(foundRef.text);
         }
@@ -179,13 +177,11 @@ const crawlScope = (
         arrayMethods.has(foundRef.name.text) &&
         ts.isCallExpression(foundRef.parent)
       ) {
-        console.log('found array method', foundRef.getText());
         const isReduce = foundRef.name.text === 'reduce';
         const isSomeOrEvery =
           foundRef.name.text === 'every' || foundRef.name.text === 'some';
         const callExpression = foundRef.parent;
         const func = callExpression.arguments[0];
-        console.log('found func', func.getText());
         if (ts.isFunctionExpression(func) || ts.isArrowFunction(func)) {
           const param = func.parameters[isReduce ? 1 : 0];
           const res = crawlScope(
@@ -195,7 +191,6 @@ const crawlScope = (
             source,
             info
           );
-          console.log('res scope', JSON.stringify(res, null, 2));
 
           // TODO: do we need to support variable destructuring here like
           // .map being used in const [x] = list.map()?
@@ -222,8 +217,6 @@ const crawlScope = (
         !pathParts.includes(foundRef.name.text)
       ) {
         const joined = [...pathParts, foundRef.name.text].join('.');
-        console.log('joined', JSON.stringify(joined, null, 2));
-        console.log('allFields', JSON.stringify(allFields, null, 2));
         if (allFields.find(x => x.startsWith(joined))) {
           pathParts.push(foundRef.name.text);
         }
@@ -235,8 +228,6 @@ const crawlScope = (
         const joined = [...pathParts, foundRef.argumentExpression.text].join(
           '.'
         );
-        console.log('joined', JSON.stringify(joined, null, 2));
-        console.log('allFields', JSON.stringify(allFields, null, 2));
         if (allFields.find(x => x.startsWith(joined))) {
           pathParts.push(foundRef.argumentExpression.text);
         }
@@ -381,7 +372,7 @@ export const checkFieldUsageInFile = (
       });
     });
   } catch (e: any) {
-    console.log('[GraphQLSP]: ', e.message, e.stack);
+    console.error('[GraphQLSP]: ', e.message, e.stack);
   }
 
   return diagnostics;

@@ -61,7 +61,7 @@ export function getGraphQLCompletions(
     const fragments = getAllFragments(filename, node, info);
 
     text = `${queryText}\n${fragments.map(x => print(x)).join('\n')}`;
-    cursor = new Cursor(foundToken.line, foundToken.start - 1);
+    cursor = new Cursor(foundToken.line - 1, foundToken.start - 1);
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
 

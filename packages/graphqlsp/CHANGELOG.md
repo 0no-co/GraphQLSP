@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.0.6
+
+### Patch Changes
+
+- Catch errors in field-usage as we have been seeing TS fail to resolve references
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#188](https://github.com/0no-co/GraphQLSP/pull/188))
+
 ## 1.0.5
 
 ### Patch Changes

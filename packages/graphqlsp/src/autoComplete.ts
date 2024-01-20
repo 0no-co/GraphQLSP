@@ -61,7 +61,7 @@ export function getGraphQLCompletions(
     const fragments = getAllFragments(filename, node, info);
 
     text = `${queryText}\n${fragments.map(x => print(x)).join('\n')}`;
-    cursor = new Cursor(foundToken.line - 1, foundToken.start);
+    cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
 
@@ -87,13 +87,11 @@ export function getGraphQLCompletions(
     foundToken.line = foundToken.line + amountOfLines;
 
     text = combinedText;
-    cursor = new Cursor(foundToken.line, foundToken.start);
+    cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else {
     return undefined;
   }
 
-  const token = getTokenAtPosition(text, cursor, 1);
-  console.log('GRAPHQL', JSON.stringify(token, null, 2));
   const [suggestions, spreadSuggestions] = getSuggestionsInternal(
     schema.current,
     text,
@@ -138,7 +136,7 @@ export function getSuggestionsInternal(
   queryText: string,
   cursor: Cursor
 ): [CompletionItem[], CompletionItem[]] {
-  const token = getTokenAtPosition(queryText, cursor, 1);
+  const token = getTokenAtPosition(queryText, cursor);
 
   let fragments: Array<FragmentDefinitionNode> = [];
   try {

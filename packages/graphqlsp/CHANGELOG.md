@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 1.0.7
+
+### Patch Changes
+
+- Avoid bailing out of the cache for identical introspections
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#193](https://github.com/0no-co/GraphQLSP/pull/193))
+- Account for empty lines when asking for completions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#191](https://github.com/0no-co/GraphQLSP/pull/191))
+
 ## 1.0.6
 
 ### Patch Changes

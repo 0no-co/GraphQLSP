@@ -133,9 +133,14 @@ export const loadSchema = (
   tadaOutputLocation: string | undefined,
   logger: Logger
 ): { current: GraphQLSchema | null; version: number } => {
-  const ref: { current: GraphQLSchema | null; version: number } = {
+  const ref: {
+    current: GraphQLSchema | null;
+    version: number;
+    prev: string | null;
+  } = {
     current: null,
     version: 0,
+    prev: null,
   };
   let url: URL | undefined;
   let config: { headers: Record<string, unknown> } | undefined;
@@ -181,19 +186,24 @@ export const loadSchema = (
           if (typeof result === 'string') {
             logger(`Got error while fetching introspection ${result}`);
           } else if (result.data) {
+            const introspection = (result as { data: IntrospectionQuery }).data;
+            const currentStringified = JSON.stringify(introspection);
+            if (ref.prev && ref.prev === currentStringified) {
+              return;
+            }
+
+            ref.prev = currentStringified;
             try {
               if (tadaOutputLocation) {
                 saveTadaIntrospection(
                   root,
-                  result.data as IntrospectionQuery,
+                  introspection,
                   tadaOutputLocation,
                   logger
                 );
               }
 
-              ref.current = buildClientSchema(
-                (result as { data: IntrospectionQuery }).data
-              );
+              ref.current = buildClientSchema(introspection);
               ref.version = ref.version + 1;
               logger(`Got schema for ${url!.toString()}`);
             } catch (e: any) {

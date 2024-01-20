@@ -29,7 +29,6 @@ export const getToken = (
       const string = stream.current();
 
       if (
-        string &&
         lPos + stream.getStartOfToken() <= cursorPosition &&
         lPos + stream.getCurrentPosition() >= cursorPosition
       ) {

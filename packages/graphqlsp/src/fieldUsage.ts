@@ -255,6 +255,10 @@ export const checkFieldUsageInFile = (
   const shouldTrackFieldUsage = info.config.trackFieldUsage ?? true;
   if (!shouldTrackFieldUsage) return diagnostics;
 
+  const defaultReservedKeys = ['id', '_id', '__typename'];
+  const additionalKeys = info.config.reservedKeys ?? [];
+  const reservedKeys = new Set([...defaultReservedKeys, ...additionalKeys]);
+
   try {
     nodes.forEach(node => {
       const nodeText = node.getText();
@@ -275,7 +279,6 @@ export const checkFieldUsageInFile = (
       const allAccess: string[] = [];
       const inProgress: string[] = [];
       const allPaths: string[] = [];
-      const reserved = ['id', '__typename'];
       const fieldToLoc = new Map<string, { start: number; length: number }>();
       // This visitor gets all the leaf-paths in the document
       // as well as all fields that are part of the document
@@ -285,7 +288,7 @@ export const checkFieldUsageInFile = (
       visit(parse(node.getText().slice(1, -1)), {
         Field: {
           enter: node => {
-            if (!node.selectionSet && !reserved.includes(node.name.value)) {
+            if (!node.selectionSet && !reservedKeys.has(node.name.value)) {
               let p;
               if (inProgress.length) {
                 p = inProgress.join('.') + '.' + node.name.value;

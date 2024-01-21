@@ -69,7 +69,9 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
   unused fields within the same file. (only works with call-expressions, default: true)
 - `tadaOutputLocation` when using `gql.tada` this can be convenient as it automatically generates
   an `introspection.ts` file for you, just give it the directory to output to and you're done
-  
+- `reservedKeys` this setting will affect `trackFieldUsage`, you can enter keys here that will be ignored
+  from usage tracking, so when they are unused in the component but used in i.e. the normalised cache you
+  won't get annoying warnings. (default `id`, `_id` and `__typename`, example: ['slug'])
 
 ## Tracking unused fields
 

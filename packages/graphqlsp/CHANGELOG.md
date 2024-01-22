@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.1.2
+
+### Patch Changes
+
+- Automatically disable Prettier and ESLint on `tadaOutputLocation` output files
+  Submitted by [@kitten](https://github.com/kitten) (See [#199](https://github.com/0no-co/GraphQLSP/pull/199))
+
 ## 1.1.1
 
 ### Patch Changes

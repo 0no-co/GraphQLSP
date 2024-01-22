@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.1.1
+
+### Patch Changes
+
+- Add `@_unmask` to known client directive list
+  Submitted by [@kitten](https://github.com/kitten) (See [#197](https://github.com/0no-co/GraphQLSP/pull/197))
+
 ## 1.1.0
 
 ### Minor Changes

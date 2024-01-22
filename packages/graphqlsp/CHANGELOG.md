@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.1.0
+
+### Minor Changes
+
+- Add way to provide additional reserved keys for field-usage tracking by means of the `reservedKeys` config property which accepts an array of strings
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#195](https://github.com/0no-co/GraphQLSP/pull/195))
+
 ## 1.0.7
 
 ### Patch Changes

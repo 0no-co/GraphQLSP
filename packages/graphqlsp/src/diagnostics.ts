@@ -27,8 +27,11 @@ import {
 const clientDirectives = new Set([
   'populate',
   'client',
+  '_unmask',
   '_optional',
   '_required',
+  'optional',
+  'required',
   'arguments',
   'argumentDefinitions',
   'connection',
@@ -37,6 +40,7 @@ const clientDirectives = new Set([
   'required',
   'inline',
 ]);
+
 const directiveRegex = /Unknown directive "@([^)]+)"/g;
 
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;

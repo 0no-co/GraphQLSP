@@ -14,6 +14,9 @@ import fs from 'fs';
 
 import { Logger } from '../index';
 
+const preambleComments =
+  ['/* eslint-disable */', '/* prettier-ignore */'].join('\n') + '\n';
+
 const dtsAnnotationComment = [
   '/** An IntrospectionQuery representation of your schema.',
   ' *',
@@ -98,6 +101,7 @@ async function saveTadaIntrospection(
 
   if (/\.d\.ts$/.test(output)) {
     contents = [
+      preambleComments,
       dtsAnnotationComment,
       `export type introspection = ${json};\n`,
       "import * as gqlTada from 'gql.tada';\n",
@@ -109,6 +113,7 @@ async function saveTadaIntrospection(
     ].join('\n');
   } else if (path.extname(output) === '.ts') {
     contents = [
+      preambleComments,
       tsAnnotationComment,
       `const introspection = ${json} as const;\n`,
       'export { introspection };',

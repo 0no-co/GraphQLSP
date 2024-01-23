@@ -192,8 +192,6 @@ const crawlScope = (
             info
           );
 
-          // TODO: do we need to support variable destructuring here like
-          // .map being used in const [x] = list.map()?
           if (
             ts.isVariableDeclaration(callExpression.parent) &&
             !isSomeOrEvery

@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.2.0
+
+### Minor Changes
+
+- support property assignment/objectAccessPattern
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#202](https://github.com/0no-co/GraphQLSP/pull/202))
+
 ## 1.1.2
 
 ### Patch Changes

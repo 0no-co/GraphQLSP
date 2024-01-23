@@ -1,3 +1,6 @@
+/* eslint-disable */
+/* prettier-ignore */
+
 /** An IntrospectionQuery representation of your schema.
  *
  * @remarks
@@ -20,426 +23,426 @@
  * ```
  */
 const introspection = {
-  __schema: {
-    queryType: {
-      name: 'Query',
+  "__schema": {
+    "queryType": {
+      "name": "Query"
     },
-    mutationType: null,
-    subscriptionType: null,
-    types: [
+    "mutationType": null,
+    "subscriptionType": null,
+    "types": [
       {
-        kind: 'OBJECT',
-        name: 'Attack',
-        fields: [
+        "kind": "OBJECT",
+        "name": "Attack",
+        "fields": [
           {
-            name: 'damage',
-            type: {
-              kind: 'SCALAR',
-              name: 'Int',
-              ofType: null,
+            "name": "damage",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'name',
-            type: {
-              kind: 'SCALAR',
-              name: 'String',
-              ofType: null,
+            "name": "name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'type',
-            type: {
-              kind: 'ENUM',
-              name: 'PokemonType',
-              ofType: null,
+            "name": "type",
+            "type": {
+              "kind": "ENUM",
+              "name": "PokemonType",
+              "ofType": null
             },
-            args: [],
-          },
+            "args": []
+          }
         ],
-        interfaces: [],
+        "interfaces": []
       },
       {
-        kind: 'SCALAR',
-        name: 'Int',
+        "kind": "SCALAR",
+        "name": "Int"
       },
       {
-        kind: 'SCALAR',
-        name: 'String',
+        "kind": "SCALAR",
+        "name": "String"
       },
       {
-        kind: 'OBJECT',
-        name: 'AttacksConnection',
-        fields: [
+        "kind": "OBJECT",
+        "name": "AttacksConnection",
+        "fields": [
           {
-            name: 'fast',
-            type: {
-              kind: 'LIST',
-              ofType: {
-                kind: 'OBJECT',
-                name: 'Attack',
-                ofType: null,
-              },
+            "name": "fast",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Attack",
+                "ofType": null
+              }
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'special',
-            type: {
-              kind: 'LIST',
-              ofType: {
-                kind: 'OBJECT',
-                name: 'Attack',
-                ofType: null,
-              },
+            "name": "special",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Attack",
+                "ofType": null
+              }
             },
-            args: [],
-          },
+            "args": []
+          }
         ],
-        interfaces: [],
+        "interfaces": []
       },
       {
-        kind: 'OBJECT',
-        name: 'EvolutionRequirement',
-        fields: [
+        "kind": "OBJECT",
+        "name": "EvolutionRequirement",
+        "fields": [
           {
-            name: 'amount',
-            type: {
-              kind: 'SCALAR',
-              name: 'Int',
-              ofType: null,
+            "name": "amount",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'name',
-            type: {
-              kind: 'SCALAR',
-              name: 'String',
-              ofType: null,
+            "name": "name",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
-            args: [],
-          },
+            "args": []
+          }
         ],
-        interfaces: [],
+        "interfaces": []
       },
       {
-        kind: 'OBJECT',
-        name: 'Pokemon',
-        fields: [
+        "kind": "OBJECT",
+        "name": "Pokemon",
+        "fields": [
           {
-            name: 'attacks',
-            type: {
-              kind: 'OBJECT',
-              name: 'AttacksConnection',
-              ofType: null,
+            "name": "attacks",
+            "type": {
+              "kind": "OBJECT",
+              "name": "AttacksConnection",
+              "ofType": null
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'classification',
-            type: {
-              kind: 'SCALAR',
-              name: 'String',
-              ofType: null,
+            "name": "classification",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'evolutionRequirements',
-            type: {
-              kind: 'LIST',
-              ofType: {
-                kind: 'OBJECT',
-                name: 'EvolutionRequirement',
-                ofType: null,
-              },
+            "name": "evolutionRequirements",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "EvolutionRequirement",
+                "ofType": null
+              }
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'evolutions',
-            type: {
-              kind: 'LIST',
-              ofType: {
-                kind: 'OBJECT',
-                name: 'Pokemon',
-                ofType: null,
-              },
+            "name": "evolutions",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Pokemon",
+                "ofType": null
+              }
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'fleeRate',
-            type: {
-              kind: 'SCALAR',
-              name: 'Float',
-              ofType: null,
+            "name": "fleeRate",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Float",
+              "ofType": null
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'height',
-            type: {
-              kind: 'OBJECT',
-              name: 'PokemonDimension',
-              ofType: null,
+            "name": "height",
+            "type": {
+              "kind": "OBJECT",
+              "name": "PokemonDimension",
+              "ofType": null
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'id',
-            type: {
-              kind: 'NON_NULL',
-              ofType: {
-                kind: 'SCALAR',
-                name: 'ID',
-                ofType: null,
-              },
+            "name": "id",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "ID",
+                "ofType": null
+              }
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'maxCP',
-            type: {
-              kind: 'SCALAR',
-              name: 'Int',
-              ofType: null,
+            "name": "maxCP",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'maxHP',
-            type: {
-              kind: 'SCALAR',
-              name: 'Int',
-              ofType: null,
+            "name": "maxHP",
+            "type": {
+              "kind": "SCALAR",
+              "name": "Int",
+              "ofType": null
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'name',
-            type: {
-              kind: 'NON_NULL',
-              ofType: {
-                kind: 'SCALAR',
-                name: 'String',
-                ofType: null,
-              },
+            "name": "name",
+            "type": {
+              "kind": "NON_NULL",
+              "ofType": {
+                "kind": "SCALAR",
+                "name": "String",
+                "ofType": null
+              }
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'resistant',
-            type: {
-              kind: 'LIST',
-              ofType: {
-                kind: 'ENUM',
-                name: 'PokemonType',
-                ofType: null,
-              },
+            "name": "resistant",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "ENUM",
+                "name": "PokemonType",
+                "ofType": null
+              }
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'types',
-            type: {
-              kind: 'LIST',
-              ofType: {
-                kind: 'ENUM',
-                name: 'PokemonType',
-                ofType: null,
-              },
+            "name": "types",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "ENUM",
+                "name": "PokemonType",
+                "ofType": null
+              }
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'weaknesses',
-            type: {
-              kind: 'LIST',
-              ofType: {
-                kind: 'ENUM',
-                name: 'PokemonType',
-                ofType: null,
-              },
+            "name": "weaknesses",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "ENUM",
+                "name": "PokemonType",
+                "ofType": null
+              }
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'weight',
-            type: {
-              kind: 'OBJECT',
-              name: 'PokemonDimension',
-              ofType: null,
+            "name": "weight",
+            "type": {
+              "kind": "OBJECT",
+              "name": "PokemonDimension",
+              "ofType": null
             },
-            args: [],
-          },
+            "args": []
+          }
         ],
-        interfaces: [],
+        "interfaces": []
       },
       {
-        kind: 'SCALAR',
-        name: 'Float',
+        "kind": "SCALAR",
+        "name": "Float"
       },
       {
-        kind: 'SCALAR',
-        name: 'ID',
+        "kind": "SCALAR",
+        "name": "ID"
       },
       {
-        kind: 'OBJECT',
-        name: 'PokemonDimension',
-        fields: [
+        "kind": "OBJECT",
+        "name": "PokemonDimension",
+        "fields": [
           {
-            name: 'maximum',
-            type: {
-              kind: 'SCALAR',
-              name: 'String',
-              ofType: null,
+            "name": "maximum",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
-            args: [],
+            "args": []
           },
           {
-            name: 'minimum',
-            type: {
-              kind: 'SCALAR',
-              name: 'String',
-              ofType: null,
+            "name": "minimum",
+            "type": {
+              "kind": "SCALAR",
+              "name": "String",
+              "ofType": null
             },
-            args: [],
-          },
+            "args": []
+          }
         ],
-        interfaces: [],
+        "interfaces": []
       },
       {
-        kind: 'ENUM',
-        name: 'PokemonType',
-        enumValues: [
+        "kind": "ENUM",
+        "name": "PokemonType",
+        "enumValues": [
           {
-            name: 'Bug',
+            "name": "Bug"
           },
           {
-            name: 'Dark',
+            "name": "Dark"
           },
           {
-            name: 'Dragon',
+            "name": "Dragon"
           },
           {
-            name: 'Electric',
+            "name": "Electric"
           },
           {
-            name: 'Fairy',
+            "name": "Fairy"
           },
           {
-            name: 'Fighting',
+            "name": "Fighting"
           },
           {
-            name: 'Fire',
+            "name": "Fire"
           },
           {
-            name: 'Flying',
+            "name": "Flying"
           },
           {
-            name: 'Ghost',
+            "name": "Ghost"
           },
           {
-            name: 'Grass',
+            "name": "Grass"
           },
           {
-            name: 'Ground',
+            "name": "Ground"
           },
           {
-            name: 'Ice',
+            "name": "Ice"
           },
           {
-            name: 'Normal',
+            "name": "Normal"
           },
           {
-            name: 'Poison',
+            "name": "Poison"
           },
           {
-            name: 'Psychic',
+            "name": "Psychic"
           },
           {
-            name: 'Rock',
+            "name": "Rock"
           },
           {
-            name: 'Steel',
+            "name": "Steel"
           },
           {
-            name: 'Water',
-          },
-        ],
+            "name": "Water"
+          }
+        ]
       },
       {
-        kind: 'OBJECT',
-        name: 'Query',
-        fields: [
+        "kind": "OBJECT",
+        "name": "Query",
+        "fields": [
           {
-            name: 'pokemon',
-            type: {
-              kind: 'OBJECT',
-              name: 'Pokemon',
-              ofType: null,
+            "name": "pokemon",
+            "type": {
+              "kind": "OBJECT",
+              "name": "Pokemon",
+              "ofType": null
             },
-            args: [
+            "args": [
               {
-                name: 'id',
-                type: {
-                  kind: 'NON_NULL',
-                  ofType: {
-                    kind: 'SCALAR',
-                    name: 'ID',
-                    ofType: null,
-                  },
-                },
-              },
-            ],
+                "name": "id",
+                "type": {
+                  "kind": "NON_NULL",
+                  "ofType": {
+                    "kind": "SCALAR",
+                    "name": "ID",
+                    "ofType": null
+                  }
+                }
+              }
+            ]
           },
           {
-            name: 'pokemons',
-            type: {
-              kind: 'LIST',
-              ofType: {
-                kind: 'OBJECT',
-                name: 'Pokemon',
-                ofType: null,
-              },
+            "name": "pokemons",
+            "type": {
+              "kind": "LIST",
+              "ofType": {
+                "kind": "OBJECT",
+                "name": "Pokemon",
+                "ofType": null
+              }
             },
-            args: [
+            "args": [
               {
-                name: 'limit',
-                type: {
-                  kind: 'SCALAR',
-                  name: 'Int',
-                  ofType: null,
-                },
+                "name": "limit",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
               },
               {
-                name: 'skip',
-                type: {
-                  kind: 'SCALAR',
-                  name: 'Int',
-                  ofType: null,
-                },
-              },
-            ],
-          },
+                "name": "skip",
+                "type": {
+                  "kind": "SCALAR",
+                  "name": "Int",
+                  "ofType": null
+                }
+              }
+            ]
+          }
         ],
-        interfaces: [],
+        "interfaces": []
       },
       {
-        kind: 'SCALAR',
-        name: 'Boolean',
+        "kind": "SCALAR",
+        "name": "Boolean"
       },
       {
-        kind: 'SCALAR',
-        name: 'Any',
-      },
+        "kind": "SCALAR",
+        "name": "Any"
+      }
     ],
-    directives: [],
-  },
+    "directives": []
+  }
 } as const;
 
 export { introspection };

@@ -1,5 +1,11 @@
 import { FragmentOf, graphql, readFragment } from './graphql';
 
+export const Fields = { Pokemon: graphql(`
+  fragment Pok on Pokemon {
+    resistant
+  }`)
+}
+
 export const PokemonFields = graphql(`
   fragment pokemonFields on Pokemon {
     name
@@ -10,18 +16,20 @@ export const PokemonFields = graphql(`
 `);
 
 interface Props {
-  data: FragmentOf<typeof PokemonFields> | null;
+  data: (FragmentOf<typeof PokemonFields> & FragmentOf<typeof Fields.Pokemon>) | null;
 }
 
 export const Pokemon = ({ data }: Props) => {
   const pokemon = readFragment(PokemonFields, data);
-  if (!pokemon) {
+  const resistant = readFragment(Fields.Pokemon, data);
+  if (!pokemon || !resistant) {
     return null;
   }
 
   return (
     <li>
       {pokemon.name}
+      {resistant.resistant}
     </li>
   );
 };

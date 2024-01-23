@@ -74,6 +74,8 @@ function unrollFragment(
     ts.isCallExpression(found.parent.initializer)
   ) {
     found = found.parent.initializer;
+  } else if (ts.isPropertyAssignment(found.parent)) {
+    found = found.parent.initializer;
   }
 
   if (ts.isCallExpression(found) && templates.has(found.expression.getText())) {
@@ -121,6 +123,15 @@ export function findAllCallExpressions(
         arg2.elements.forEach(element => {
           if (ts.isIdentifier(element)) {
             fragments.push(...unrollFragment(element, info));
+          } else if (ts.isPropertyAccessExpression(element)) {
+            let el = element;
+            while (ts.isPropertyAccessExpression(el.expression)) {
+              el = el.expression;
+            }
+
+            if (ts.isIdentifier(el.name)) {
+              fragments.push(...unrollFragment(el.name, info));
+            }
           }
         });
       }

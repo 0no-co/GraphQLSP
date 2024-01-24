@@ -27,6 +27,7 @@ const PokemonQuery = graphql(`
       maxCP
       maxHP
       types
+      fleeRate
     }
   }
 `, [PokemonFields, Fields.Pokemon]);
@@ -37,6 +38,9 @@ const Pokemons = () => {
     variables: { id: '' }
   });
   
+  // @ts-expect-error
+  const [sel] = result.data?.pokemons;
+  console.log(sel.fleeRate)
   const selected = result.data?.pokemons?.at(0)!
   console.log(result.data?.pokemons?.at(0)?.maxCP)
   console.log(selected.maxHP)

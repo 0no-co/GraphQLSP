@@ -15,6 +15,25 @@ const getVariableDeclaration = (start: ts.NoSubstitutionTemplateLiteral) => {
   return node;
 };
 
+const traverseArrayDestructuring = (
+  node: ts.ArrayBindingPattern,
+  originalWip: Array<string>,
+  allFields: Array<string>,
+  source: ts.SourceFile,
+  info: ts.server.PluginCreateInfo
+): Array<string> => {
+  return node.elements.flatMap(element => {
+    if (ts.isOmittedExpression(element)) return [];
+
+    const wip = [...originalWip];
+    return ts.isIdentifier(element.name)
+      ? crawlScope(element.name, wip, allFields, source, info)
+      : ts.isObjectBindingPattern(element.name)
+      ? traverseDestructuring(element.name, wip, allFields, source, info)
+      : traverseArrayDestructuring(element.name, wip, allFields, source, info);
+  });
+};
+
 const traverseDestructuring = (
   node: ts.ObjectBindingPattern,
   originalWip: Array<string>,
@@ -151,6 +170,14 @@ const crawlScope = (
           // Crawl down until we have either a leaf node or an object/array that can
           // be recrawled
           return traverseDestructuring(
+            foundRef.name,
+            pathParts,
+            allFields,
+            source,
+            info
+          );
+        } else if (ts.isArrayBindingPattern(foundRef.name)) {
+          return traverseArrayDestructuring(
             foundRef.name,
             pathParts,
             allFields,

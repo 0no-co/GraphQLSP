@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.3.0
+
+### Minor Changes
+
+- Support array destructuring result lists
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#204](https://github.com/0no-co/GraphQLSP/pull/204))
+
 ## 1.2.0
 
 ### Minor Changes

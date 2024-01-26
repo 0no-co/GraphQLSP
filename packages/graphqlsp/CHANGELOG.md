@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.3.1
+
+### Patch Changes
+
+- ⚠️ Fix case for call-expression where index would go out of bounds due to fragments being external to the document. In tagged-templates we resolve this by adding it in to the original text
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#207](https://github.com/0no-co/GraphQLSP/pull/207))
+
 ## 1.3.0
 
 ### Minor Changes

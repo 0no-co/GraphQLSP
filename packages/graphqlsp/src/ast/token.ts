@@ -22,8 +22,8 @@ export const getToken = (
 
   let foundToken: Token | undefined = undefined;
   for (let line = 0; line < input.length; line++) {
-    const lPos = cPos - 1;
-    const stream = new CharacterStream(input[line]);
+    const lPos = cPos;
+    const stream = new CharacterStream(input[line] + '\n');
     while (!stream.eol()) {
       const token = parser.token(stream, state);
       const string = stream.current();

@@ -34,7 +34,7 @@ export const getToken = (
       ) {
         foundToken = {
           line,
-          start: stream.getStartOfToken(),
+          start: stream.getStartOfToken() + 1,
           end: stream.getCurrentPosition(),
           string,
           state,

@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.3.2
+
+### Patch Changes
+
+- ⚠️ fix broken positioning on unix
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#209](https://github.com/0no-co/GraphQLSP/pull/209))
+
 ## 1.3.1
 
 ### Patch Changes

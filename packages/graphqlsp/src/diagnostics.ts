@@ -251,13 +251,13 @@ const runDiagnostics = (
           let startChar = startingPosition + start.line;
           for (let i = 0; i <= start.line; i++) {
             if (i === start.line) startChar += start.character;
-            else startChar += lines[i].length;
+            else if (lines[i]) startChar += lines[i].length;
           }
 
           let endChar = startingPosition + end.line;
           for (let i = 0; i <= end.line; i++) {
             if (i === end.line) endChar += end.character;
-            else endChar += lines[i].length;
+            else if (lines[i]) endChar += lines[i].length;
           }
 
           const locatedInFragment = resolvedSpans.find(x => {

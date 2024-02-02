@@ -172,6 +172,7 @@ export function getAllFragments(
   }
 
   const def = definitions[0];
+  if (!def) return fragments;
   const src = getSource(info, def.fileName);
   if (!src) return fragments;
 

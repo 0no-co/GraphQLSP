@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.3.3
+
+### Patch Changes
+
+- minor fix to avoid error message in the logs
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#214](https://github.com/0no-co/GraphQLSP/pull/214))
+
 ## 1.3.2
 
 ### Patch Changes

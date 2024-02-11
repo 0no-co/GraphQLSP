@@ -23,6 +23,7 @@ import {
   MISSING_FRAGMENT_CODE,
   getColocatedFragmentNames,
 } from './checkImports';
+import { NoSubstitutionTemplateLiteral } from 'typescript';
 
 const clientDirectives = new Set([
   'populate',
@@ -205,13 +206,12 @@ const runDiagnostics = (
       // by the fact that the parent is an expressionStatement
 
       let startingPosition =
-        node.pos +
+        node.getStart() +
         (isCallExpression
           ? 0
           : (node as ts.TaggedTemplateExpression).tag.getText().length +
-            (isExpression ? 2 : 1));
+            (isExpression ? 2 : 0));
       const endPosition = startingPosition + node.getText().length;
-
       let docFragments = [...fragments];
       if (isCallExpression) {
         try {
@@ -312,7 +312,7 @@ const runDiagnostics = (
           if (!op.name) {
             graphQLDiagnostics.push({
               message: 'Operation needs a name for types to be generated.',
-              start: node.pos,
+              start: node.getStart(),
               code: MISSING_OPERATION_NAME_CODE,
               length: originalNode.getText().length,
               range: {} as any,

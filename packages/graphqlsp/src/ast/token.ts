@@ -18,7 +18,7 @@ export const getToken = (
   const input = text.split('\n');
   const parser = onlineParser();
   const state = parser.startState();
-  let cPos = template.pos + 1;
+  let cPos = template.getStart() + 1;
 
   let foundToken: Token | undefined = undefined;
   for (let line = 0; line < input.length; line++) {

@@ -208,7 +208,7 @@ const runDiagnostics = (
         (isCallExpression
           ? 0
           : (node as ts.TaggedTemplateExpression).tag.getText().length +
-            (isExpression ? 2 : 1));
+            (isExpression ? 2 : 0));
       const endPosition = startingPosition + node.getText().length;
       let docFragments = [...fragments];
       if (isCallExpression) {

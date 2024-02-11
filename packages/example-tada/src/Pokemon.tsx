@@ -8,7 +8,7 @@ export const Fields = { Pokemon: graphql(`
 
 export const PokemonFields = graphql(/* GraphQL */`
   fragment pokemonFields on Pokemon {
-    name @_pagin
+    name
     weight { 
       minimum
     }

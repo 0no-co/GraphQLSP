@@ -29,6 +29,8 @@ const clientDirectives = new Set([
   'client',
   '_unmask',
   '_optional',
+  '_relayPagination',
+  '_simplePagination',
   '_required',
   'optional',
   'required',

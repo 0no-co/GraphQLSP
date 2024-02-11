@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 1.3.4
+
+### Patch Changes
+
+- ⚠️ Fix offset issue when using the graphql annotation
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#217](https://github.com/0no-co/GraphQLSP/pull/217))
+- Add more built-in urql directives
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#218](https://github.com/0no-co/GraphQLSP/pull/218))
+
 ## 1.3.3
 
 ### Patch Changes

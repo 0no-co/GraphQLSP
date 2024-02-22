@@ -383,6 +383,9 @@ export const checkFieldUsageInFile = (
         }
       });
 
+      // Bail when we can't find anything
+      if (!allAccess.length) return;
+
       const unused = allPaths.filter(x => !allAccess.includes(x));
 
       unused.forEach(unusedField => {

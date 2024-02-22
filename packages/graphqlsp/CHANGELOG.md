@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.3.5
+
+### Patch Changes
+
+- Add bail for field-usage when we can't find anything
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#226](https://github.com/0no-co/GraphQLSP/pull/226))
+
 ## 1.3.4
 
 ### Patch Changes

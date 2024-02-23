@@ -3,6 +3,7 @@ import { FragmentDefinitionNode, Kind, parse } from 'graphql';
 
 import { findAllCallExpressions, findAllImports, getSource } from './ast';
 import { resolveTemplate } from './ast/resolve';
+import { VariableStatement, isSourceFile } from 'typescript';
 
 export const MISSING_FRAGMENT_CODE = 52003;
 
@@ -148,8 +149,23 @@ function getFragmentsInSource(
 ): Array<FragmentDefinitionNode> {
   let fragments: Array<FragmentDefinitionNode> = [];
   const callExpressions = findAllCallExpressions(src, info, false);
+  const nodes = callExpressions.nodes.filter(x => {
+    let parent = x.parent;
+    while (
+      parent &&
+      !ts.isSourceFile(parent) &&
+      !ts.isVariableStatement(parent)
+    ) {
+      parent = parent.parent;
+    }
 
-  callExpressions.nodes.forEach(node => {
+    if (ts.isVariableStatement(parent)) {
+      return (parent as VariableStatement).modifiers?.some(x => x.kind === 95);
+    } else {
+      return false;
+    }
+  });
+  nodes.forEach(node => {
     const text = resolveTemplate(node, src.fileName, info).combinedText;
     try {
       const parsed = parse(text, { noLocation: true });

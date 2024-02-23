@@ -7,8 +7,8 @@ const PokemonQuery = graphql(`
     pokemon(id: $id) {
       id
       fleeRate
-      ...pokemonFields
       ...Pok
+      ...pokemonFields
       attacks {
         special {
           name

@@ -283,6 +283,7 @@ export const checkFieldUsageInFile = (
   const defaultReservedKeys = ['id', '_id', '__typename'];
   const additionalKeys = info.config.reservedKeys ?? [];
   const reservedKeys = new Set([...defaultReservedKeys, ...additionalKeys]);
+  const typeChecker = info.languageService.getProgram()!.getTypeChecker();
 
   try {
     nodes.forEach(node => {
@@ -295,10 +296,42 @@ export const checkFieldUsageInFile = (
       const variableDeclaration = getVariableDeclaration(node);
       if (!ts.isVariableDeclaration(variableDeclaration)) return;
 
+      let dataType: ts.Type | undefined;
+
+      const type = typeChecker.getTypeAtLocation(node.parent) as
+        | ts.TypeReference
+        | ts.Type;
+      // Attempt to retrieve type from internally resolve type arguments
+      if ('target' in type) {
+        const typeArguments = (type as any)
+          .resolvedTypeArguments as readonly ts.Type[];
+        dataType = typeArguments.length > 1 ? typeArguments[0] : undefined;
+      }
+      // Fallback to resolving the type from scratch
+      if (!dataType) {
+        const apiTypeSymbol = type.getProperty('__apiType');
+        if (apiTypeSymbol) {
+          let apiType = typeChecker.getTypeOfSymbol(apiTypeSymbol);
+          let callSignature: ts.Signature | undefined =
+            type.getCallSignatures()[0];
+          if (apiType.isUnionOrIntersection()) {
+            for (const type of apiType.types) {
+              callSignature = type.getCallSignatures()[0];
+              if (callSignature) {
+                dataType = callSignature.getReturnType();
+                break;
+              }
+            }
+          }
+          dataType = callSignature && callSignature.getReturnType();
+        }
+      }
+
       const references = info.languageService.getReferencesAtPosition(
         source.fileName,
         variableDeclaration.name.getStart()
       );
+
       if (!references) return;
 
       const allAccess: string[] = [];
@@ -341,50 +374,54 @@ export const checkFieldUsageInFile = (
       references.forEach(ref => {
         if (ref.fileName !== source.fileName) return;
 
-        let found = findNode(source, ref.textSpan.start);
-        while (found && !ts.isVariableStatement(found)) {
-          found = found.parent;
+        const targetNode = findNode(source, ref.textSpan.start);
+        if (!targetNode) return;
+        // Skip declaration as reference of itself
+        if (targetNode.parent === variableDeclaration) return;
+
+        const scopeSymbols = typeChecker.getSymbolsInScope(
+          targetNode,
+          ts.SymbolFlags.BlockScopedVariable
+        );
+
+        let scopeDataSymbol: ts.Symbol | undefined;
+        for (const scopeSymbol of scopeSymbols) {
+          if (!scopeSymbol.valueDeclaration) continue;
+          let typeOfScopeSymbol = typeChecker.getTypeOfSymbol(scopeSymbol);
+          if (typeOfScopeSymbol.isUnionOrIntersection()) {
+            typeOfScopeSymbol =
+              typeOfScopeSymbol.types.find(
+                type => type.flags & ts.TypeFlags.Object
+              ) || typeOfScopeSymbol;
+          }
+          if (dataType === typeOfScopeSymbol) {
+            scopeDataSymbol = scopeSymbol;
+            break;
+          }
         }
 
-        if (!found || !ts.isVariableStatement(found)) return;
-
-        const [output] = found.declarationList.declarations;
-
-        if (output.name.getText() === variableDeclaration.name.getText())
-          return;
-
-        let temp = output.name;
-        // Supported cases:
-        // - const result = await client.query() || useFragment()
-        // - const [result] = useQuery() --> urql
-        // - const { data } = useQuery() --> Apollo
-        // - const { field } = useFragment()
-        // - const [{ data }] = useQuery()
-        // - const { data: { pokemon } } = useQuery()
+        const valueDeclaration = scopeDataSymbol?.valueDeclaration;
         if (
-          ts.isArrayBindingPattern(temp) &&
-          ts.isBindingElement(temp.elements[0])
+          valueDeclaration &&
+          'name' in valueDeclaration &&
+          !!valueDeclaration.name &&
+          (ts.isIdentifier(valueDeclaration.name as any) ||
+            ts.isBindingName(valueDeclaration.name as any))
         ) {
-          temp = temp.elements[0].name;
-        }
-
-        if (ts.isObjectBindingPattern(temp)) {
-          const result = traverseDestructuring(
-            temp,
+          const result = crawlScope(
+            valueDeclaration.name as any,
             [],
             allPaths,
             source,
             info
           );
           allAccess.push(...result);
-        } else {
-          const result = crawlScope(temp, [], allPaths, source, info);
-          allAccess.push(...result);
         }
       });
 
-      // Bail when we can't find anything
-      if (!allAccess.length) return;
+      if (!allAccess.length) {
+        return;
+      }
 
       const unused = allPaths.filter(x => !allAccess.includes(x));
 

@@ -7,8 +7,8 @@ const PokemonQuery = graphql(`
     pokemon(id: $id) {
       id
       fleeRate
-      ...pokemonFields
       ...Pok
+      ...pokemonFields
       attacks {
         special {
           name
@@ -66,5 +66,6 @@ const Pokemons = () => {
   const { pokemon } = result.data || {};
   console.log(pokemon?.weight?.maximum)
 
+  // @ts-ignore
   return <Pokemon data={result.data!.pokemon} />;
 }

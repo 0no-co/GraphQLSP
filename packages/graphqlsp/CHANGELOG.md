@@ -1,5 +1,19 @@
 # @0no-co/graphqlsp
 
+## 1.4.0
+
+### Minor Changes
+
+- Expand support of tracking field usage to more edge cases by matching a defined GraphQL document’s type against variables in-scope with said type
+  Submitted by [@kitten](https://github.com/kitten) (See [#235](https://github.com/0no-co/GraphQLSP/pull/235))
+
+### Patch Changes
+
+- Only warn for fragments that are exported
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#230](https://github.com/0no-co/GraphQLSP/pull/230))
+- ⚠️ Fix issue where a missing argument 2 for a call-expression would make us erase prior found fragment-definitions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#233](https://github.com/0no-co/GraphQLSP/pull/233))
+
 ## 1.3.5
 
 ### Patch Changes

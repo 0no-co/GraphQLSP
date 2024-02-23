@@ -5,14 +5,19 @@ import { findNode } from './ast';
 
 export const UNUSED_FIELD_CODE = 52005;
 
-const getVariableDeclaration = (start: ts.NoSubstitutionTemplateLiteral) => {
-  let node: any = start;
-  let counter = 0;
-  while (!ts.isVariableDeclaration(node) && node.parent && counter < 5) {
-    node = node.parent;
-    counter++;
+const getVariableDeclaration = (
+  start: ts.Node
+): ts.VariableDeclaration | undefined => {
+  let node: ts.Node = start;
+  const seen = new Set();
+  while (node.parent && !seen.has(node)) {
+    seen.add(node);
+    if (ts.isBlock(node)) {
+      return; // NOTE: We never want to traverse up into a new function/module block
+    } else if (ts.isVariableDeclaration((node = node.parent))) {
+      return node;
+    }
   }
-  return node;
 };
 
 const traverseArrayDestructuring = (
@@ -106,8 +111,9 @@ const arrayMethods = new Set([
   'flatMap',
   'sort',
 ]);
+
 const crawlScope = (
-  node: ts.Identifier | ts.BindingName,
+  node: ts.BindingName,
   originalWip: Array<string>,
   allFields: Array<string>,
   source: ts.SourceFile,
@@ -294,7 +300,7 @@ export const checkFieldUsageInFile = (
         return;
 
       const variableDeclaration = getVariableDeclaration(node);
-      if (!ts.isVariableDeclaration(variableDeclaration)) return;
+      if (!variableDeclaration) return;
 
       let dataType: ts.Type | undefined;
 
@@ -401,6 +407,7 @@ export const checkFieldUsageInFile = (
         }
 
         const valueDeclaration = scopeDataSymbol?.valueDeclaration;
+        let name: ts.BindingName | undefined;
         if (
           valueDeclaration &&
           'name' in valueDeclaration &&
@@ -408,15 +415,22 @@ export const checkFieldUsageInFile = (
           (ts.isIdentifier(valueDeclaration.name as any) ||
             ts.isBindingName(valueDeclaration.name as any))
         ) {
-          const result = crawlScope(
-            valueDeclaration.name as any,
-            [],
-            allPaths,
-            source,
-            info
-          );
-          allAccess.push(...result);
+          name = valueDeclaration.name as ts.BindingName;
+        } else {
+          const variableDeclaration = getVariableDeclaration(targetNode);
+          if (variableDeclaration) name = variableDeclaration.name;
         }
+
+        let result: string[] = [];
+        if (name && ts.isObjectBindingPattern(name)) {
+          result = traverseDestructuring(name, [], allPaths, source, info);
+        } else if (name && ts.isArrayBindingPattern(name)) {
+          result = traverseArrayDestructuring(name, [], allPaths, source, info);
+        } else if (name) {
+          result = crawlScope(name, [], allPaths, source, info);
+        }
+
+        allAccess.push(...result);
       });
 
       if (!allAccess.length) {

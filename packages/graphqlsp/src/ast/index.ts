@@ -118,7 +118,7 @@ export function findAllCallExpressions(
 
       if (!hasTriedToFindFragments && !arg2) {
         hasTriedToFindFragments = true;
-        fragments = getAllFragments(sourceFile.fileName, node, info);
+        fragments.push(...getAllFragments(sourceFile.fileName, node, info));
       } else if (arg2 && ts.isArrayLiteralExpression(arg2)) {
         arg2.elements.forEach(element => {
           if (ts.isIdentifier(element)) {

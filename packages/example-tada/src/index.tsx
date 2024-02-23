@@ -1,4 +1,4 @@
-import { createClient, useQuery } from 'urql';
+import { useQuery } from 'urql';
 import { graphql } from './graphql';
 import { Fields, Pokemon, PokemonFields } from './Pokemon';
 
@@ -31,6 +31,8 @@ const PokemonQuery = graphql(`
     }
   }
 `, [PokemonFields, Fields.Pokemon]);
+
+const persisted = graphql.persisted<typeof PokemonQuery>("sha256:dc31ff9637bbc77bb95dffb2ca73b0e607639b018befd06e9ad801b54483d661")
 
 const Pokemons = () => {
   const [result] = useQuery({

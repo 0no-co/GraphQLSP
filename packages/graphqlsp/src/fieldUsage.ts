@@ -5,14 +5,25 @@ import { findNode } from './ast';
 
 export const UNUSED_FIELD_CODE = 52005;
 
-const getVariableDeclaration = (start: ts.NoSubstitutionTemplateLiteral) => {
-  let node: any = start;
-  let counter = 0;
-  while (!ts.isVariableDeclaration(node) && node.parent && counter < 5) {
-    node = node.parent;
-    counter++;
+const unwrapAbstractType = (type: ts.Type) => {
+  return type.isUnionOrIntersection()
+    ? type.types.find(type => type.flags & ts.TypeFlags.Object) || type
+    : type;
+};
+
+const getVariableDeclaration = (
+  start: ts.Node
+): ts.VariableDeclaration | undefined => {
+  let node: ts.Node = start;
+  const seen = new Set();
+  while (node.parent && !seen.has(node)) {
+    seen.add(node);
+    if (ts.isBlock(node)) {
+      return; // NOTE: We never want to traverse up into a new function/module block
+    } else if (ts.isVariableDeclaration((node = node.parent))) {
+      return node;
+    }
   }
-  return node;
 };
 
 const traverseArrayDestructuring = (
@@ -106,13 +117,26 @@ const arrayMethods = new Set([
   'flatMap',
   'sort',
 ]);
+
 const crawlScope = (
-  node: ts.Identifier | ts.BindingName,
+  node: ts.BindingName,
   originalWip: Array<string>,
   allFields: Array<string>,
   source: ts.SourceFile,
   info: ts.server.PluginCreateInfo
 ): Array<string> => {
+  if (ts.isObjectBindingPattern(node)) {
+    return traverseDestructuring(node, originalWip, allFields, source, info);
+  } else if (ts.isArrayBindingPattern(node)) {
+    return traverseArrayDestructuring(
+      node,
+      originalWip,
+      allFields,
+      source,
+      info
+    );
+  }
+
   let results: string[] = [];
 
   const references = info.languageService.getReferencesAtPosition(
@@ -155,36 +179,7 @@ const crawlScope = (
       ts.isBinaryExpression(foundRef)
     ) {
       if (ts.isVariableDeclaration(foundRef)) {
-        if (ts.isIdentifier(foundRef.name)) {
-          // We have already added the paths because of the right-hand expression,
-          // const pokemon = result.data.pokemon --> we have pokemon as our path,
-          // now re-crawling pokemon for all of its accessors should deliver us the usage
-          // patterns... This might get expensive though if we need to perform this deeply.
-          return crawlScope(foundRef.name, pathParts, allFields, source, info);
-        } else if (ts.isObjectBindingPattern(foundRef.name)) {
-          // First we need to traverse the left-hand side of the variable assignment,
-          // this could be tree-like as we could be dealing with
-          // - const { x: { y: z }, a: { b: { c, d }, e: { f } } } = result.data
-          // Which we will need several paths for...
-          // after doing that we need to re-crawl all of the resulting variables
-          // Crawl down until we have either a leaf node or an object/array that can
-          // be recrawled
-          return traverseDestructuring(
-            foundRef.name,
-            pathParts,
-            allFields,
-            source,
-            info
-          );
-        } else if (ts.isArrayBindingPattern(foundRef.name)) {
-          return traverseArrayDestructuring(
-            foundRef.name,
-            pathParts,
-            allFields,
-            source,
-            info
-          );
-        }
+        return crawlScope(foundRef.name, pathParts, allFields, source, info);
       } else if (
         ts.isIdentifier(foundRef) &&
         !pathParts.includes(foundRef.text)
@@ -208,8 +203,31 @@ const crawlScope = (
         const isSomeOrEvery =
           foundRef.name.text === 'every' || foundRef.name.text === 'some';
         const callExpression = foundRef.parent;
-        const func = callExpression.arguments[0];
-        if (ts.isFunctionExpression(func) || ts.isArrowFunction(func)) {
+        let func: ts.Expression | ts.FunctionDeclaration =
+          callExpression.arguments[0];
+
+        if (ts.isIdentifier(func)) {
+          // TODO: Scope utilities in checkFieldUsageInFile to deduplicate
+          const checker = info.languageService.getProgram()!.getTypeChecker();
+
+          const declaration =
+            checker.getSymbolAtLocation(func)?.valueDeclaration;
+          if (declaration && ts.isFunctionDeclaration(declaration)) {
+            func = declaration;
+          } else if (
+            declaration &&
+            ts.isVariableDeclaration(declaration) &&
+            declaration.initializer
+          ) {
+            func = declaration.initializer;
+          }
+        }
+
+        if (
+          ts.isFunctionDeclaration(func) ||
+          ts.isFunctionExpression(func) ||
+          ts.isArrowFunction(func)
+        ) {
           const param = func.parameters[isReduce ? 1 : 0];
           const res = crawlScope(
             param.name,
@@ -234,8 +252,6 @@ const crawlScope = (
           }
 
           return res;
-        } else if (ts.isIdentifier(func)) {
-          // TODO: get the function and do the same as the above
         }
       } else if (
         ts.isPropertyAccessExpression(foundRef) &&
@@ -283,6 +299,8 @@ export const checkFieldUsageInFile = (
   const defaultReservedKeys = ['id', '_id', '__typename'];
   const additionalKeys = info.config.reservedKeys ?? [];
   const reservedKeys = new Set([...defaultReservedKeys, ...additionalKeys]);
+  const checker = info.languageService.getProgram()?.getTypeChecker();
+  if (!checker) return;
 
   try {
     nodes.forEach(node => {
@@ -293,12 +311,44 @@ export const checkFieldUsageInFile = (
         return;
 
       const variableDeclaration = getVariableDeclaration(node);
-      if (!ts.isVariableDeclaration(variableDeclaration)) return;
+      if (!variableDeclaration) return;
+
+      let dataType: ts.Type | undefined;
+
+      const type = checker.getTypeAtLocation(node.parent) as
+        | ts.TypeReference
+        | ts.Type;
+      // Attempt to retrieve type from internally resolve type arguments
+      if ('target' in type) {
+        const typeArguments = (type as any)
+          .resolvedTypeArguments as readonly ts.Type[];
+        dataType = typeArguments.length > 1 ? typeArguments[0] : undefined;
+      }
+      // Fallback to resolving the type from scratch
+      if (!dataType) {
+        const apiTypeSymbol = type.getProperty('__apiType');
+        if (apiTypeSymbol) {
+          let apiType = checker.getTypeOfSymbol(apiTypeSymbol);
+          let callSignature: ts.Signature | undefined =
+            type.getCallSignatures()[0];
+          if (apiType.isUnionOrIntersection()) {
+            for (const type of apiType.types) {
+              callSignature = type.getCallSignatures()[0];
+              if (callSignature) {
+                dataType = callSignature.getReturnType();
+                break;
+              }
+            }
+          }
+          dataType = callSignature && callSignature.getReturnType();
+        }
+      }
 
       const references = info.languageService.getReferencesAtPosition(
         source.fileName,
         variableDeclaration.name.getStart()
       );
+
       if (!references) return;
 
       const allAccess: string[] = [];
@@ -341,50 +391,79 @@ export const checkFieldUsageInFile = (
       references.forEach(ref => {
         if (ref.fileName !== source.fileName) return;
 
-        let found = findNode(source, ref.textSpan.start);
-        while (found && !ts.isVariableStatement(found)) {
-          found = found.parent;
-        }
+        const targetNode = findNode(source, ref.textSpan.start);
+        if (!targetNode) return;
+        // Skip declaration as reference of itself
+        if (targetNode.parent === variableDeclaration) return;
 
-        if (!found || !ts.isVariableStatement(found)) return;
+        const scopeSymbols = checker.getSymbolsInScope(
+          targetNode,
+          ts.SymbolFlags.BlockScopedVariable
+        );
 
-        const [output] = found.declarationList.declarations;
-
-        if (output.name.getText() === variableDeclaration.name.getText())
-          return;
-
-        let temp = output.name;
-        // Supported cases:
-        // - const result = await client.query() || useFragment()
-        // - const [result] = useQuery() --> urql
-        // - const { data } = useQuery() --> Apollo
-        // - const { field } = useFragment()
-        // - const [{ data }] = useQuery()
-        // - const { data: { pokemon } } = useQuery()
-        if (
-          ts.isArrayBindingPattern(temp) &&
-          ts.isBindingElement(temp.elements[0])
-        ) {
-          temp = temp.elements[0].name;
-        }
-
-        if (ts.isObjectBindingPattern(temp)) {
-          const result = traverseDestructuring(
-            temp,
-            [],
-            allPaths,
-            source,
-            info
+        let scopeDataSymbol: ts.Symbol | undefined;
+        for (let scopeSymbol of scopeSymbols) {
+          if (!scopeSymbol.valueDeclaration) continue;
+          let typeOfScopeSymbol = unwrapAbstractType(
+            checker.getTypeOfSymbol(scopeSymbol)
           );
-          allAccess.push(...result);
+          if (dataType === typeOfScopeSymbol) {
+            scopeDataSymbol = scopeSymbol;
+            break;
+          }
+
+          // NOTE: This is an aggressive fallback for hooks where the return value isn't destructured
+          // This is a last resort solution for patterns like react-query, where the fallback that
+          // would otherwise happen below isn't sufficient
+          if (typeOfScopeSymbol.flags & ts.TypeFlags.Object) {
+            const tuplePropertySymbol = typeOfScopeSymbol.getProperty('0');
+            if (tuplePropertySymbol) {
+              typeOfScopeSymbol = checker.getTypeOfSymbol(tuplePropertySymbol);
+              if (dataType === typeOfScopeSymbol) {
+                scopeDataSymbol = scopeSymbol;
+                break;
+              }
+            }
+
+            const dataPropertySymbol = typeOfScopeSymbol.getProperty('data');
+            if (dataPropertySymbol) {
+              typeOfScopeSymbol = unwrapAbstractType(
+                checker.getTypeOfSymbol(dataPropertySymbol)
+              );
+              if (dataType === typeOfScopeSymbol) {
+                scopeDataSymbol = scopeSymbol;
+                break;
+              }
+            }
+          }
+        }
+
+        const valueDeclaration = scopeDataSymbol?.valueDeclaration;
+        let name: ts.BindingName | undefined;
+        if (
+          valueDeclaration &&
+          'name' in valueDeclaration &&
+          !!valueDeclaration.name &&
+          (ts.isIdentifier(valueDeclaration.name as any) ||
+            ts.isBindingName(valueDeclaration.name as any))
+        ) {
+          name = valueDeclaration.name as ts.BindingName;
         } else {
-          const result = crawlScope(temp, [], allPaths, source, info);
+          // Fall back to looking at the variable declaration directly,
+          // if we are on one.
+          const variableDeclaration = getVariableDeclaration(targetNode);
+          if (variableDeclaration) name = variableDeclaration.name;
+        }
+
+        if (name) {
+          const result = crawlScope(name, [], allPaths, source, info);
           allAccess.push(...result);
         }
       });
 
-      // Bail when we can't find anything
-      if (!allAccess.length) return;
+      if (!allAccess.length) {
+        return;
+      }
 
       const unused = allPaths.filter(x => !allAccess.includes(x));
 

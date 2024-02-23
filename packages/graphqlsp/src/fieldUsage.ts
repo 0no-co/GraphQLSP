@@ -5,6 +5,12 @@ import { findNode } from './ast';
 
 export const UNUSED_FIELD_CODE = 52005;
 
+const unwrapAbstractType = (type: ts.Type) => {
+  return type.isUnionOrIntersection()
+    ? type.types.find(type => type.flags & ts.TypeFlags.Object) || type
+    : type;
+};
+
 const getVariableDeclaration = (
   start: ts.Node
 ): ts.VariableDeclaration | undefined => {
@@ -374,18 +380,40 @@ export const checkFieldUsageInFile = (
         );
 
         let scopeDataSymbol: ts.Symbol | undefined;
-        for (const scopeSymbol of scopeSymbols) {
+        for (let scopeSymbol of scopeSymbols) {
           if (!scopeSymbol.valueDeclaration) continue;
-          let typeOfScopeSymbol = typeChecker.getTypeOfSymbol(scopeSymbol);
-          if (typeOfScopeSymbol.isUnionOrIntersection()) {
-            typeOfScopeSymbol =
-              typeOfScopeSymbol.types.find(
-                type => type.flags & ts.TypeFlags.Object
-              ) || typeOfScopeSymbol;
-          }
+          let typeOfScopeSymbol = unwrapAbstractType(
+            typeChecker.getTypeOfSymbol(scopeSymbol)
+          );
           if (dataType === typeOfScopeSymbol) {
             scopeDataSymbol = scopeSymbol;
             break;
+          }
+
+          // NOTE: This is an aggressive fallback for hooks where the return value isn't destructured
+          // This is a last resort solution for patterns like react-query, where the fallback that
+          // would otherwise happen below isn't sufficient
+          if (typeOfScopeSymbol.flags & ts.TypeFlags.Object) {
+            const tuplePropertySymbol = typeOfScopeSymbol.getProperty('0');
+            if (tuplePropertySymbol) {
+              typeOfScopeSymbol =
+                typeChecker.getTypeOfSymbol(tuplePropertySymbol);
+              if (dataType === typeOfScopeSymbol) {
+                scopeDataSymbol = scopeSymbol;
+                break;
+              }
+            }
+
+            const dataPropertySymbol = typeOfScopeSymbol.getProperty('data');
+            if (dataPropertySymbol) {
+              typeOfScopeSymbol = unwrapAbstractType(
+                typeChecker.getTypeOfSymbol(dataPropertySymbol)
+              );
+              if (dataType === typeOfScopeSymbol) {
+                scopeDataSymbol = scopeSymbol;
+                break;
+              }
+            }
           }
         }
 
@@ -400,6 +428,8 @@ export const checkFieldUsageInFile = (
         ) {
           name = valueDeclaration.name as ts.BindingName;
         } else {
+          // Fall back to looking at the variable declaration directly,
+          // if we are on one.
           const variableDeclaration = getVariableDeclaration(targetNode);
           if (variableDeclaration) name = variableDeclaration.name;
         }

@@ -203,8 +203,31 @@ const crawlScope = (
         const isSomeOrEvery =
           foundRef.name.text === 'every' || foundRef.name.text === 'some';
         const callExpression = foundRef.parent;
-        const func = callExpression.arguments[0];
-        if (ts.isFunctionExpression(func) || ts.isArrowFunction(func)) {
+        let func: ts.Expression | ts.FunctionDeclaration =
+          callExpression.arguments[0];
+
+        if (ts.isIdentifier(func)) {
+          // TODO: Scope utilities in checkFieldUsageInFile to deduplicate
+          const checker = info.languageService.getProgram()!.getTypeChecker();
+
+          const declaration =
+            checker.getSymbolAtLocation(func)?.valueDeclaration;
+          if (declaration && ts.isFunctionDeclaration(declaration)) {
+            func = declaration;
+          } else if (
+            declaration &&
+            ts.isVariableDeclaration(declaration) &&
+            declaration.initializer
+          ) {
+            func = declaration.initializer;
+          }
+        }
+
+        if (
+          ts.isFunctionDeclaration(func) ||
+          ts.isFunctionExpression(func) ||
+          ts.isArrowFunction(func)
+        ) {
           const param = func.parameters[isReduce ? 1 : 0];
           const res = crawlScope(
             param.name,
@@ -229,8 +252,6 @@ const crawlScope = (
           }
 
           return res;
-        } else if (ts.isIdentifier(func)) {
-          // TODO: get the function and do the same as the above
         }
       } else if (
         ts.isPropertyAccessExpression(foundRef) &&

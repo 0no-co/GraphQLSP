@@ -278,7 +278,8 @@ export const checkFieldUsageInFile = (
   const defaultReservedKeys = ['id', '_id', '__typename'];
   const additionalKeys = info.config.reservedKeys ?? [];
   const reservedKeys = new Set([...defaultReservedKeys, ...additionalKeys]);
-  const typeChecker = info.languageService.getProgram()!.getTypeChecker();
+  const checker = info.languageService.getProgram()?.getTypeChecker();
+  if (!checker) return;
 
   try {
     nodes.forEach(node => {
@@ -293,7 +294,7 @@ export const checkFieldUsageInFile = (
 
       let dataType: ts.Type | undefined;
 
-      const type = typeChecker.getTypeAtLocation(node.parent) as
+      const type = checker.getTypeAtLocation(node.parent) as
         | ts.TypeReference
         | ts.Type;
       // Attempt to retrieve type from internally resolve type arguments
@@ -306,7 +307,7 @@ export const checkFieldUsageInFile = (
       if (!dataType) {
         const apiTypeSymbol = type.getProperty('__apiType');
         if (apiTypeSymbol) {
-          let apiType = typeChecker.getTypeOfSymbol(apiTypeSymbol);
+          let apiType = checker.getTypeOfSymbol(apiTypeSymbol);
           let callSignature: ts.Signature | undefined =
             type.getCallSignatures()[0];
           if (apiType.isUnionOrIntersection()) {
@@ -374,7 +375,7 @@ export const checkFieldUsageInFile = (
         // Skip declaration as reference of itself
         if (targetNode.parent === variableDeclaration) return;
 
-        const scopeSymbols = typeChecker.getSymbolsInScope(
+        const scopeSymbols = checker.getSymbolsInScope(
           targetNode,
           ts.SymbolFlags.BlockScopedVariable
         );
@@ -383,7 +384,7 @@ export const checkFieldUsageInFile = (
         for (let scopeSymbol of scopeSymbols) {
           if (!scopeSymbol.valueDeclaration) continue;
           let typeOfScopeSymbol = unwrapAbstractType(
-            typeChecker.getTypeOfSymbol(scopeSymbol)
+            checker.getTypeOfSymbol(scopeSymbol)
           );
           if (dataType === typeOfScopeSymbol) {
             scopeDataSymbol = scopeSymbol;
@@ -396,8 +397,7 @@ export const checkFieldUsageInFile = (
           if (typeOfScopeSymbol.flags & ts.TypeFlags.Object) {
             const tuplePropertySymbol = typeOfScopeSymbol.getProperty('0');
             if (tuplePropertySymbol) {
-              typeOfScopeSymbol =
-                typeChecker.getTypeOfSymbol(tuplePropertySymbol);
+              typeOfScopeSymbol = checker.getTypeOfSymbol(tuplePropertySymbol);
               if (dataType === typeOfScopeSymbol) {
                 scopeDataSymbol = scopeSymbol;
                 break;
@@ -407,7 +407,7 @@ export const checkFieldUsageInFile = (
             const dataPropertySymbol = typeOfScopeSymbol.getProperty('data');
             if (dataPropertySymbol) {
               typeOfScopeSymbol = unwrapAbstractType(
-                typeChecker.getTypeOfSymbol(dataPropertySymbol)
+                checker.getTypeOfSymbol(dataPropertySymbol)
               );
               if (dataType === typeOfScopeSymbol) {
                 scopeDataSymbol = scopeSymbol;

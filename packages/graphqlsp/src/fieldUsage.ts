@@ -119,6 +119,18 @@ const crawlScope = (
   source: ts.SourceFile,
   info: ts.server.PluginCreateInfo
 ): Array<string> => {
+  if (ts.isObjectBindingPattern(node)) {
+    return traverseDestructuring(node, originalWip, allFields, source, info);
+  } else if (ts.isArrayBindingPattern(node)) {
+    return traverseArrayDestructuring(
+      node,
+      originalWip,
+      allFields,
+      source,
+      info
+    );
+  }
+
   let results: string[] = [];
 
   const references = info.languageService.getReferencesAtPosition(
@@ -161,36 +173,7 @@ const crawlScope = (
       ts.isBinaryExpression(foundRef)
     ) {
       if (ts.isVariableDeclaration(foundRef)) {
-        if (ts.isIdentifier(foundRef.name)) {
-          // We have already added the paths because of the right-hand expression,
-          // const pokemon = result.data.pokemon --> we have pokemon as our path,
-          // now re-crawling pokemon for all of its accessors should deliver us the usage
-          // patterns... This might get expensive though if we need to perform this deeply.
-          return crawlScope(foundRef.name, pathParts, allFields, source, info);
-        } else if (ts.isObjectBindingPattern(foundRef.name)) {
-          // First we need to traverse the left-hand side of the variable assignment,
-          // this could be tree-like as we could be dealing with
-          // - const { x: { y: z }, a: { b: { c, d }, e: { f } } } = result.data
-          // Which we will need several paths for...
-          // after doing that we need to re-crawl all of the resulting variables
-          // Crawl down until we have either a leaf node or an object/array that can
-          // be recrawled
-          return traverseDestructuring(
-            foundRef.name,
-            pathParts,
-            allFields,
-            source,
-            info
-          );
-        } else if (ts.isArrayBindingPattern(foundRef.name)) {
-          return traverseArrayDestructuring(
-            foundRef.name,
-            pathParts,
-            allFields,
-            source,
-            info
-          );
-        }
+        return crawlScope(foundRef.name, pathParts, allFields, source, info);
       } else if (
         ts.isIdentifier(foundRef) &&
         !pathParts.includes(foundRef.text)
@@ -421,16 +404,10 @@ export const checkFieldUsageInFile = (
           if (variableDeclaration) name = variableDeclaration.name;
         }
 
-        let result: string[] = [];
-        if (name && ts.isObjectBindingPattern(name)) {
-          result = traverseDestructuring(name, [], allPaths, source, info);
-        } else if (name && ts.isArrayBindingPattern(name)) {
-          result = traverseArrayDestructuring(name, [], allPaths, source, info);
-        } else if (name) {
-          result = crawlScope(name, [], allPaths, source, info);
+        if (name) {
+          const result = crawlScope(name, [], allPaths, source, info);
+          allAccess.push(...result);
         }
-
-        allAccess.push(...result);
       });
 
       if (!allAccess.length) {

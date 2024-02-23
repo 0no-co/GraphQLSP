@@ -66,5 +66,6 @@ const Pokemons = () => {
   const { pokemon } = result.data || {};
   console.log(pokemon?.weight?.maximum)
 
+  // @ts-ignore
   return <Pokemon data={result.data!.pokemon} />;
 }

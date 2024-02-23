@@ -3,7 +3,11 @@ import { FragmentDefinitionNode, Kind, parse } from 'graphql';
 
 import { findAllCallExpressions, findAllImports, getSource } from './ast';
 import { resolveTemplate } from './ast/resolve';
-import { VariableStatement, isSourceFile } from 'typescript';
+import {
+  VariableDeclaration,
+  VariableStatement,
+  isSourceFile,
+} from 'typescript';
 
 export const MISSING_FRAGMENT_CODE = 52003;
 
@@ -15,10 +19,14 @@ export const getColocatedFragmentNames = (
   { start: number; length: number; fragments: Array<string> }
 > => {
   const imports = findAllImports(source);
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+
   const importSpecifierToFragments: Record<
     string,
     { start: number; length: number; fragments: Array<string> }
   > = {};
+
+  if (!typeChecker) return importSpecifierToFragments;
 
   if (imports.length) {
     imports.forEach(imp => {
@@ -36,7 +44,11 @@ export const getColocatedFragmentNames = (
           const externalSource = getSource(info, def.fileName);
           if (!externalSource) return;
 
-          const fragmentsForImport = getFragmentsInSource(externalSource, info);
+          const fragmentsForImport = getFragmentsInSource(
+            externalSource,
+            typeChecker,
+            info
+          );
 
           const names = fragmentsForImport.map(fragment => fragment.name.value);
           if (
@@ -74,7 +86,11 @@ export const getColocatedFragmentNames = (
           const externalSource = getSource(info, def.fileName);
           if (!externalSource) return;
 
-          const fragmentsForImport = getFragmentsInSource(externalSource, info);
+          const fragmentsForImport = getFragmentsInSource(
+            externalSource,
+            typeChecker,
+            info
+          );
           const names = fragmentsForImport.map(fragment => fragment.name.value);
           if (
             names.length &&
@@ -112,6 +128,7 @@ export const getColocatedFragmentNames = (
 
             const fragmentsForImport = getFragmentsInSource(
               externalSource,
+              typeChecker,
               info
             );
             const names = fragmentsForImport.map(
@@ -145,26 +162,34 @@ export const getColocatedFragmentNames = (
 
 function getFragmentsInSource(
   src: ts.SourceFile,
+  typeChecker: ts.TypeChecker,
   info: ts.server.PluginCreateInfo
 ): Array<FragmentDefinitionNode> {
   let fragments: Array<FragmentDefinitionNode> = [];
   const callExpressions = findAllCallExpressions(src, info, false);
+
+  const symbol = typeChecker.getSymbolAtLocation(src);
+  if (!symbol) return [];
+
+  const exports = typeChecker.getExportsOfModule(symbol);
+  const exportedNames = exports.map(symb => symb.name);
   const nodes = callExpressions.nodes.filter(x => {
     let parent = x.parent;
     while (
       parent &&
       !ts.isSourceFile(parent) &&
-      !ts.isVariableStatement(parent)
+      !ts.isVariableDeclaration(parent)
     ) {
       parent = parent.parent;
     }
 
-    if (ts.isVariableStatement(parent)) {
-      return (parent as VariableStatement).modifiers?.some(x => x.kind === 95);
+    if (ts.isVariableDeclaration(parent)) {
+      return exportedNames.includes(parent.name.getText());
     } else {
       return false;
     }
   });
+
   nodes.forEach(node => {
     const text = resolveTemplate(node, src.fileName, info).combinedText;
     try {

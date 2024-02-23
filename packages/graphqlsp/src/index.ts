@@ -2,7 +2,7 @@ import { ts, init as initTypeScript } from './ts';
 import { SchemaOrigin, loadSchema } from './graphql/getSchema';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
-import { getGraphQLDiagnostics } from './diagnostics';
+import { ALL_DIAGNOSTICS, getGraphQLDiagnostics } from './diagnostics';
 import { templates } from './ast/templates';
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
@@ -61,6 +61,11 @@ function create(info: ts.server.PluginCreateInfo) {
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics =
       info.languageService.getSemanticDiagnostics(filename);
+
+    const hasGraphQLDiagnostics = originalDiagnostics.some(x =>
+      ALL_DIAGNOSTICS.includes(x.code)
+    );
+    if (hasGraphQLDiagnostics) return originalDiagnostics;
 
     const graphQLDiagnostics = getGraphQLDiagnostics(filename, schema, info);
 

@@ -18,12 +18,11 @@ import {
   getSource,
 } from './ast';
 import { resolveTemplate } from './ast/resolve';
-import { checkFieldUsageInFile } from './fieldUsage';
+import { UNUSED_FIELD_CODE, checkFieldUsageInFile } from './fieldUsage';
 import {
   MISSING_FRAGMENT_CODE,
   getColocatedFragmentNames,
 } from './checkImports';
-import { NoSubstitutionTemplateLiteral } from 'typescript';
 
 const clientDirectives = new Set([
   'populate',
@@ -49,6 +48,13 @@ const directiveRegex = /Unknown directive "@([^)]+)"/g;
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const MISSING_OPERATION_NAME_CODE = 52002;
 export const USING_DEPRECATED_FIELD_CODE = 52004;
+export const ALL_DIAGNOSTICS = [
+  SEMANTIC_DIAGNOSTIC_CODE,
+  MISSING_OPERATION_NAME_CODE,
+  USING_DEPRECATED_FIELD_CODE,
+  MISSING_FRAGMENT_CODE,
+  UNUSED_FIELD_CODE,
+];
 
 const cache = new LRUCache<number, ts.Diagnostic[]>({
   // how long to live in ms

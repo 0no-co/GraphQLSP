@@ -362,25 +362,22 @@ export const checkFieldUsageInFile = (
       // is valid given the current document...
       visit(parse(node.getText().slice(1, -1)), {
         Field: {
-          enter: node => {
+          enter(node) {
+            const alias = node.alias ? node.alias.value : node.name.value;
             if (!node.selectionSet && !reservedKeys.has(node.name.value)) {
-              let p;
-              if (inProgress.length) {
-                p = inProgress.join('.') + '.' + node.name.value;
-              } else {
-                p = node.name.value;
-              }
-              allPaths.push(p);
-
-              fieldToLoc.set(p, {
+              const path = inProgress.length
+                ? `${inProgress.join('.')}.${alias}`
+                : alias;
+              allPaths.push(path);
+              fieldToLoc.set(path, {
                 start: node.name.loc!.start,
                 length: node.name.loc!.end - node.name.loc!.start,
               });
             } else if (node.selectionSet) {
-              inProgress.push(node.name.value);
+              inProgress.push(alias);
             }
           },
-          leave: node => {
+          leave(node) {
             if (node.selectionSet) {
               inProgress.pop();
             }

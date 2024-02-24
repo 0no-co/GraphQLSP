@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.4.1
+
+### Patch Changes
+
+- ⚠️ Fix unused fields detection not respecting field aliases in GraphQL documents
+  Submitted by [@kitten](https://github.com/kitten) (See [#238](https://github.com/0no-co/GraphQLSP/pull/238))
+
 ## 1.4.0
 
 ### Minor Changes

@@ -9,5 +9,11 @@ const PostsQuery = gql`
   }
 `;
 
+const Regression190 = gql`
+query AllPosts {
+  
+}
+`;
+
 const sql = (x: string | TemplateStringsArray) => x;
 const x = sql`'{}'`;

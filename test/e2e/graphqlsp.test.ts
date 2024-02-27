@@ -109,7 +109,7 @@ describe('simple', () => {
     ]);
   }, 7500);
 
-  it('Gives quick-info when hovering', async () => {
+  it('Gives quick-info when hovering start (#15)', async () => {
     server.send({
       seq: 9,
       type: 'request',
@@ -117,7 +117,7 @@ describe('simple', () => {
       arguments: {
         file: testFile,
         line: 5,
-        offset: 7,
+        offset: 5,
       },
     });
 
@@ -134,5 +134,77 @@ describe('simple', () => {
     expect(res?.body.documentation).toEqual(
       `Query.posts: [Post]\n\nList out all posts`
     );
+  }, 7500);
+
+  it('Handles empty line (#190)', async () => {
+    server.send({
+      seq: 10,
+      type: 'request',
+      command: 'completionInfo',
+      arguments: {
+        file: testFile,
+        line: 14,
+        offset: 3,
+        includeExternalModuleExports: true,
+        includeInsertTextCompletions: true,
+        triggerKind: 1,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'completionInfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(
+        resp => resp.type === 'response' && resp.command === 'completionInfo'
+      );
+
+    expect(res).toBeDefined();
+    expect(typeof res?.body.entries).toEqual('object');
+    const defaultAttrs = { kind: 'var', kindModifiers: 'declare' };
+    expect(res?.body.entries).toEqual([
+      {
+        ...defaultAttrs,
+        name: 'post',
+        sortText: '0post',
+        labelDetails: { detail: ' Post' },
+      },
+      {
+        ...defaultAttrs,
+        name: 'posts',
+        sortText: '1posts',
+        labelDetails: { detail: ' [Post]', description: 'List out all posts' },
+      },
+      {
+        ...defaultAttrs,
+        name: '__typename',
+        sortText: '2__typename',
+        labelDetails: {
+          detail: ' String!',
+          description: 'The name of the current Object type at runtime.',
+        },
+      },
+      {
+        ...defaultAttrs,
+        name: '__schema',
+        sortText: '3__schema',
+        labelDetails: {
+          detail: ' __Schema!',
+          description: 'Access the current type schema of this server.',
+        },
+      },
+      {
+        ...defaultAttrs,
+        name: '__type',
+        sortText: '4__type',
+        labelDetails: {
+          detail: ' __Type',
+          description: 'Request the type information of a single type.',
+        },
+      },
+    ]);
   }, 7500);
 });

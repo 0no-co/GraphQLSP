@@ -367,4 +367,194 @@ List out all Pokémon, optionally in pages`
       ]
     `);
   }, 30000);
+
+  it('gives quick-info at start of word (#15)', async () => {
+    server.send({
+      seq: 11,
+      type: 'request',
+      command: 'quickinfo',
+      arguments: {
+        file: outfileCombinations,
+        line: 7,
+        offset: 5,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'quickinfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(resp => resp.type === 'response' && resp.command === 'quickinfo');
+
+    expect(res).toBeDefined();
+    expect(typeof res?.body).toEqual('object');
+    expect(res?.body.documentation).toEqual(`Pokemon.name: String!`);
+  }, 30000);
+
+  it('gives suggestions with empty line (#190)', async () => {
+    server.send({
+      seq: 12,
+      type: 'request',
+      command: 'completionInfo',
+      arguments: {
+        file: outfileCombinations,
+        line: 19,
+        offset: 3,
+        includeExternalModuleExports: true,
+        includeInsertTextCompletions: true,
+        triggerKind: 1,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'completionInfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(
+        resp => resp.type === 'response' && resp.command === 'completionInfo'
+      );
+
+    expect(res).toBeDefined();
+    expect(typeof res?.body.entries).toEqual('object');
+    expect(res?.body.entries).toMatchInlineSnapshot(`
+      [
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " AttacksConnection",
+          },
+          "name": "attacks",
+          "sortText": "0attacks",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " [EvolutionRequirement]",
+          },
+          "name": "evolutionRequirements",
+          "sortText": "2evolutionRequirements",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " [Pokemon]",
+          },
+          "name": "evolutions",
+          "sortText": "3evolutions",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "description": "Likelihood of an attempt to catch a Pokémon to fail.",
+            "detail": " Float",
+          },
+          "name": "fleeRate",
+          "sortText": "4fleeRate",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " PokemonDimension",
+          },
+          "name": "height",
+          "sortText": "5height",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " ID!",
+          },
+          "name": "id",
+          "sortText": "6id",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "description": "Maximum combat power a Pokémon may achieve at max level.",
+            "detail": " Int",
+          },
+          "name": "maxCP",
+          "sortText": "7maxCP",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "description": "Maximum health points a Pokémon may achieve at max level.",
+            "detail": " Int",
+          },
+          "name": "maxHP",
+          "sortText": "8maxHP",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " String!",
+          },
+          "name": "name",
+          "sortText": "9name",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " [PokemonType]",
+          },
+          "name": "resistant",
+          "sortText": "10resistant",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " [PokemonType]",
+          },
+          "name": "types",
+          "sortText": "11types",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " [PokemonType]",
+          },
+          "name": "weaknesses",
+          "sortText": "12weaknesses",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "detail": " PokemonDimension",
+          },
+          "name": "weight",
+          "sortText": "13weight",
+        },
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "description": "The name of the current Object type at runtime.",
+            "detail": " String!",
+          },
+          "name": "__typename",
+          "sortText": "14__typename",
+        },
+      ]
+    `);
+  }, 30000);
 });

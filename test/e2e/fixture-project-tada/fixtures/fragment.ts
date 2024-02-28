@@ -10,4 +10,14 @@ export const PokemonFields = graphql(`
   }
 `);
 
+// prettier-ignore
+export const Regression190 = graphql(`
+fragment pokemonFields on Pokemon {
+  id
+  name
+  fleeRate
+  
+}
+`);
+
 export const Pokemon = () => {};

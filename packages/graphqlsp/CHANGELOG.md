@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 1.4.2
+
+### Patch Changes
+
+- ⚠️ fix case where the hover-information would target the wrong TypeScript node by one character
+  Submitted by [@llllvvuu](https://github.com/llllvvuu) (See [#244](https://github.com/0no-co/GraphQLSP/pull/244))
+- Update ESM build output to be written to a `.mjs` file extension rather than `.js`
+  Submitted by [@kitten](https://github.com/kitten) (See [#250](https://github.com/0no-co/GraphQLSP/pull/250))
+
 ## 1.4.1
 
 ### Patch Changes

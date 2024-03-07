@@ -218,12 +218,13 @@ export const loadSchema = (
             logger(`Got invalid response ${JSON.stringify(result)}`);
           }
         });
+
+      setTimeout(() => {
+        pollSchema();
+      }, 1000 * 60);
     };
 
     pollSchema();
-    setInterval(() => {
-      pollSchema();
-    }, 1000 * 60);
   } else if (typeof schema === 'string') {
     const isJson = path.extname(schema) === '.json';
     const resolvedPath = path.resolve(path.dirname(root), schema);

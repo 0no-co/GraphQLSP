@@ -167,6 +167,9 @@ importers:
 
   packages/graphqlsp:
     dependencies:
+      json5:
+        specifier: ^2.2.3
+        version: 2.2.3
       node-fetch:
         specifier: ^2.0.0
         version: 2.6.7
@@ -195,6 +198,9 @@ importers:
       lru-cache:
         specifier: ^10.0.1
         version: 10.0.1
+      type-fest:
+        specifier: ^4.11.1
+        version: 4.11.1
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -4227,7 +4233,6 @@ packages:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
     engines: {node: '>=6'}
     hasBin: true
-    dev: true
 
   /jsonc-parser@3.2.0:
     resolution: {integrity: sha512-gfFQZrcTc8CnKXp6Y4/CBT3fTc0OVuDofpre4aEeEpSBPV5X5v4+Vmx+8snU7RLPrNHPKSgLxGo9YuQzz20o+w==}
@@ -5710,6 +5715,11 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
+  /type-fest@4.11.1:
+    resolution: {integrity: sha512-MFMf6VkEVZAETidGGSYW2B1MjXbGX+sWIywn2QPEaJ3j08V+MwVRHMXtf2noB8ENJaD0LIun9wh5Z6OPNf1QzQ==}
+    engines: {node: '>=16'}
+    dev: true
+
   /typed-array-length@1.0.4:
     resolution: {integrity: sha512-KjZypGq+I/H7HI5HlOoGHkWUUGq+Q0TPhQurLbyrVrvnKTBgzLhIJ7j6J/XTQOi0d1RjyZ0wdas8bKs2p0x3Ng==}
     dependencies:
@@ -6176,6 +6186,7 @@ packages:
     resolution: {directory: packages/graphqlsp, type: directory}
     name: '@0no-co/graphqlsp'
     dependencies:
+      json5: 2.2.3
       node-fetch: 2.6.7
     transitivePeerDependencies:
       - encoding

@@ -149,21 +149,8 @@ describe('unused fields', () => {
             "line": 10,
             "offset": 9,
           },
-          "text": "Field 'attacks.fast.damage' is not used.",
-        },
-        {
-          "category": "warning",
-          "code": 52005,
-          "end": {
-            "line": 11,
-            "offset": 13,
-          },
-          "start": {
-            "line": 11,
-            "offset": 9,
-          },
-          "text": "Field 'attacks.fast.name' is not used.",
-        },
+          "text": "Field(s) 'attacks.fast.damage', 'attacks.fast.name' are not used.",
+        }
       ]
     `);
   }, 30000);

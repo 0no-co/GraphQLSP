@@ -142,15 +142,15 @@ describe('unused fields', () => {
           "category": "warning",
           "code": 52005,
           "end": {
-            "line": 10,
-            "offset": 15,
+            "line": 9,
+            "offset": 11,
           },
           "start": {
-            "line": 10,
-            "offset": 9,
+            "line": 9,
+            "offset": 7,
           },
           "text": "Field(s) 'attacks.fast.damage', 'attacks.fast.name' are not used.",
-        }
+        },
       ]
     `);
   }, 30000);
@@ -174,27 +174,14 @@ describe('unused fields', () => {
           "category": "warning",
           "code": 52005,
           "end": {
-            "line": 10,
-            "offset": 15,
+            "line": 9,
+            "offset": 11,
           },
           "start": {
-            "line": 10,
-            "offset": 9,
+            "line": 9,
+            "offset": 7,
           },
-          "text": "Field 'attacks.fast.damage' is not used.",
-        },
-        {
-          "category": "warning",
-          "code": 52005,
-          "end": {
-            "line": 11,
-            "offset": 13,
-          },
-          "start": {
-            "line": 11,
-            "offset": 9,
-          },
-          "text": "Field 'attacks.fast.name' is not used.",
+          "text": "Field(s) 'attacks.fast.damage', 'attacks.fast.name' are not used.",
         },
       ]
     `);
@@ -219,53 +206,40 @@ describe('unused fields', () => {
           "category": "warning",
           "code": 52005,
           "end": {
-            "line": 11,
-            "offset": 15,
+            "line": 9,
+            "offset": 12,
           },
           "start": {
-            "line": 11,
+            "line": 9,
+            "offset": 5,
+          },
+          "text": "Field(s) 'pokemon.fleeRate' are not used.",
+        },
+        {
+          "category": "warning",
+          "code": 52005,
+          "end": {
+            "line": 14,
+            "offset": 16,
+          },
+          "start": {
+            "line": 14,
+            "offset": 9,
+          },
+          "text": "Field(s) 'pokemon.attacks.special.damage' are not used.",
+        },
+        {
+          "category": "warning",
+          "code": 52005,
+          "end": {
+            "line": 19,
+            "offset": 13,
+          },
+          "start": {
+            "line": 19,
             "offset": 7,
           },
-          "text": "Field 'pokemon.fleeRate' is not used.",
-        },
-        {
-          "category": "warning",
-          "code": 52005,
-          "end": {
-            "line": 16,
-            "offset": 17,
-          },
-          "start": {
-            "line": 16,
-            "offset": 11,
-          },
-          "text": "Field 'pokemon.attacks.special.damage' is not used.",
-        },
-        {
-          "category": "warning",
-          "code": 52005,
-          "end": {
-            "line": 20,
-            "offset": 16,
-          },
-          "start": {
-            "line": 20,
-            "offset": 9,
-          },
-          "text": "Field 'pokemon.weight.minimum' is not used.",
-        },
-        {
-          "category": "warning",
-          "code": 52005,
-          "end": {
-            "line": 21,
-            "offset": 16,
-          },
-          "start": {
-            "line": 21,
-            "offset": 9,
-          },
-          "text": "Field 'pokemon.weight.maximum' is not used.",
+          "text": "Field(s) 'pokemon.weight.minimum', 'pokemon.weight.maximum' are not used.",
         },
         {
           "category": "error",
@@ -297,40 +271,27 @@ describe('unused fields', () => {
           "category": "warning",
           "code": 52005,
           "end": {
-            "line": 15,
-            "offset": 15,
+            "line": 14,
+            "offset": 16,
           },
           "start": {
-            "line": 15,
-            "offset": 11,
+            "line": 14,
+            "offset": 9,
           },
-          "text": "Field 'pokemon.attacks.special.name' is not used.",
+          "text": "Field(s) 'pokemon.attacks.special.name', 'pokemon.attacks.special.damage' are not used.",
         },
         {
           "category": "warning",
           "code": 52005,
           "end": {
-            "line": 16,
-            "offset": 17,
+            "line": 9,
+            "offset": 12,
           },
           "start": {
-            "line": 16,
-            "offset": 11,
+            "line": 9,
+            "offset": 5,
           },
-          "text": "Field 'pokemon.attacks.special.damage' is not used.",
-        },
-        {
-          "category": "warning",
-          "code": 52005,
-          "end": {
-            "line": 23,
-            "offset": 11,
-          },
-          "start": {
-            "line": 23,
-            "offset": 7,
-          },
-          "text": "Field 'pokemon.name' is not used.",
+          "text": "Field(s) 'pokemon.name' are not used.",
         },
         {
           "category": "error",
@@ -362,40 +323,27 @@ describe('unused fields', () => {
           "category": "warning",
           "code": 52005,
           "end": {
-            "line": 15,
-            "offset": 15,
+            "line": 14,
+            "offset": 16,
           },
           "start": {
-            "line": 15,
-            "offset": 11,
+            "line": 14,
+            "offset": 9,
           },
-          "text": "Field 'pokemon.attacks.special.name' is not used.",
+          "text": "Field(s) 'pokemon.attacks.special.name', 'pokemon.attacks.special.damage' are not used.",
         },
         {
           "category": "warning",
           "code": 52005,
           "end": {
-            "line": 16,
-            "offset": 17,
+            "line": 9,
+            "offset": 12,
           },
           "start": {
-            "line": 16,
-            "offset": 11,
+            "line": 9,
+            "offset": 5,
           },
-          "text": "Field 'pokemon.attacks.special.damage' is not used.",
-        },
-        {
-          "category": "warning",
-          "code": 52005,
-          "end": {
-            "line": 23,
-            "offset": 11,
-          },
-          "start": {
-            "line": 23,
-            "offset": 7,
-          },
-          "text": "Field 'pokemon.name' is not used.",
+          "text": "Field(s) 'pokemon.name' are not used.",
         },
         {
           "category": "error",

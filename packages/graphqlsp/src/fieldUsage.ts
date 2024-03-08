@@ -176,9 +176,22 @@ const crawlScope = (
       ts.isPropertyAccessExpression(foundRef) ||
       ts.isElementAccessExpression(foundRef) ||
       ts.isVariableDeclaration(foundRef) ||
-      ts.isBinaryExpression(foundRef)
+      ts.isBinaryExpression(foundRef) ||
+      ts.isReturnStatement(foundRef) ||
+      ts.isArrowFunction(foundRef)
     ) {
-      if (ts.isVariableDeclaration(foundRef)) {
+      console.log('[GraphQLSP]', foundRef.kind, foundRef.getText());
+      if (ts.isReturnStatement(foundRef) || ts.isArrowFunction(foundRef)) {
+        // When we are returning the ref or we are dealing with an implicit return
+        // we mark all its children as used (bail scenario)
+        const joined = pathParts.join('.');
+        console.log('[GraphQLSP] ' + joined);
+        const bailedFields = allFields.filter(x => x.startsWith(joined + '.'));
+        console.log(
+          '[GraphQLSP] ' + JSON.stringify(bailedFields, undefined, 2)
+        );
+        return bailedFields;
+      } else if (ts.isVariableDeclaration(foundRef)) {
         return crawlScope(foundRef.name, pathParts, allFields, source, info);
       } else if (
         ts.isIdentifier(foundRef) &&

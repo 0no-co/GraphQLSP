@@ -1,12 +1,5 @@
 {
   "compilerOptions": {
-    "plugins": [
-      {
-        "name": "@0no-co/graphqlsp",
-        "schema": "./packages/example-tada/schema.graphql",
-        "tadaOutputLocation": "./packages/example-tada/introspection.ts"
-      }
-    ],
     "jsx": "react-jsx",
     /* Language and Environment */
     "target": "es2016" /* Set the JavaScript language version for emitted JavaScript and include compatible library declarations. */,

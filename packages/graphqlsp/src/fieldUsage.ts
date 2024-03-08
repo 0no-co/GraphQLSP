@@ -364,10 +364,11 @@ export const checkFieldUsageInFile = (
         Field: {
           enter(node) {
             const alias = node.alias ? node.alias.value : node.name.value;
+            const path = inProgress.length
+              ? `${inProgress.join('.')}.${alias}`
+              : alias;
+
             if (!node.selectionSet && !reservedKeys.has(node.name.value)) {
-              const path = inProgress.length
-                ? `${inProgress.join('.')}.${alias}`
-                : alias;
               allPaths.push(path);
               fieldToLoc.set(path, {
                 start: node.name.loc!.start,
@@ -375,6 +376,10 @@ export const checkFieldUsageInFile = (
               });
             } else if (node.selectionSet) {
               inProgress.push(alias);
+              fieldToLoc.set(path, {
+                start: node.name.loc!.start,
+                length: node.name.loc!.end - node.name.loc!.start,
+              });
             }
           },
           leave(node) {
@@ -463,18 +468,35 @@ export const checkFieldUsageInFile = (
       }
 
       const unused = allPaths.filter(x => !allAccess.includes(x));
-
+      const aggregatedUnusedFields = new Set<string>();
+      const unusedChildren: { [key: string]: Set<string> } = {};
       unused.forEach(unusedField => {
-        const loc = fieldToLoc.get(unusedField);
+        const split = unusedField.split('.');
+        split.pop();
+        const parentField = split.join('.');
+        const loc = fieldToLoc.get(parentField);
         if (!loc) return;
 
+        aggregatedUnusedFields.add(parentField);
+        if (unusedChildren[parentField]) {
+          unusedChildren[parentField].add(unusedField);
+        } else {
+          unusedChildren[parentField] = new Set([unusedField]);
+        }
+      });
+
+      aggregatedUnusedFields.forEach(field => {
+        const loc = fieldToLoc.get(field)!;
+        const unusedFields = unusedChildren[field]!;
         diagnostics.push({
           file: source,
           length: loc.length,
           start: node.getStart() + loc.start + 1,
           category: ts.DiagnosticCategory.Warning,
           code: UNUSED_FIELD_CODE,
-          messageText: `Field '${unusedField}' is not used.`,
+          messageText: `Field(s) ${[...unusedFields]
+            .map(x => `'${x}'`)
+            .join(', ')} are not used.`,
         });
       });
     });

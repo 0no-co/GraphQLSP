@@ -6,12 +6,14 @@ import {
   IntrospectionQuery,
   introspectionFromSchema,
 } from 'graphql';
-
+import path from 'path';
+import JSON5 from 'json5';
 import { minifyIntrospectionQuery } from '@urql/introspection';
 import fetch from 'node-fetch';
-import path from 'path';
 import fs from 'fs';
+import type { TsConfigJson } from 'type-fest';
 
+import { ts } from '../ts';
 import { Logger } from '../index';
 
 const preambleComments =
@@ -71,7 +73,7 @@ async function saveTadaIntrospection(
 
   const json = JSON.stringify(minified, null, 2);
 
-  let output = path.resolve(path.dirname(root), tadaOutputLocation);
+  let output = path.resolve(root, tadaOutputLocation);
   let stat: fs.Stats | undefined;
   let contents = '';
 
@@ -132,12 +134,38 @@ export type SchemaOrigin = {
   headers: Record<string, unknown>;
 };
 
+const getRootDir = (
+  info: ts.server.PluginCreateInfo,
+  tsconfigPath: string
+): string | undefined => {
+  const tsconfigContents = info.project.readFile(tsconfigPath);
+  const parsed = JSON5.parse<TsConfigJson>(tsconfigContents!);
+
+  if (
+    parsed.compilerOptions?.plugins?.find(x => x.name === '@0no-co/graphqlsp')
+  ) {
+    return path.dirname(tsconfigPath);
+  } else if (Array.isArray(parsed.extends)) {
+    return parsed.extends.find(p => {
+      const resolved = path.resolve(path.dirname(tsconfigPath), p);
+      return getRootDir(info, resolved);
+    });
+  } else if (parsed.extends) {
+    const resolved = path.resolve(path.dirname(tsconfigPath), parsed.extends);
+    return getRootDir(info, resolved);
+  }
+};
+
 export const loadSchema = (
-  root: string,
+  info: ts.server.PluginCreateInfo,
   schema: SchemaOrigin | string,
   tadaOutputLocation: string | undefined,
   logger: Logger
 ): { current: GraphQLSchema | null; version: number } => {
+  const root =
+    getRootDir(info, info.project.getProjectName()) ||
+    path.dirname(info.project.getProjectName());
+  logger('Got root-directory to resolve schema from: ' + root);
   const ref: {
     current: GraphQLSchema | null;
     version: number;
@@ -227,7 +255,7 @@ export const loadSchema = (
     pollSchema();
   } else if (typeof schema === 'string') {
     const isJson = path.extname(schema) === '.json';
-    const resolvedPath = path.resolve(path.dirname(root), schema);
+    const resolvedPath = path.resolve(root, schema);
     logger(`Getting schema from ${resolvedPath}`);
 
     async function readSchema() {

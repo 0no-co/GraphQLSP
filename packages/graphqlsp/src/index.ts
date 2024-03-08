@@ -49,7 +49,7 @@ function create(info: ts.server.PluginCreateInfo) {
   const proxy = createBasicDecorator(info);
 
   const schema = loadSchema(
-    info.project.getProjectName(),
+    info,
     config.schema,
     // TODO: either we check here for the client having a package.json
     // with gql.tada and use a default file loc or we use a config

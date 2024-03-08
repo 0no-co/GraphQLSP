@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 1.4.3
+
+### Patch Changes
+
+- Add support for alternative root directories, when your tsconfig does not define GraphQLSP we'll traverse up until we find the `extends` that does and resolve the schema from there
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#257](https://github.com/0no-co/GraphQLSP/pull/257))
+- Change `setInterval` to `setTimeout`
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#255](https://github.com/0no-co/GraphQLSP/pull/255))
+
 ## 1.4.2
 
 ### Patch Changes

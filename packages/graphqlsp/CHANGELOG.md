@@ -1,5 +1,17 @@
 # @0no-co/graphqlsp
 
+## 1.5.0
+
+### Minor Changes
+
+- Add a bail for `fieldUsage` where we return a property from a function
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#260](https://github.com/0no-co/GraphQLSP/pull/260))
+
+### Patch Changes
+
+- Bubble up unused fields to their closest parent
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#258](https://github.com/0no-co/GraphQLSP/pull/258))
+
 ## 1.4.3
 
 ### Patch Changes

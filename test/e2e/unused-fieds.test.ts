@@ -14,6 +14,7 @@ describe('unused fields', () => {
     'immediate-destructuring.tsx'
   );
   const outfileDestructuring = path.join(projectPath, 'destructuring.tsx');
+  const outfileBail = path.join(projectPath, 'bail.tsx');
   const outfileFragmentDestructuring = path.join(
     projectPath,
     'fragment-destructuring.tsx'
@@ -27,6 +28,11 @@ describe('unused fields', () => {
 
     server.sendCommand('open', {
       file: outfileDestructuring,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+    server.sendCommand('open', {
+      file: outfileBail,
       fileContent: '// empty',
       scriptKindName: 'TS',
     } satisfies ts.server.protocol.OpenRequestArgs);
@@ -57,6 +63,13 @@ describe('unused fields', () => {
           file: outfileDestructuring,
           fileContent: fs.readFileSync(
             path.join(projectPath, 'fixtures/destructuring.tsx'),
+            'utf-8'
+          ),
+        },
+        {
+          file: outfileBail,
+          fileContent: fs.readFileSync(
+            path.join(projectPath, 'fixtures/bail.tsx'),
             'utf-8'
           ),
         },
@@ -111,6 +124,10 @@ describe('unused fields', () => {
       file: outfileDestructuringFromStart,
       tmpfile: outfileDestructuringFromStart,
     } satisfies ts.server.protocol.SavetoRequestArgs);
+    server.sendCommand('saveto', {
+      file: outfileBail,
+      tmpfile: outfileBail,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
   });
 
   afterAll(() => {
@@ -120,6 +137,7 @@ describe('unused fields', () => {
       fs.unlinkSync(outfilePropAccess);
       fs.unlinkSync(outfileFragmentDestructuring);
       fs.unlinkSync(outfileDestructuringFromStart);
+      fs.unlinkSync(outfileBail);
     } catch {}
   });
 
@@ -354,6 +372,32 @@ describe('unused fields', () => {
           },
           "start": {
             "line": 3,
+            "offset": 1,
+          },
+          "text": "Unused '@ts-expect-error' directive.",
+        },
+      ]
+    `);
+  }, 30000);
+
+  it('Bails unused fields when memo func is used', async () => {
+    const res = server.responses.filter(
+      resp =>
+        resp.type === 'event' &&
+        resp.event === 'semanticDiag' &&
+        resp.body?.file === outfileBail
+    );
+    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+      [
+        {
+          "category": "error",
+          "code": 2578,
+          "end": {
+            "line": 4,
+            "offset": 20,
+          },
+          "start": {
+            "line": 4,
             "offset": 1,
           },
           "text": "Unused '@ts-expect-error' directive.",

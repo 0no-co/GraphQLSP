@@ -11,6 +11,7 @@ const x = graphql(`
       classification
       ...pokemonFields
       __typename
+      ... on 
     }
   }
 `, [PokemonFields]);

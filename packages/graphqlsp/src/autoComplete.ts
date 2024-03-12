@@ -138,10 +138,6 @@ export function getSuggestionsInternal(
 ): [CompletionItem[], CompletionItem[]] {
   const token = getTokenAtPosition(queryText, cursor);
 
-  if (token.string === 'on' && token.state.kind === 'TypeCondition') {
-    token.state.step = 1;
-  }
-
   let fragments: Array<FragmentDefinitionNode> = [];
   try {
     const parsed = parse(queryText, { noLocation: true });
@@ -150,17 +146,32 @@ export function getSuggestionsInternal(
     ) as Array<FragmentDefinitionNode>;
   } catch (e) {}
 
-  let suggestions = getAutocompleteSuggestions(schema, queryText, cursor, {
-    ...token,
-    type: null,
-  });
-  let spreadSuggestions = getSuggestionsForFragmentSpread(
-    token,
-    getTypeInfo(schema, token.state),
+  const isOnTypeCondition =
+    token.string === 'on' && token.state.kind === 'TypeCondition';
+  let suggestions = getAutocompleteSuggestions(
     schema,
     queryText,
-    fragments
+    cursor,
+    isOnTypeCondition
+      ? {
+          ...token,
+          state: {
+            ...token.state,
+            step: 1,
+          },
+          type: null,
+        }
+      : undefined
   );
+  let spreadSuggestions = !isOnTypeCondition
+    ? getSuggestionsForFragmentSpread(
+        token,
+        getTypeInfo(schema, token.state),
+        schema,
+        queryText,
+        fragments
+      )
+    : [];
 
   const state =
     token.state.kind === 'Invalid' ? token.state.prevState : token.state;

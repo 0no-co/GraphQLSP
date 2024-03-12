@@ -21,6 +21,7 @@ export const getToken = (
   let cPos = template.getStart() + 1;
 
   let foundToken: Token | undefined = undefined;
+  let prevToken: Token | undefined = undefined;
   for (let line = 0; line < input.length; line++) {
     if (foundToken) continue;
     const lPos = cPos - 1;
@@ -33,7 +34,19 @@ export const getToken = (
         lPos + stream.getStartOfToken() + 1 <= cursorPosition &&
         lPos + stream.getCurrentPosition() >= cursorPosition
       ) {
-        foundToken = {
+        foundToken = prevToken
+          ? prevToken
+          : {
+              line,
+              start: stream.getStartOfToken() + 1,
+              end: stream.getCurrentPosition(),
+              string,
+              state,
+              tokenKind: token,
+            };
+        break;
+      } else if (string === 'on') {
+        prevToken = {
           line,
           start: stream.getStartOfToken() + 1,
           end: stream.getCurrentPosition(),
@@ -41,7 +54,8 @@ export const getToken = (
           state,
           tokenKind: token,
         };
-        break;
+      } else {
+        prevToken = undefined;
       }
     }
 

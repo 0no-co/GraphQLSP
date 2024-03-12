@@ -22,6 +22,7 @@ export const getToken = (
 
   let foundToken: Token | undefined = undefined;
   for (let line = 0; line < input.length; line++) {
+    if (foundToken) continue;
     const lPos = cPos - 1;
     const stream = new CharacterStream(input[line] + '\n');
     while (!stream.eol()) {

@@ -138,6 +138,10 @@ export function getSuggestionsInternal(
 ): [CompletionItem[], CompletionItem[]] {
   const token = getTokenAtPosition(queryText, cursor);
 
+  if (token.string === 'on' && token.state.kind === 'TypeCondition') {
+    token.state.step = 1;
+  }
+
   let fragments: Array<FragmentDefinitionNode> = [];
   try {
     const parsed = parse(queryText, { noLocation: true });
@@ -146,7 +150,10 @@ export function getSuggestionsInternal(
     ) as Array<FragmentDefinitionNode>;
   } catch (e) {}
 
-  let suggestions = getAutocompleteSuggestions(schema, queryText, cursor);
+  let suggestions = getAutocompleteSuggestions(schema, queryText, cursor, {
+    ...token,
+    type: null,
+  });
   let spreadSuggestions = getSuggestionsForFragmentSpread(
     token,
     getTypeInfo(schema, token.state),

@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.5.1
+
+### Patch Changes
+
+- ⚠️ Fix type-condition suggestions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#262](https://github.com/0no-co/GraphQLSP/pull/262))
+
 ## 1.5.0
 
 ### Minor Changes

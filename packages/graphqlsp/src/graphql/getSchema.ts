@@ -147,11 +147,15 @@ const getRootDir = (
     return path.dirname(tsconfigPath);
   } else if (Array.isArray(parsed.extends)) {
     return parsed.extends.find(p => {
-      const resolved = path.resolve(path.dirname(tsconfigPath), p);
+      const resolved = require.resolve(p, {
+        paths: [path.dirname(tsconfigPath)],
+      });
       return getRootDir(info, resolved);
     });
   } else if (parsed.extends) {
-    const resolved = path.resolve(path.dirname(tsconfigPath), parsed.extends);
+    const resolved = require.resolve(parsed.extends, {
+      paths: [path.dirname(tsconfigPath)],
+    });
     return getRootDir(info, resolved);
   }
 };

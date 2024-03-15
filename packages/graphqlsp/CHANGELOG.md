@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.6.0
+
+### Minor Changes
+
+- Leverage `require.resolve` when following `tsconfig.extends` so we support `node_modules`
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#266](https://github.com/0no-co/GraphQLSP/pull/266))
+
 ## 1.5.1
 
 ### Patch Changes

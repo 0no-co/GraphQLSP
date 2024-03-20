@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.6.1
+
+### Patch Changes
+
+- ⚠️ Fix case where our fragments is an empty array
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#271](https://github.com/0no-co/GraphQLSP/pull/271))
+
 ## 1.6.0
 
 ### Minor Changes

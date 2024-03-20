@@ -58,7 +58,7 @@ function unrollFragment(
     element.getStart()
   );
 
-  if (!definitions) return fragments;
+  if (!definitions || !definitions.length) return fragments;
 
   const [fragment] = definitions;
 
@@ -159,7 +159,7 @@ export function getAllFragments(
     fileName,
     node.expression.getStart()
   );
-  if (!definitions) return fragments;
+  if (!definitions || !definitions.length) return fragments;
 
   if (node.arguments[1] && ts.isArrayLiteralExpression(node.arguments[1])) {
     const arg2 = node.arguments[1] as ts.ArrayLiteralExpression;

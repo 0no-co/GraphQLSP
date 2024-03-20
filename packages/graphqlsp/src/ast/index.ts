@@ -148,6 +148,29 @@ export function findAllCallExpressions(
   return { nodes: result, fragments };
 }
 
+export function findAllPersistedCallExpressions(
+  sourceFile: ts.SourceFile
+): Array<ts.CallExpression> {
+  const result: Array<ts.CallExpression> = [];
+  function find(node: ts.Node) {
+    if (ts.isCallExpression(node)) {
+      // This expression ideally for us looks like <template>.persisted
+      const expression = node.expression.getText();
+      const parts = expression.split('.');
+      if (parts.length !== 2) return;
+
+      const [template, method] = parts;
+      if (!templates.has(template) || method !== 'persisted') return;
+
+      result.push(node);
+    } else {
+      ts.forEachChild(node, find);
+    }
+  }
+  find(sourceFile);
+  return result;
+}
+
 export function getAllFragments(
   fileName: string,
   node: ts.CallExpression,

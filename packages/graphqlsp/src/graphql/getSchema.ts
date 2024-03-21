@@ -150,7 +150,7 @@ export const loadSchema = (
                   root,
                   introspection,
                   tadaOutputLocation,
-                  info.config.preProcess ?? false,
+                  info.config.preProcess ?? true,
                   logger
                 );
               }
@@ -195,7 +195,7 @@ export const loadSchema = (
           root,
           schemaOrIntrospection,
           tadaOutputLocation,
-          info.config.preProcess ?? false,
+          info.config.preProcess ?? true,
           logger
         );
       }

@@ -69,7 +69,7 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
   unused fields within the same file. (only works with call-expressions, default: true)
 - `tadaOutputLocation` when using `gql.tada` this can be convenient as it automatically generates
   an `introspection.ts` file for you, just give it the directory to output to and you're done
-- `preProcess` this setting optimises the `tadaOutput` to a pre-processed TypeScript type, this is on by default.
+- `tadaDisablePreprocessing` this setting disables the optimisation of `tadaOutput` to a pre-processed TypeScript type, this is off by default.
 
 ## Tracking unused fields
 

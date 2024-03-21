@@ -22,7 +22,7 @@ async function saveTadaIntrospection(
   root: string,
   schema: GraphQLSchema | IntrospectionQuery,
   tadaOutputLocation: string,
-  shouldPreprocess: boolean,
+  disablePreprocessing: boolean,
   logger: Logger
 ) {
   const introspection = !('__schema' in schema)
@@ -33,7 +33,7 @@ async function saveTadaIntrospection(
 
   const contents = await outputIntrospectionFile(minified, {
     fileType: tadaOutputLocation,
-    shouldPreprocess,
+    shouldPreprocess: !disablePreprocessing,
   });
 
   let output = path.resolve(root, tadaOutputLocation);
@@ -150,7 +150,7 @@ export const loadSchema = (
                   root,
                   introspection,
                   tadaOutputLocation,
-                  info.config.preProcess ?? true,
+                  info.config.tadaDisablePreprocessing ?? false,
                   logger
                 );
               }
@@ -195,7 +195,7 @@ export const loadSchema = (
           root,
           schemaOrIntrospection,
           tadaOutputLocation,
-          info.config.preProcess ?? true,
+          info.config.tadaDisablePreprocessing ?? false,
           logger
         );
       }

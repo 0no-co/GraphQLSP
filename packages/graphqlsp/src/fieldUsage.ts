@@ -38,7 +38,7 @@ const traverseArrayDestructuring = (
 
     const wip = [...originalWip];
     return ts.isIdentifier(element.name)
-      ? crawlScope(element.name, wip, allFields, source, info)
+      ? crawlScope(element.name, wip, allFields, source, info, false)
       : ts.isObjectBindingPattern(element.name)
       ? traverseDestructuring(element.name, wip, allFields, source, info)
       : traverseArrayDestructuring(element.name, wip, allFields, source, info);
@@ -96,7 +96,8 @@ const traverseDestructuring = (
         wip,
         allFields,
         source,
-        info
+        info,
+        false
       );
 
       results.push(...crawlResult);
@@ -123,7 +124,8 @@ const crawlScope = (
   originalWip: Array<string>,
   allFields: Array<string>,
   source: ts.SourceFile,
-  info: ts.server.PluginCreateInfo
+  info: ts.server.PluginCreateInfo,
+  inArrayMethod: boolean
 ): Array<string> => {
   if (ts.isObjectBindingPattern(node)) {
     return traverseDestructuring(node, originalWip, allFields, source, info);
@@ -176,16 +178,34 @@ const crawlScope = (
       ts.isPropertyAccessExpression(foundRef) ||
       ts.isElementAccessExpression(foundRef) ||
       ts.isVariableDeclaration(foundRef) ||
-      ts.isBinaryExpression(foundRef)
+      ts.isBinaryExpression(foundRef) ||
+      ts.isReturnStatement(foundRef) ||
+      ts.isArrowFunction(foundRef)
     ) {
-      if (ts.isVariableDeclaration(foundRef)) {
-        return crawlScope(foundRef.name, pathParts, allFields, source, info);
+      if (
+        !inArrayMethod &&
+        (ts.isReturnStatement(foundRef) || ts.isArrowFunction(foundRef))
+      ) {
+        // When we are returning the ref or we are dealing with an implicit return
+        // we mark all its children as used (bail scenario)
+        const joined = pathParts.join('.');
+        const bailedFields = allFields.filter(x => x.startsWith(joined + '.'));
+        return bailedFields;
+      } else if (ts.isVariableDeclaration(foundRef)) {
+        return crawlScope(
+          foundRef.name,
+          pathParts,
+          allFields,
+          source,
+          info,
+          false
+        );
       } else if (
         ts.isIdentifier(foundRef) &&
         !pathParts.includes(foundRef.text)
       ) {
         const joined = [...pathParts, foundRef.text].join('.');
-        if (allFields.find(x => x.startsWith(joined))) {
+        if (allFields.find(x => x.startsWith(joined + '.'))) {
           pathParts.push(foundRef.text);
         }
       } else if (
@@ -234,7 +254,8 @@ const crawlScope = (
             pathParts,
             allFields,
             source,
-            info
+            info,
+            true
           );
 
           if (
@@ -246,7 +267,8 @@ const crawlScope = (
               pathParts,
               allFields,
               source,
-              info
+              info,
+              true
             );
             res.push(...varRes);
           }
@@ -458,7 +480,7 @@ export const checkFieldUsageInFile = (
         }
 
         if (name) {
-          const result = crawlScope(name, [], allPaths, source, info);
+          const result = crawlScope(name, [], allPaths, source, info, false);
           allAccess.push(...result);
         }
       });

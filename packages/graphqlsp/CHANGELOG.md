@@ -1,5 +1,38 @@
 # @0no-co/graphqlsp
 
+## 1.6.1
+
+### Patch Changes
+
+- ⚠️ Fix case where our fragments is an empty array
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#271](https://github.com/0no-co/GraphQLSP/pull/271))
+
+## 1.6.0
+
+### Minor Changes
+
+- Leverage `require.resolve` when following `tsconfig.extends` so we support `node_modules`
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#266](https://github.com/0no-co/GraphQLSP/pull/266))
+
+## 1.5.1
+
+### Patch Changes
+
+- ⚠️ Fix type-condition suggestions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#262](https://github.com/0no-co/GraphQLSP/pull/262))
+
+## 1.5.0
+
+### Minor Changes
+
+- Add a bail for `fieldUsage` where we return a property from a function
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#260](https://github.com/0no-co/GraphQLSP/pull/260))
+
+### Patch Changes
+
+- Bubble up unused fields to their closest parent
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#258](https://github.com/0no-co/GraphQLSP/pull/258))
+
 ## 1.4.3
 
 ### Patch Changes

@@ -10,6 +10,7 @@ const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 const projectPath = path.resolve(__dirname, 'fixture-project-tada');
 describe('Fragment + operations', () => {
   const outfileCombo = path.join(projectPath, 'simple.ts');
+  const outfileTypeCondition = path.join(projectPath, 'type-condition.ts');
   const outfileUnusedFragment = path.join(projectPath, 'unused-fragment.ts');
   const outfileCombinations = path.join(projectPath, 'fragment.ts');
 
@@ -19,6 +20,11 @@ describe('Fragment + operations', () => {
 
     server.sendCommand('open', {
       file: outfileCombo,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+    server.sendCommand('open', {
+      file: outfileTypeCondition,
       fileContent: '// empty',
       scriptKindName: 'TS',
     } satisfies ts.server.protocol.OpenRequestArgs);
@@ -39,6 +45,13 @@ describe('Fragment + operations', () => {
           file: outfileCombinations,
           fileContent: fs.readFileSync(
             path.join(projectPath, 'fixtures/fragment.ts'),
+            'utf-8'
+          ),
+        },
+        {
+          file: outfileTypeCondition,
+          fileContent: fs.readFileSync(
+            path.join(projectPath, 'fixtures/type-condition.ts'),
             'utf-8'
           ),
         },
@@ -64,6 +77,10 @@ describe('Fragment + operations', () => {
       tmpfile: outfileCombo,
     } satisfies ts.server.protocol.SavetoRequestArgs);
     server.sendCommand('saveto', {
+      file: outfileTypeCondition,
+      tmpfile: outfileTypeCondition,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+    server.sendCommand('saveto', {
       file: outfileCombinations,
       tmpfile: outfileCombinations,
     } satisfies ts.server.protocol.SavetoRequestArgs);
@@ -78,6 +95,7 @@ describe('Fragment + operations', () => {
       fs.unlinkSync(outfileUnusedFragment);
       fs.unlinkSync(outfileCombinations);
       fs.unlinkSync(outfileCombo);
+      fs.unlinkSync(outfileTypeCondition);
     } catch {}
   });
 
@@ -553,6 +571,49 @@ List out all Pokémon, optionally in pages`
           },
           "name": "__typename",
           "sortText": "14__typename",
+        },
+      ]
+    `);
+  }, 30000);
+
+  it('gives suggestions for type-conditions (#261)', async () => {
+    server.send({
+      seq: 13,
+      type: 'request',
+      command: 'completionInfo',
+      arguments: {
+        file: outfileTypeCondition,
+        line: 14,
+        offset: 14,
+        includeExternalModuleExports: true,
+        includeInsertTextCompletions: true,
+        triggerKind: 1,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'completionInfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(
+        resp => resp.type === 'response' && resp.command === 'completionInfo'
+      );
+
+    expect(res).toBeDefined();
+    expect(typeof res?.body.entries).toEqual('object');
+    expect(res?.body.entries).toMatchInlineSnapshot(`
+      [
+        {
+          "kind": "var",
+          "kindModifiers": "declare",
+          "labelDetails": {
+            "description": "",
+          },
+          "name": "Pokemon",
+          "sortText": "0",
         },
       ]
     `);

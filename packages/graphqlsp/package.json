@@ -40,15 +40,13 @@
     "@sindresorhus/fnv1a": "^2.0.0",
     "@types/node": "^18.15.11",
     "@types/node-fetch": "^2.6.3",
-    "@urql/introspection": "^1.0.3",
     "graphql": "^16.8.1",
     "graphql-language-service": "^5.2.0",
     "lru-cache": "^10.0.1",
-    "type-fest": "^4.11.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "json5": "^2.2.3",
+    "@gql.tada/internal": "^0.1.0",
     "node-fetch": "^2.0.0"
   },
   "publishConfig": {

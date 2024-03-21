@@ -7,75 +7,37 @@ import {
   introspectionFromSchema,
 } from 'graphql';
 import path from 'path';
-import JSON5 from 'json5';
-import { minifyIntrospectionQuery } from '@urql/introspection';
 import fetch from 'node-fetch';
 import fs from 'fs';
-import type { TsConfigJson } from 'type-fest';
+import {
+  resolveTypeScriptRootDir,
+  minifyIntrospection,
+  outputIntrospectionFile,
+} from '@gql.tada/internal';
 
 import { ts } from '../ts';
 import { Logger } from '../index';
-
-const preambleComments =
-  ['/* eslint-disable */', '/* prettier-ignore */'].join('\n') + '\n';
-
-const dtsAnnotationComment = [
-  '/** An IntrospectionQuery representation of your schema.',
-  ' *',
-  ' * @remarks',
-  ' * This is an introspection of your schema saved as a file by GraphQLSP.',
-  ' * It will automatically be used by `gql.tada` to infer the types of your GraphQL documents.',
-  ' * If you need to reuse this data or update your `scalars`, update `tadaOutputLocation` to',
-  ' * instead save to a .ts instead of a .d.ts file.',
-  ' */',
-].join('\n');
-
-const tsAnnotationComment = [
-  '/** An IntrospectionQuery representation of your schema.',
-  ' *',
-  ' * @remarks',
-  ' * This is an introspection of your schema saved as a file by GraphQLSP.',
-  ' * You may import it to create a `graphql()` tag function with `gql.tada`',
-  ' * by importing it and passing it to `initGraphQLTada<>()`.',
-  ' *',
-  ' * @example',
-  ' * ```',
-  " * import { initGraphQLTada } from 'gql.tada';",
-  " * import type { introspection } from './introspection';",
-  ' *',
-  ' * export const graphql = initGraphQLTada<{',
-  ' *   introspection: typeof introspection;',
-  ' *   scalars: {',
-  ' *     DateTime: string;',
-  ' *     Json: any;',
-  ' *   };',
-  ' * }>();',
-  ' * ```',
-  ' */',
-].join('\n');
 
 async function saveTadaIntrospection(
   root: string,
   schema: GraphQLSchema | IntrospectionQuery,
   tadaOutputLocation: string,
+  disablePreprocessing: boolean,
   logger: Logger
 ) {
   const introspection = !('__schema' in schema)
     ? introspectionFromSchema(schema, { descriptions: false })
     : schema;
 
-  const minified = minifyIntrospectionQuery(introspection, {
-    includeDirectives: false,
-    includeEnums: true,
-    includeInputs: true,
-    includeScalars: true,
-  });
+  const minified = minifyIntrospection(introspection);
 
-  const json = JSON.stringify(minified, null, 2);
+  const contents = await outputIntrospectionFile(minified, {
+    fileType: tadaOutputLocation,
+    shouldPreprocess: !disablePreprocessing,
+  });
 
   let output = path.resolve(root, tadaOutputLocation);
   let stat: fs.Stats | undefined;
-  let contents = '';
 
   try {
     stat = await fs.promises.stat(output);
@@ -101,30 +63,6 @@ async function saveTadaIntrospection(
     return;
   }
 
-  if (/\.d\.ts$/.test(output)) {
-    contents = [
-      preambleComments,
-      dtsAnnotationComment,
-      `export type introspection = ${json};\n`,
-      "import * as gqlTada from 'gql.tada';\n",
-      "declare module 'gql.tada' {",
-      '  interface setupSchema {',
-      '    introspection: introspection',
-      '  }',
-      '}',
-    ].join('\n');
-  } else if (path.extname(output) === '.ts') {
-    contents = [
-      preambleComments,
-      tsAnnotationComment,
-      `const introspection = ${json} as const;\n`,
-      'export { introspection };',
-    ].join('\n');
-  } else {
-    logger(`Unknown file type on path @ ${output}`);
-    return;
-  }
-
   await fs.promises.writeFile(output, contents);
   logger(`Introspection saved to path @ ${output}`);
 }
@@ -134,32 +72,6 @@ export type SchemaOrigin = {
   headers: Record<string, unknown>;
 };
 
-const getRootDir = (
-  info: ts.server.PluginCreateInfo,
-  tsconfigPath: string
-): string | undefined => {
-  const tsconfigContents = info.project.readFile(tsconfigPath);
-  const parsed = JSON5.parse<TsConfigJson>(tsconfigContents!);
-
-  if (
-    parsed.compilerOptions?.plugins?.find(x => x.name === '@0no-co/graphqlsp')
-  ) {
-    return path.dirname(tsconfigPath);
-  } else if (Array.isArray(parsed.extends)) {
-    return parsed.extends.find(p => {
-      const resolved = require.resolve(p, {
-        paths: [path.dirname(tsconfigPath)],
-      });
-      return getRootDir(info, resolved);
-    });
-  } else if (parsed.extends) {
-    const resolved = require.resolve(parsed.extends, {
-      paths: [path.dirname(tsconfigPath)],
-    });
-    return getRootDir(info, resolved);
-  }
-};
-
 export const loadSchema = (
   info: ts.server.PluginCreateInfo,
   schema: SchemaOrigin | string,
@@ -167,8 +79,10 @@ export const loadSchema = (
   logger: Logger
 ): { current: GraphQLSchema | null; version: number } => {
   const root =
-    getRootDir(info, info.project.getProjectName()) ||
-    path.dirname(info.project.getProjectName());
+    resolveTypeScriptRootDir(
+      path => info.project.readFile(path),
+      info.project.getProjectName()
+    ) || path.dirname(info.project.getProjectName());
   logger('Got root-directory to resolve schema from: ' + root);
   const ref: {
     current: GraphQLSchema | null;
@@ -236,6 +150,7 @@ export const loadSchema = (
                   root,
                   introspection,
                   tadaOutputLocation,
+                  info.config.tadaDisablePreprocessing ?? false,
                   logger
                 );
               }
@@ -280,6 +195,7 @@ export const loadSchema = (
           root,
           schemaOrIntrospection,
           tadaOutputLocation,
+          info.config.tadaDisablePreprocessing ?? false,
           logger
         );
       }

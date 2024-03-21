@@ -72,6 +72,7 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 - `reservedKeys` this setting will affect `trackFieldUsage`, you can enter keys here that will be ignored
   from usage tracking, so when they are unused in the component but used in i.e. the normalised cache you
   won't get annoying warnings. (default `id`, `_id` and `__typename`, example: ['slug'])
+- `tadaDisablePreprocessing` this setting disables the optimisation of `tadaOutput` to a pre-processed TypeScript type, this is off by default.
 
 ## Tracking unused fields
 

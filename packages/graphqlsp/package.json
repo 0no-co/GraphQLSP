@@ -40,7 +40,6 @@
     "@sindresorhus/fnv1a": "^2.0.0",
     "@types/node": "^18.15.11",
     "@types/node-fetch": "^2.6.3",
-    "@urql/introspection": "^1.0.3",
     "graphql": "^16.8.1",
     "graphql-language-service": "^5.2.0",
     "lru-cache": "^10.0.1",
@@ -48,6 +47,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
+    "@gql.tada/internal": "0.1.0-canary-0c7178c3869822f586e7b12fa5821ebbe662c993",
     "json5": "^2.2.3",
     "node-fetch": "^2.0.0"
   },

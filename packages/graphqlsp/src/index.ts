@@ -22,6 +22,7 @@ export type Logger = (msg: string) => void;
 
 type Config = {
   schema: SchemaOrigin | string;
+  preProcess?: boolean;
   templateIsCallExpression?: boolean;
   shouldCheckForColocatedFragments?: boolean;
   template?: string;

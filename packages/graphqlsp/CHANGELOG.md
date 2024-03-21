@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.7.0
+
+### Minor Changes
+
+- Introduce option to pre-process the introspection file, this improves the performance of `gql.tada`. This will be enabled by default and can be turned off by leveraging `tadaDisablePreprocessing: true` in the `tsconfig`
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#273](https://github.com/0no-co/GraphQLSP/pull/273))
+
 ## 1.6.1
 
 ### Patch Changes

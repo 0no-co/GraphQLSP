@@ -137,8 +137,8 @@ importers:
         specifier: ^3.0.0
         version: 3.2.2(graphql@16.8.1)
       gql.tada:
-        specifier: ^1.0.0
-        version: 1.0.0(graphql@16.8.1)
+        specifier: ^1.3.6
+        version: 1.3.6(graphql@16.8.1)
       graphql:
         specifier: ^16.8.1
         version: 16.8.1
@@ -168,11 +168,8 @@ importers:
   packages/graphqlsp:
     dependencies:
       '@gql.tada/internal':
-        specifier: 0.1.0-canary-0c7178c3869822f586e7b12fa5821ebbe662c993
-        version: 0.1.0-canary-0c7178c3869822f586e7b12fa5821ebbe662c993
-      json5:
-        specifier: ^2.2.3
-        version: 2.2.3
+        specifier: 0.1.0-canary-3b1ef6d54e33b53835e16ccdbe85d5d99add2178
+        version: 0.1.0-canary-3b1ef6d54e33b53835e16ccdbe85d5d99add2178
       node-fetch:
         specifier: ^2.0.0
         version: 2.6.7
@@ -198,9 +195,6 @@ importers:
       lru-cache:
         specifier: ^10.0.1
         version: 10.0.1
-      type-fest:
-        specifier: ^4.11.1
-        version: 4.11.1
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -1318,11 +1312,18 @@ packages:
     dev: true
     optional: true
 
-  /@gql.tada/internal@0.1.0-canary-0c7178c3869822f586e7b12fa5821ebbe662c993:
-    resolution: {integrity: sha512-6Ce9usewWYlwpV/IYxt9HEPKqZTpTOm+NoWkNAx98SL+FK8cpPk9tXnHrWfjPwXJxiAi9CLSLqk4swTZn3iYiA==}
+  /@gql.tada/cli-utils@0.2.0:
+    resolution: {integrity: sha512-S/1KdJ08G9wKbsHUrBBT6GK38OtGaC82lY9MIFwkIziR9rf/N1PmDxWOThvMWJsaKQaEf5PhioRxquVCjeIbtw==}
     dependencies:
       '@urql/introspection': 1.0.3(graphql@16.8.1)
       graphql: 16.8.1
+    dev: false
+
+  /@gql.tada/internal@0.1.0-canary-3b1ef6d54e33b53835e16ccdbe85d5d99add2178:
+    resolution: {integrity: sha512-o5Fwbs6hO2RgbPUDZWKQ7jEbRJxfQ9+Rpq/A9KIfbHqp7xPYI8+yiGN1zpth0n4DR4fG+a6XOBnvNvF+ihfzlQ==}
+    dependencies:
+      graphql: 16.8.1
+      typescript: 5.3.3
 
   /@graphql-codegen/add@5.0.0(graphql@16.8.1):
     resolution: {integrity: sha512-ynWDOsK2yxtFHwcJTB9shoSkUd7YXd6ZE57f0nk7W5cu/nAgxZZpEsnTPEpZB/Mjf14YRGe2uJHQ7AfElHjqUQ==}
@@ -2383,6 +2384,7 @@ packages:
       graphql: ^0.11.0 || ^0.12.0 || ^0.13.0 || ^14.0.0 || ^15.0.0 || ^16.0.0
     dependencies:
       graphql: 16.8.1
+    dev: false
 
   /@vitest/expect@0.34.6:
     resolution: {integrity: sha512-QUzKpUQRc1qC7qdGo7rMK3AkETI7w18gTCUrsNnyjjJKYiuUB9+TQK3QnR1unhCnWRC0AbKv2omLGQDF/mIjOw==}
@@ -3657,18 +3659,20 @@ packages:
       get-intrinsic: 1.2.2
     dev: true
 
-  /gql.tada@1.0.0(graphql@16.8.1):
-    resolution: {integrity: sha512-bmZUHxXGXJNW8fPtXyWIwbLKbEjnKK3PF6XinZFK2PgcxSFJ/9p5fVDseE1xiCkf3nOA4aiSxY5OQ3xWNjCzvg==}
+  /gql.tada@1.2.1(graphql@16.8.1):
+    resolution: {integrity: sha512-Nx8x3g9WLT23eu9aL/4TTFDBwm7CBGVd4F2Jp2H5oOjDpuWv12i1mTLKReQwn2V1ZP+jG8V0ATXzFQZt1pxSgw==}
     dependencies:
       '@0no-co/graphql.web': 1.0.4(graphql@16.8.1)
     transitivePeerDependencies:
       - graphql
     dev: false
 
-  /gql.tada@1.2.1(graphql@16.8.1):
-    resolution: {integrity: sha512-Nx8x3g9WLT23eu9aL/4TTFDBwm7CBGVd4F2Jp2H5oOjDpuWv12i1mTLKReQwn2V1ZP+jG8V0ATXzFQZt1pxSgw==}
+  /gql.tada@1.3.6(graphql@16.8.1):
+    resolution: {integrity: sha512-POQmGyZ0/nfqZUqXT3OQl4GqXMatnYW67ytl27IPTbzopGQEUazVNBoBmb0QPGDOBIXxFpg5NHXxV3wcJ+h21Q==}
+    hasBin: true
     dependencies:
       '@0no-co/graphql.web': 1.0.4(graphql@16.8.1)
+      '@gql.tada/cli-utils': 0.2.0
     transitivePeerDependencies:
       - graphql
     dev: false
@@ -4238,6 +4242,7 @@ packages:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
     engines: {node: '>=6'}
     hasBin: true
+    dev: true
 
   /jsonc-parser@3.2.0:
     resolution: {integrity: sha512-gfFQZrcTc8CnKXp6Y4/CBT3fTc0OVuDofpre4aEeEpSBPV5X5v4+Vmx+8snU7RLPrNHPKSgLxGo9YuQzz20o+w==}
@@ -5720,11 +5725,6 @@ packages:
     engines: {node: '>=10'}
     dev: true
 
-  /type-fest@4.11.1:
-    resolution: {integrity: sha512-MFMf6VkEVZAETidGGSYW2B1MjXbGX+sWIywn2QPEaJ3j08V+MwVRHMXtf2noB8ENJaD0LIun9wh5Z6OPNf1QzQ==}
-    engines: {node: '>=16'}
-    dev: true
-
   /typed-array-length@1.0.4:
     resolution: {integrity: sha512-KjZypGq+I/H7HI5HlOoGHkWUUGq+Q0TPhQurLbyrVrvnKTBgzLhIJ7j6J/XTQOi0d1RjyZ0wdas8bKs2p0x3Ng==}
     dependencies:
@@ -5737,7 +5737,6 @@ packages:
     resolution: {integrity: sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==}
     engines: {node: '>=14.17'}
     hasBin: true
-    dev: true
 
   /ua-parser-js@0.7.37:
     resolution: {integrity: sha512-xV8kqRKM+jhMvcHWUKthV9fNebIzrNy//2O9ZwWcfiBFR5f25XVZPLlEajk/sf3Ra15V92isyQqnIEXRDaZWEA==}
@@ -6191,7 +6190,7 @@ packages:
     resolution: {directory: packages/graphqlsp, type: directory}
     name: '@0no-co/graphqlsp'
     dependencies:
-      '@gql.tada/internal': 0.1.0-canary-0c7178c3869822f586e7b12fa5821ebbe662c993
+      '@gql.tada/internal': 0.1.0-canary-3b1ef6d54e33b53835e16ccdbe85d5d99add2178
       json5: 2.2.3
       node-fetch: 2.6.7
     transitivePeerDependencies:

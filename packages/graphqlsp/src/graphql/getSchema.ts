@@ -7,10 +7,8 @@ import {
   introspectionFromSchema,
 } from 'graphql';
 import path from 'path';
-import JSON5 from 'json5';
 import fetch from 'node-fetch';
 import fs from 'fs';
-import type { TsConfigJson } from 'type-fest';
 import {
   resolveTypeScriptRootDir,
   minifyIntrospection,
@@ -31,18 +29,12 @@ async function saveTadaIntrospection(
     ? introspectionFromSchema(schema, { descriptions: false })
     : schema;
 
-  const minified = minifyIntrospection(introspection, {
-    includeDirectives: false,
-    includeEnums: true,
-    includeInputs: true,
-    includeScalars: true,
-  });
+  const minified = minifyIntrospection(introspection);
 
-  const contents = await outputIntrospectionFile(introspection, {
+  const contents = await outputIntrospectionFile(minified, {
     fileType: tadaOutputLocation,
     shouldPreprocess,
   });
-  const json = JSON.stringify(minified, null, 2);
 
   let output = path.resolve(root, tadaOutputLocation);
   let stat: fs.Stats | undefined;
@@ -80,28 +72,6 @@ export type SchemaOrigin = {
   headers: Record<string, unknown>;
 };
 
-const getRootDir = (
-  info: ts.server.PluginCreateInfo,
-  tsconfigPath: string
-): string | undefined => {
-  const tsconfigContents = info.project.readFile(tsconfigPath);
-  const parsed = JSON5.parse<TsConfigJson>(tsconfigContents!);
-
-  if (
-    parsed.compilerOptions?.plugins?.find(x => x.name === '@0no-co/graphqlsp')
-  ) {
-    return path.dirname(tsconfigPath);
-  } else if (Array.isArray(parsed.extends)) {
-    return parsed.extends.find(p => {
-      const resolved = path.resolve(path.dirname(tsconfigPath), p);
-      return getRootDir(info, resolved);
-    });
-  } else if (parsed.extends) {
-    const resolved = path.resolve(path.dirname(tsconfigPath), parsed.extends);
-    return getRootDir(info, resolved);
-  }
-};
-
 export const loadSchema = (
   info: ts.server.PluginCreateInfo,
   schema: SchemaOrigin | string,
@@ -110,7 +80,7 @@ export const loadSchema = (
 ): { current: GraphQLSchema | null; version: number } => {
   const root =
     resolveTypeScriptRootDir(
-      info.project.readFile,
+      path => info.project.readFile(path),
       info.project.getProjectName()
     ) || path.dirname(info.project.getProjectName());
   logger('Got root-directory to resolve schema from: ' + root);
@@ -180,7 +150,7 @@ export const loadSchema = (
                   root,
                   introspection,
                   tadaOutputLocation,
-                  info.config.preProcess || false,
+                  info.config.preProcess ?? false,
                   logger
                 );
               }
@@ -225,7 +195,7 @@ export const loadSchema = (
           root,
           schemaOrIntrospection,
           tadaOutputLocation,
-          info.config.preProcess || false,
+          info.config.preProcess ?? false,
           logger
         );
       }

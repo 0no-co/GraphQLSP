@@ -43,12 +43,10 @@
     "graphql": "^16.8.1",
     "graphql-language-service": "^5.2.0",
     "lru-cache": "^10.0.1",
-    "type-fest": "^4.11.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@gql.tada/internal": "0.1.0-canary-0c7178c3869822f586e7b12fa5821ebbe662c993",
-    "json5": "^2.2.3",
+    "@gql.tada/internal": "0.1.0-canary-3b1ef6d54e33b53835e16ccdbe85d5d99add2178",
     "node-fetch": "^2.0.0"
   },
   "publishConfig": {

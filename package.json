@@ -47,6 +47,7 @@
   },
   "pnpm": {
     "overrides": {
+      "typescript": "^5.3.3",
       "ua-parser-js@<0.7.33": ">=0.7.33",
       "postcss@<8.4.31": ">=8.4.31",
       "semver@<5.7.2": ">=5.7.2",

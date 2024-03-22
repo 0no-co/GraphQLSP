@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  typescript: ^5.3.3
   ua-parser-js@<0.7.33: '>=0.7.33'
   postcss@<8.4.31: '>=8.4.31'
   semver@<5.7.2: '>=5.7.2'
@@ -89,7 +90,7 @@ importers:
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: file:../graphqlsp
-        version: file:packages/graphqlsp
+        version: file:packages/graphqlsp(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -111,7 +112,7 @@ importers:
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: file:../graphqlsp
-        version: file:packages/graphqlsp
+        version: file:packages/graphqlsp(typescript@5.3.3)
       '@graphql-codegen/cli':
         specifier: ^5.0.0
         version: 5.0.0(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.3.3)
@@ -148,7 +149,7 @@ importers:
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: file:../graphqlsp
-        version: file:packages/graphqlsp
+        version: file:packages/graphqlsp(typescript@5.3.3)
       '@graphql-codegen/cli':
         specifier: ^5.0.0
         version: 5.0.0(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.3.3)
@@ -2122,7 +2123,7 @@ packages:
     peerDependencies:
       rollup: ^2.14.0||^3.0.0||^4.0.0
       tslib: '*'
-      typescript: '>=3.7.0'
+      typescript: ^5.3.3
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -3024,7 +3025,7 @@ packages:
     resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
     engines: {node: '>=14'}
     peerDependencies:
-      typescript: '>=4.9.5'
+      typescript: ^5.3.3
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -5142,7 +5143,7 @@ packages:
     engines: {node: '>=16'}
     peerDependencies:
       rollup: ^3.29.4 || ^4
-      typescript: ^4.5 || ^5.0
+      typescript: ^5.3.3
     dependencies:
       magic-string: 0.30.5
       rollup: 4.9.5
@@ -5642,7 +5643,7 @@ packages:
       '@swc/core': '>=1.2.50'
       '@swc/wasm': '>=1.2.50'
       '@types/node': '*'
-      typescript: '>=2.7'
+      typescript: ^5.3.3
     peerDependenciesMeta:
       '@swc/core':
         optional: true
@@ -6179,13 +6180,16 @@ packages:
     engines: {node: '>=12.20'}
     dev: true
 
-  file:packages/graphqlsp:
+  file:packages/graphqlsp(typescript@5.3.3):
     resolution: {directory: packages/graphqlsp, type: directory}
+    id: file:packages/graphqlsp
     name: '@0no-co/graphqlsp'
+    peerDependencies:
+      typescript: ^5.3.3
     dependencies:
       '@gql.tada/internal': 0.1.0
-      json5: 2.2.3
       node-fetch: 2.6.7
+      typescript: 5.3.3
     transitivePeerDependencies:
       - encoding
     dev: true

@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.7.1
+
+### Patch Changes
+
+- Add `typescript` to `peerDependencies`
+  Submitted by [@kitten](https://github.com/kitten) (See [#275](https://github.com/0no-co/GraphQLSP/pull/275))
+
 ## 1.7.0
 
 ### Minor Changes

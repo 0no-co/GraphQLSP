@@ -89,7 +89,7 @@ importers:
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: file:../graphqlsp
-        version: file:packages/graphqlsp
+        version: file:packages/graphqlsp(typescript@5.3.3)
       typescript:
         specifier: ^5.3.3
         version: 5.3.3
@@ -111,7 +111,7 @@ importers:
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: file:../graphqlsp
-        version: file:packages/graphqlsp
+        version: file:packages/graphqlsp(typescript@5.3.3)
       '@graphql-codegen/cli':
         specifier: ^5.0.0
         version: 5.0.0(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.3.3)
@@ -148,7 +148,7 @@ importers:
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: file:../graphqlsp
-        version: file:packages/graphqlsp
+        version: file:packages/graphqlsp(typescript@5.3.3)
       '@graphql-codegen/cli':
         specifier: ^5.0.0
         version: 5.0.0(@types/node@18.15.11)(graphql@16.8.1)(typescript@5.3.3)
@@ -6179,13 +6179,16 @@ packages:
     engines: {node: '>=12.20'}
     dev: true
 
-  file:packages/graphqlsp:
+  file:packages/graphqlsp(typescript@5.3.3):
     resolution: {directory: packages/graphqlsp, type: directory}
+    id: file:packages/graphqlsp
     name: '@0no-co/graphqlsp'
+    peerDependencies:
+      typescript: ^5.0.0
     dependencies:
       '@gql.tada/internal': 0.1.0
-      json5: 2.2.3
       node-fetch: 2.6.7
+      typescript: 5.3.3
     transitivePeerDependencies:
       - encoding
     dev: true

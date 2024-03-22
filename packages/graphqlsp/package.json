@@ -49,6 +49,9 @@
     "@gql.tada/internal": "^0.1.0",
     "node-fetch": "^2.0.0"
   },
+  "peerDependencies": {
+    "typescript": "^5.0.0"
+  },
   "publishConfig": {
     "provenance": true
   }

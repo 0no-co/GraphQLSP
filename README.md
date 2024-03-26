@@ -111,6 +111,21 @@ export function useFragment<Type>(
 This is mainly needed in cases where this isn't supported out of the box and mainly serves as a way
 for you to case your types.
 
+## 💙 [Sponsors](https://github.com/sponsors/urql-graphql)
+
+<table>
+  <tr>
+   <td align="center"><a href="https://bigcommerce.com/"><img src="https://avatars.githubusercontent.com/u/186342?s=150&v=4" width="150" alt="BigCommerce"/><br />BigCommerce</a></td>
+   <td align="center"><a href="https://wundergraph.com/"><img src="https://avatars.githubusercontent.com/u/64281914?s=200&v=4" width="150" alt="WunderGraph"/><br />WunderGraph</a></td>
+  </tr>
+</table>
+
+<table>
+  <tr>
+   <td align="center"><a href="https://beatgig.com/"><img src="https://avatars.githubusercontent.com/u/51333382?s=200&v=4" width="100" alt="BeatGig"/><br />BeatGig</a></td>
+  </tr>
+</table>
+
 ## Local development
 
 Run `pnpm i` at the root. Open `packages/example` by running `code packages/example` or if you want to leverage

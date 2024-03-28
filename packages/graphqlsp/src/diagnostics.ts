@@ -351,11 +351,12 @@ const runDiagnostics = (
   }));
 
   if (isCallExpression) {
-    const usageDiagnostics = checkFieldUsageInFile(
-      source,
-      nodes as ts.NoSubstitutionTemplateLiteral[],
-      info
-    );
+    const usageDiagnostics =
+      checkFieldUsageInFile(
+        source,
+        nodes as ts.NoSubstitutionTemplateLiteral[],
+        info
+      ) || [];
 
     return [...tsDiagnostics, ...usageDiagnostics];
   } else {

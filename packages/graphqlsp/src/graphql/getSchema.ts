@@ -5,6 +5,7 @@ import type { GraphQLSchema, IntrospectionQuery } from 'graphql';
 
 import {
   type SchemaOrigin,
+  type SchemaLoaderResult,
   load,
   resolveTypeScriptRootDir,
   minifyIntrospection,
@@ -68,10 +69,8 @@ export const loadSchema = (
   origin: SchemaOrigin,
   logger: Logger
 ): SchemaRef => {
-  const ref: SchemaRef = {
-    current: null,
-    version: 0,
-  };
+  let loaderResult: SchemaLoaderResult | null = null;
+  const ref: SchemaRef = { current: null, version: 0 };
 
   (async () => {
     const rootPath =
@@ -86,7 +85,14 @@ export const loadSchema = (
     logger('Got root-directory to resolve schema from: ' + rootPath);
 
     const loader = load({ origin, rootPath });
-    let loaderResult = await loader.load();
+
+    try {
+      logger(`Loading schema from "${origin}"`);
+      loaderResult = await loader.load();
+    } catch (error) {
+      logger(`Failed to load schema: ${error}`);
+    }
+
     if (loaderResult) {
       ref.current = loaderResult && loaderResult.schema;
       ref.version++;

@@ -83,6 +83,7 @@ export const loadSchema = (
       path.resolve(rootPath, info.config.tadaOutputLocation);
 
     logger('Got root-directory to resolve schema from: ' + rootPath);
+    logger('Resolving schema from "schema" config: ' + JSON.stringify(origin));
 
     const loader = load({ origin, rootPath });
 

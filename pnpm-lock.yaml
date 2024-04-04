@@ -169,8 +169,8 @@ importers:
   packages/graphqlsp:
     dependencies:
       '@gql.tada/internal':
-        specifier: 0.1.2-canary-ca9108ab14e50f180f86fbaf545bfb9827ce3f03
-        version: 0.1.2-canary-ca9108ab14e50f180f86fbaf545bfb9827ce3f03(graphql@16.8.1)(typescript@5.3.3)
+        specifier: ^0.1.2
+        version: 0.1.2(graphql@16.8.1)(typescript@5.3.3)
       graphql:
         specifier: ^16.8.1
         version: 16.8.1
@@ -1337,8 +1337,8 @@ packages:
       typescript: 5.3.3
     dev: false
 
-  /@gql.tada/internal@0.1.2-canary-ca9108ab14e50f180f86fbaf545bfb9827ce3f03(graphql@16.8.1)(typescript@5.3.3):
-    resolution: {integrity: sha512-UyHYEpnKJTbTxWtwOo8oI2NEbBPQZklCqZf4slW5PVu2v8mkuciz0kBWgsZeDNrkxwObztcX9DZAJKaSFRdtSg==}
+  /@gql.tada/internal@0.1.2(graphql@16.8.1)(typescript@5.3.3):
+    resolution: {integrity: sha512-8I4Z1zxYYGK66FWdB3yIZBn3cITLPnciEgjChp3K2+Ha1e/AEBGtZv9AUlodraO/RZafDMkpFhoi+tMpluBjeg==}
     peerDependencies:
       graphql: ^16.8.1
       typescript: ^5.3.3
@@ -6208,7 +6208,7 @@ packages:
     peerDependencies:
       typescript: ^5.3.3
     dependencies:
-      '@gql.tada/internal': 0.1.2-canary-ca9108ab14e50f180f86fbaf545bfb9827ce3f03(graphql@16.8.1)(typescript@5.3.3)
+      '@gql.tada/internal': 0.1.2(graphql@16.8.1)(typescript@5.3.3)
       graphql: 16.8.1
       node-fetch: 2.6.7
       typescript: 5.3.3

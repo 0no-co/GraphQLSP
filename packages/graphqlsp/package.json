@@ -12,6 +12,12 @@
       "require": "./dist/graphqlsp.js",
       "source": "./src/index.ts"
     },
+    "./api": {
+      "types": "./dist/api.d.ts",
+      "import": "./dist/api.mjs",
+      "require": "./dist/api.js",
+      "source": "./src/api.ts"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {

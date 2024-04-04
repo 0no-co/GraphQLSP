@@ -2144,7 +2144,7 @@ packages:
     peerDependencies:
       rollup: ^2.14.0||^3.0.0||^4.0.0
       tslib: '*'
-      typescript: ^5.3.3
+      typescript: '>=3.7.0'
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -3046,7 +3046,7 @@ packages:
     resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
     engines: {node: '>=14'}
     peerDependencies:
-      typescript: ^5.3.3
+      typescript: '>=4.9.5'
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -5164,7 +5164,7 @@ packages:
     engines: {node: '>=16'}
     peerDependencies:
       rollup: ^3.29.4 || ^4
-      typescript: ^5.3.3
+      typescript: ^4.5 || ^5.0
     dependencies:
       magic-string: 0.30.5
       rollup: 4.9.5
@@ -5664,7 +5664,7 @@ packages:
       '@swc/core': '>=1.2.50'
       '@swc/wasm': '>=1.2.50'
       '@types/node': '*'
-      typescript: ^5.3.3
+      typescript: '>=2.7'
     peerDependenciesMeta:
       '@swc/core':
         optional: true
@@ -6206,7 +6206,7 @@ packages:
     id: file:packages/graphqlsp
     name: '@0no-co/graphqlsp'
     peerDependencies:
-      typescript: ^5.3.3
+      typescript: ^5.0.0
     dependencies:
       '@gql.tada/internal': 0.1.2(graphql@16.8.1)(typescript@5.3.3)
       graphql: 16.8.1

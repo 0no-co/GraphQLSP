@@ -136,5 +136,4 @@ const init: ts.server.PluginModuleFactory = ts => {
   return { create };
 };
 
-export { getGraphQLDiagnostics, initTypeScript };
 export default init;

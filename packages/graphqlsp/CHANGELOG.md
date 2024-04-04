@@ -1,5 +1,17 @@
 # @0no-co/graphqlsp
 
+## 1.8.0
+
+### Minor Changes
+
+- Expose the `init` and `getGraphQLDiagnostics` methods
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#279](https://github.com/0no-co/GraphQLSP/pull/279))
+
+### Patch Changes
+
+- Switch to loading the schema with `@gql.tada/internal` utilities
+  Submitted by [@kitten](https://github.com/kitten) (See [#277](https://github.com/0no-co/GraphQLSP/pull/277))
+
 ## 1.7.1
 
 ### Patch Changes

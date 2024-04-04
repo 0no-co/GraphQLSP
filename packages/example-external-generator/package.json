@@ -16,7 +16,7 @@
     "urql": "^4.0.6"
   },
   "devDependencies": {
-    "@0no-co/graphqlsp": "file:../graphqlsp",
+    "@0no-co/graphqlsp": "workspace:*",
     "@graphql-codegen/cli": "^5.0.0",
     "@graphql-codegen/client-preset": "^4.1.0",
     "@types/react": "^18.2.45",

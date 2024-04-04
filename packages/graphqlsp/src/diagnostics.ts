@@ -355,7 +355,7 @@ const runDiagnostics = (
       source,
       nodes as ts.NoSubstitutionTemplateLiteral[],
       info
-    );
+    ) || [];
 
     return [...tsDiagnostics, ...usageDiagnostics];
   } else {

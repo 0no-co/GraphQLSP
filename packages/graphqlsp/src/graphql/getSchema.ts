@@ -1,15 +1,12 @@
-import {
-  GraphQLSchema,
-  buildSchema,
-  buildClientSchema,
-  getIntrospectionQuery,
-  IntrospectionQuery,
-  introspectionFromSchema,
-} from 'graphql';
 import path from 'path';
-import fetch from 'node-fetch';
 import fs from 'fs';
+
+import type { GraphQLSchema, IntrospectionQuery } from 'graphql';
+
 import {
+  type SchemaOrigin,
+  type SchemaLoaderResult,
+  load,
   resolveTypeScriptRootDir,
   minifyIntrospection,
   outputIntrospectionFile,
@@ -19,24 +16,18 @@ import { ts } from '../ts';
 import { Logger } from '../index';
 
 async function saveTadaIntrospection(
-  root: string,
-  schema: GraphQLSchema | IntrospectionQuery,
+  introspection: IntrospectionQuery,
   tadaOutputLocation: string,
   disablePreprocessing: boolean,
   logger: Logger
 ) {
-  const introspection = !('__schema' in schema)
-    ? introspectionFromSchema(schema, { descriptions: false })
-    : schema;
-
   const minified = minifyIntrospection(introspection);
-
-  const contents = await outputIntrospectionFile(minified, {
+  const contents = outputIntrospectionFile(minified, {
     fileType: tadaOutputLocation,
     shouldPreprocess: !disablePreprocessing,
   });
 
-  let output = path.resolve(root, tadaOutputLocation);
+  let output = tadaOutputLocation;
   let stat: fs.Stats | undefined;
 
   try {
@@ -67,147 +58,69 @@ async function saveTadaIntrospection(
   logger(`Introspection saved to path @ ${output}`);
 }
 
-export type SchemaOrigin = {
-  url: string;
-  headers: Record<string, unknown>;
-};
+export interface SchemaRef {
+  current: GraphQLSchema | null;
+  version: number;
+}
 
 export const loadSchema = (
+  // TODO: abstract info away
   info: ts.server.PluginCreateInfo,
-  schema: SchemaOrigin | string,
-  tadaOutputLocation: string | undefined,
+  origin: SchemaOrigin,
   logger: Logger
-): { current: GraphQLSchema | null; version: number } => {
-  const root =
-    resolveTypeScriptRootDir(
-      path => info.project.readFile(path),
-      info.project.getProjectName()
-    ) || path.dirname(info.project.getProjectName());
-  logger('Got root-directory to resolve schema from: ' + root);
-  const ref: {
-    current: GraphQLSchema | null;
-    version: number;
-    prev: string | null;
-  } = {
-    current: null,
-    version: 0,
-    prev: null,
-  };
-  let url: URL | undefined;
-  let config: { headers: Record<string, unknown> } | undefined;
+): SchemaRef => {
+  let loaderResult: SchemaLoaderResult | null = null;
+  const ref: SchemaRef = { current: null, version: 0 };
 
-  try {
-    if (typeof schema === 'object') {
-      url = new URL(schema.url);
-      config = { headers: schema.headers };
-    } else {
-      url = new URL(schema);
+  (async () => {
+    const rootPath =
+      (await resolveTypeScriptRootDir(info.project.getProjectName())) ||
+      path.dirname(info.project.getProjectName());
+    const tadaDisablePreprocessing =
+      info.config.tadaDisablePreprocessing ?? false;
+    const tadaOutputLocation =
+      info.config.tadaOutputLocation &&
+      path.resolve(rootPath, info.config.tadaOutputLocation);
+
+    logger('Got root-directory to resolve schema from: ' + rootPath);
+    logger('Resolving schema from "schema" config: ' + JSON.stringify(origin));
+
+    const loader = load({ origin, rootPath });
+
+    try {
+      logger(`Loading schema from "${origin}"`);
+      loaderResult = await loader.load();
+    } catch (error) {
+      logger(`Failed to load schema: ${error}`);
     }
-  } catch (e) {}
 
-  if (url) {
-    const pollSchema = () => {
-      logger(`Fetching introspection from ${url!.toString()}`);
-      fetch(url!.toString(), {
-        method: 'POST',
-        headers: config
-          ? {
-              ...(config.headers || {}),
-              'Content-Type': 'application/json',
-            }
-          : {
-              'Content-Type': 'application/json',
-            },
-        body: JSON.stringify({
-          query: getIntrospectionQuery({
-            descriptions: true,
-            schemaDescription: false,
-            inputValueDeprecation: false,
-            directiveIsRepeatable: false,
-            specifiedByUrl: false,
-          }),
-        }),
-      })
-        .then(response => {
-          logger(`Got response ${response.statusText} ${response.status}`);
-          if (response.ok) return response.json();
-          else return response.text();
-        })
-        .then(result => {
-          if (typeof result === 'string') {
-            logger(`Got error while fetching introspection ${result}`);
-          } else if (result.data) {
-            const introspection = (result as { data: IntrospectionQuery }).data;
-            const currentStringified = JSON.stringify(introspection);
-            if (ref.prev && ref.prev === currentStringified) {
-              return;
-            }
-
-            ref.prev = currentStringified;
-            try {
-              if (tadaOutputLocation) {
-                saveTadaIntrospection(
-                  root,
-                  introspection,
-                  tadaOutputLocation,
-                  info.config.tadaDisablePreprocessing ?? false,
-                  logger
-                );
-              }
-
-              ref.current = buildClientSchema(introspection);
-              ref.version = ref.version + 1;
-              logger(`Got schema for ${url!.toString()}`);
-            } catch (e: any) {
-              logger(`Got schema error for ${e.message}`);
-            }
-          } else {
-            logger(`Got invalid response ${JSON.stringify(result)}`);
-          }
-        });
-
-      setTimeout(() => {
-        pollSchema();
-      }, 1000 * 60);
-    };
-
-    pollSchema();
-  } else if (typeof schema === 'string') {
-    const isJson = path.extname(schema) === '.json';
-    const resolvedPath = path.resolve(root, schema);
-    logger(`Getting schema from ${resolvedPath}`);
-
-    async function readSchema() {
-      const contents = fs.readFileSync(resolvedPath, 'utf-8');
-
-      const schemaOrIntrospection = isJson
-        ? (JSON.parse(contents) as IntrospectionQuery)
-        : buildSchema(contents);
-
-      ref.version = ref.version + 1;
-      ref.current =
-        '__schema' in schemaOrIntrospection
-          ? buildClientSchema(schemaOrIntrospection)
-          : schemaOrIntrospection;
-
+    if (loaderResult) {
+      ref.current = loaderResult && loaderResult.schema;
+      ref.version++;
       if (tadaOutputLocation) {
         saveTadaIntrospection(
-          root,
-          schemaOrIntrospection,
+          loaderResult.introspection,
           tadaOutputLocation,
-          info.config.tadaDisablePreprocessing ?? false,
+          tadaDisablePreprocessing,
           logger
         );
       }
     }
 
-    readSchema();
-    fs.watchFile(resolvedPath, () => {
-      readSchema();
+    loader.notifyOnUpdate(result => {
+      logger(`Got schema for origin "${origin}"`);
+      ref.current = (loaderResult = result).schema;
+      ref.version++;
+      if (tadaOutputLocation) {
+        saveTadaIntrospection(
+          loaderResult.introspection,
+          tadaOutputLocation,
+          tadaDisablePreprocessing,
+          logger
+        );
+      }
     });
-
-    logger(`Got schema and initialized watcher for ${schema}`);
-  }
+  })();
 
   return ref;
 };

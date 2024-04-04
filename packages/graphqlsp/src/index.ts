@@ -1,5 +1,7 @@
+import type { SchemaOrigin } from '@gql.tada/internal';
+
 import { ts, init as initTypeScript } from './ts';
-import { SchemaOrigin, loadSchema } from './graphql/getSchema';
+import { loadSchema } from './graphql/getSchema';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
 import { ALL_DIAGNOSTICS, getGraphQLDiagnostics } from './diagnostics';
@@ -20,15 +22,15 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
 
 export type Logger = (msg: string) => void;
 
-type Config = {
-  schema: SchemaOrigin | string;
+interface Config {
+  schema: SchemaOrigin;
   tadaDisablePreprocessing?: boolean;
   templateIsCallExpression?: boolean;
   shouldCheckForColocatedFragments?: boolean;
   template?: string;
   trackFieldUsage?: boolean;
   tadaOutputLocation?: string;
-};
+}
 
 function create(info: ts.server.PluginCreateInfo) {
   const logger: Logger = (msg: string) =>
@@ -49,15 +51,7 @@ function create(info: ts.server.PluginCreateInfo) {
 
   const proxy = createBasicDecorator(info);
 
-  const schema = loadSchema(
-    info,
-    config.schema,
-    // TODO: either we check here for the client having a package.json
-    // with gql.tada and use a default file loc or we use a config
-    // option with a location
-    config.tadaOutputLocation,
-    logger
-  );
+  const schema = loadSchema(info, config.schema, logger);
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics =

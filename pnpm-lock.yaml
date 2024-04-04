@@ -169,8 +169,11 @@ importers:
   packages/graphqlsp:
     dependencies:
       '@gql.tada/internal':
-        specifier: ^0.1.0
-        version: 0.1.0
+        specifier: ^0.1.2
+        version: 0.1.2(graphql@16.8.1)(typescript@5.3.3)
+      graphql:
+        specifier: ^16.8.1
+        version: 16.8.1
       node-fetch:
         specifier: ^2.0.0
         version: 2.6.7
@@ -187,9 +190,6 @@ importers:
       '@types/node-fetch':
         specifier: ^2.6.3
         version: 2.6.3
-      graphql:
-        specifier: ^16.8.1
-        version: 16.8.1
       graphql-language-service:
         specifier: ^5.2.0
         version: 5.2.0(graphql@16.8.1)
@@ -283,6 +283,16 @@ packages:
 
   /@0no-co/graphql.web@1.0.4(graphql@16.8.1):
     resolution: {integrity: sha512-W3ezhHGfO0MS1PtGloaTpg0PbaT8aZSmmaerL7idtU5F7oCI+uu25k+MsMS31BVFlp4aMkHSrNRxiD72IlK8TA==}
+    peerDependencies:
+      graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
+    peerDependenciesMeta:
+      graphql:
+        optional: true
+    dependencies:
+      graphql: 16.8.1
+
+  /@0no-co/graphql.web@1.0.6(graphql@16.8.1):
+    resolution: {integrity: sha512-KZ7TnwMcQJcFgzjoY623AVxtlDQonkqp3rSz0wb15/jHPyU1v5gynUibEpuutDeoyGJ5Tp+FwxjGyDGDwq3vIw==}
     peerDependencies:
       graphql: ^14.0.0 || ^15.0.0 || ^16.0.0
     peerDependenciesMeta:
@@ -1323,6 +1333,17 @@ packages:
   /@gql.tada/internal@0.1.0:
     resolution: {integrity: sha512-FTvBVXVvt0xUo8hvRlwFoyeNXpUDqc+e20MzFkF8ozbsa5PoYb/gksmmnHMjUphsIq1H3Hq8o4RGstFN5LKH4w==}
     dependencies:
+      graphql: 16.8.1
+      typescript: 5.3.3
+    dev: false
+
+  /@gql.tada/internal@0.1.2(graphql@16.8.1)(typescript@5.3.3):
+    resolution: {integrity: sha512-8I4Z1zxYYGK66FWdB3yIZBn3cITLPnciEgjChp3K2+Ha1e/AEBGtZv9AUlodraO/RZafDMkpFhoi+tMpluBjeg==}
+    peerDependencies:
+      graphql: ^16.8.1
+      typescript: ^5.3.3
+    dependencies:
+      '@0no-co/graphql.web': 1.0.6(graphql@16.8.1)
       graphql: 16.8.1
       typescript: 5.3.3
 
@@ -6187,7 +6208,8 @@ packages:
     peerDependencies:
       typescript: ^5.0.0
     dependencies:
-      '@gql.tada/internal': 0.1.0
+      '@gql.tada/internal': 0.1.2(graphql@16.8.1)(typescript@5.3.3)
+      graphql: 16.8.1
       node-fetch: 2.6.7
       typescript: 5.3.3
     transitivePeerDependencies:

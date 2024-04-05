@@ -6,6 +6,7 @@ import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
 import { ALL_DIAGNOSTICS, getGraphQLDiagnostics } from './diagnostics';
 import { templates } from './ast/templates';
+import { getPersistedCodeFixAtPosition } from './persisted';
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -99,6 +100,89 @@ function create(info: ts.server.PluginCreateInfo) {
     }
   };
 
+  proxy.getEditsForRefactor = (
+    filename,
+    formatOptions,
+    positionOrRange,
+    refactorName,
+    actionName,
+    preferences,
+    interactive
+  ) => {
+    const original = info.languageService.getEditsForRefactor(
+      filename,
+      formatOptions,
+      positionOrRange,
+      refactorName,
+      actionName,
+      preferences,
+      interactive
+    );
+
+    const codefix = getPersistedCodeFixAtPosition(
+      filename,
+      typeof positionOrRange === 'number'
+        ? positionOrRange
+        : positionOrRange.pos,
+      info
+    );
+    if (!codefix) return original;
+    return {
+      edits: [
+        {
+          fileName: filename,
+          textChanges: [{ newText: codefix.replacement, span: codefix.span }],
+        },
+      ],
+    };
+  };
+
+  proxy.getApplicableRefactors = (
+    filename,
+    positionOrRange,
+    preferences,
+    reason,
+    kind,
+    includeInteractive
+  ) => {
+    const original = info.languageService.getApplicableRefactors(
+      filename,
+      positionOrRange,
+      preferences,
+      reason,
+      kind,
+      includeInteractive
+    );
+
+    const codefix = getPersistedCodeFixAtPosition(
+      filename,
+      typeof positionOrRange === 'number'
+        ? positionOrRange
+        : positionOrRange.pos,
+      info
+    );
+    console.log('[GraphQLSP]', JSON.stringify(codefix));
+    if (codefix) {
+      return [
+        {
+          name: 'GraphQL',
+          description: 'Operations specific to gql.tada!',
+          actions: [
+            {
+              name: 'Insert document-id',
+              description:
+                'Generate a document-id for your persisted-operation, by default a SHA256 hash.',
+            },
+          ],
+          inlineable: true,
+        },
+        ...original,
+      ];
+    } else {
+      return original;
+    }
+  };
+
   proxy.getQuickInfoAtPosition = (filename: string, cursorPosition: number) => {
     const quickInfo = getGraphQLQuickInfo(
       filename,
@@ -114,11 +198,6 @@ function create(info: ts.server.PluginCreateInfo) {
       cursorPosition
     );
   };
-
-  // TODO: check out the following hooks
-  // - getSuggestionDiagnostics, can suggest refactors
-  // - getCompletionEntryDetails, this can build on the auto-complete for more information
-  // - getCodeFixesAtPosition
 
   logger('proxy: ' + JSON.stringify(proxy));
 

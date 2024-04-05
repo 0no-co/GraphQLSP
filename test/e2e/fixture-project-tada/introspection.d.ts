@@ -422,10 +422,6 @@ export type introspection = {
       {
         "kind": "SCALAR",
         "name": "Boolean"
-      },
-      {
-        "kind": "SCALAR",
-        "name": "Any"
       }
     ],
     "directives": []

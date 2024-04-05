@@ -14,6 +14,7 @@ import { print } from '@0no-co/graphql.web';
 
 import {
   findAllCallExpressions,
+  findAllPersistedCallExpressions,
   findAllTaggedTemplateNodes,
   getSource,
 } from './ast';
@@ -23,6 +24,7 @@ import {
   MISSING_FRAGMENT_CODE,
   getColocatedFragmentNames,
 } from './checkImports';
+import { getDocumentReferenceFromTypeQuery } from './persisted';
 
 const clientDirectives = new Set([
   'populate',
@@ -48,12 +50,18 @@ const directiveRegex = /Unknown directive "@([^)]+)"/g;
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const MISSING_OPERATION_NAME_CODE = 52002;
 export const USING_DEPRECATED_FIELD_CODE = 52004;
+export const MISSING_PERSISTED_TYPE_ARG = 520100;
+export const MISSING_PERSISTED_CODE_ARG = 520101;
+export const MISSING_PERSISTED_DOCUMENT = 520102;
 export const ALL_DIAGNOSTICS = [
   SEMANTIC_DIAGNOSTIC_CODE,
   MISSING_OPERATION_NAME_CODE,
   USING_DEPRECATED_FIELD_CODE,
   MISSING_FRAGMENT_CODE,
   UNUSED_FIELD_CODE,
+  MISSING_PERSISTED_TYPE_ARG,
+  MISSING_PERSISTED_CODE_ARG,
+  MISSING_PERSISTED_DOCUMENT,
 ];
 
 const cache = new LRUCache<number, ts.Diagnostic[]>({
@@ -117,6 +125,98 @@ export function getGraphQLDiagnostics(
   const shouldCheckForColocatedFragments =
     info.config.shouldCheckForColocatedFragments ?? true;
   let fragmentDiagnostics: ts.Diagnostic[] = [];
+
+  if (isCallExpression) {
+    const persistedCalls = findAllPersistedCallExpressions(source);
+    // We need to check whether the user has correctly inserted a hash,
+    // by means of providing an argument to the function and that they
+    // are establishing a reference to the document by means of the generic.
+    //
+    // OPTIONAL: we could also check whether the hash is out of date with the
+    // document but this removes support for self-generating identifiers
+    const persistedDiagnostics = persistedCalls
+      .map<ts.Diagnostic | null>(callExpression => {
+        if (!callExpression.typeArguments) {
+          return {
+            category: ts.DiagnosticCategory.Warning,
+            code: MISSING_PERSISTED_TYPE_ARG,
+            file: source,
+            messageText: 'Missing generic pointing at the GraphQL document.',
+            start: callExpression.getStart(),
+            length: callExpression.getEnd() - callExpression.getStart(),
+          };
+        }
+
+        const [typeQuery] = callExpression.typeArguments;
+
+        if (!ts.isTypeQueryNode(typeQuery)) {
+          // Provide diagnostic about wroong generic
+          return {
+            category: ts.DiagnosticCategory.Warning,
+            code: MISSING_PERSISTED_TYPE_ARG,
+            file: source,
+            messageText:
+              'Provided generic should be a typeQueryNode in the shape of graphql.persisted<typeof document>.',
+            start: typeQuery.getStart(),
+            length: typeQuery.getEnd() - typeQuery.getStart(),
+          };
+        }
+
+        const { node: foundNode } = getDocumentReferenceFromTypeQuery(
+          typeQuery,
+          filename,
+          info
+        );
+
+        if (!foundNode) {
+          return {
+            category: ts.DiagnosticCategory.Warning,
+            code: MISSING_PERSISTED_DOCUMENT,
+            file: source,
+            messageText: `Can't find reference to "${typeQuery.getText()}".`,
+            start: typeQuery.getStart(),
+            length: typeQuery.getEnd() - typeQuery.getStart(),
+          };
+        }
+
+        const initializer = foundNode.initializer;
+        if (
+          !initializer ||
+          !ts.isCallExpression(initializer) ||
+          !ts.isNoSubstitutionTemplateLiteral(initializer.arguments[0])
+        ) {
+          // TODO: we can make this check more stringent where we also parse and resolve
+          // the accompanying template.
+          return {
+            category: ts.DiagnosticCategory.Warning,
+            code: MISSING_PERSISTED_DOCUMENT,
+            file: source,
+            messageText: `Referenced type "${typeQuery.getText()}" is not a GraphQL document.`,
+            start: typeQuery.getStart(),
+            length: typeQuery.getEnd() - typeQuery.getStart(),
+          };
+        }
+
+        if (!callExpression.arguments[0]) {
+          // TODO: this might be covered by the API enforcing the first
+          // argument so can possibly be removed.
+          return {
+            category: ts.DiagnosticCategory.Warning,
+            code: MISSING_PERSISTED_CODE_ARG,
+            file: source,
+            messageText: `The call-expression is missing a hash for the persisted argument.`,
+            start: callExpression.arguments.pos,
+            length: callExpression.arguments.end - callExpression.arguments.pos,
+          };
+        }
+
+        return null;
+      })
+      .filter(Boolean);
+
+    tsDiagnostics.push(...(persistedDiagnostics as ts.Diagnostic[]));
+  }
+
   if (isCallExpression && shouldCheckForColocatedFragments) {
     const moduleSpecifierToFragments = getColocatedFragmentNames(source, info);
 
@@ -356,6 +456,8 @@ const runDiagnostics = (
       nodes as ts.NoSubstitutionTemplateLiteral[],
       info
     ) || [];
+
+    if (!usageDiagnostics) return tsDiagnostics
 
     return [...tsDiagnostics, ...usageDiagnostics];
   } else {

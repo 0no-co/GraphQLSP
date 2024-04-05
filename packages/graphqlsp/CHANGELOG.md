@@ -1,5 +1,17 @@
 # @0no-co/graphqlsp
 
+## 1.9.0
+
+### Minor Changes
+
+- Add support for `graphql.persisted` https://github.com/0no-co/GraphQLSP/pull/240
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [`9210406`](https://github.com/0no-co/GraphQLSP/commit/9210406744ff94ffcc4958c42478ef98c0b64be6))
+
+### Patch Changes
+
+- Expose persisted helper to translate typeQuery to the corresponding document
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#284](https://github.com/0no-co/GraphQLSP/pull/284))
+
 ## 1.8.0
 
 ### Minor Changes

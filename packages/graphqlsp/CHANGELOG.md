@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.9.1
+
+### Patch Changes
+
+- Add internal helper to unroll tada fragments
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#285](https://github.com/0no-co/GraphQLSP/pull/285))
+
 ## 1.9.0
 
 ### Minor Changes

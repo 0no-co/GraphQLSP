@@ -101,6 +101,29 @@ function unrollFragment(
   return fragments;
 }
 
+export function unrollTadaFragments(
+  fragmentsArray: ts.ArrayLiteralExpression,
+  wip: FragmentDefinitionNode[],
+  info: ts.server.PluginCreateInfo
+): FragmentDefinitionNode[] {
+  fragmentsArray.elements.forEach(element => {
+    if (ts.isIdentifier(element)) {
+      wip.push(...unrollFragment(element, info));
+    } else if (ts.isPropertyAccessExpression(element)) {
+      let el = element;
+      while (ts.isPropertyAccessExpression(el.expression)) {
+        el = el.expression;
+      }
+
+      if (ts.isIdentifier(el.name)) {
+        wip.push(...unrollFragment(el.name, info));
+      }
+    }
+  });
+
+  return wip;
+}
+
 export function findAllCallExpressions(
   sourceFile: ts.SourceFile,
   info: ts.server.PluginCreateInfo,

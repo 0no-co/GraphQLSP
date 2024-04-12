@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.10.0
+
+### Minor Changes
+
+- Support passing GraphQL documents by value to `graphql.persisted`’s second argument
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#287](https://github.com/0no-co/GraphQLSP/pull/287))
+
 ## 1.9.1
 
 ### Patch Changes

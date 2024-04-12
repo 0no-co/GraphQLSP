@@ -24,7 +24,10 @@ import {
   MISSING_FRAGMENT_CODE,
   getColocatedFragmentNames,
 } from './checkImports';
-import { getDocumentReferenceFromTypeQuery } from './persisted';
+import {
+  getDocumentReferenceFromDocumentNode,
+  getDocumentReferenceFromTypeQuery,
+} from './persisted';
 
 const clientDirectives = new Set([
   'populate',
@@ -136,7 +139,7 @@ export function getGraphQLDiagnostics(
     // document but this removes support for self-generating identifiers
     const persistedDiagnostics = persistedCalls
       .map<ts.Diagnostic | null>(callExpression => {
-        if (!callExpression.typeArguments) {
+        if (!callExpression.typeArguments && !callExpression.arguments[1]) {
           return {
             category: ts.DiagnosticCategory.Warning,
             code: MISSING_PERSISTED_TYPE_ARG,
@@ -147,39 +150,75 @@ export function getGraphQLDiagnostics(
           };
         }
 
-        const [typeQuery] = callExpression.typeArguments;
+        let foundNode,
+          foundFilename = filename,
+          ref,
+          start,
+          length;
+        if (callExpression.typeArguments) {
+          const [typeQuery] = callExpression.typeArguments;
+          start = typeQuery.getStart();
+          length = typeQuery.getEnd() - typeQuery.getStart();
 
-        if (!ts.isTypeQueryNode(typeQuery)) {
-          // Provide diagnostic about wroong generic
-          return {
-            category: ts.DiagnosticCategory.Warning,
-            code: MISSING_PERSISTED_TYPE_ARG,
-            file: source,
-            messageText:
-              'Provided generic should be a typeQueryNode in the shape of graphql.persisted<typeof document>.',
-            start: typeQuery.getStart(),
-            length: typeQuery.getEnd() - typeQuery.getStart(),
-          };
+          if (!ts.isTypeQueryNode(typeQuery)) {
+            return {
+              category: ts.DiagnosticCategory.Warning,
+              code: MISSING_PERSISTED_TYPE_ARG,
+              file: source,
+              messageText:
+                'Provided generic should be a typeQueryNode in the shape of graphql.persisted<typeof document>.',
+              start,
+              length,
+            };
+          }
+          const { node: found, filename: fileName } =
+            getDocumentReferenceFromTypeQuery(typeQuery, filename, info);
+          foundNode = found;
+          foundFilename = fileName;
+          ref = typeQuery.getText();
+        } else if (callExpression.arguments[1]) {
+          start = callExpression.arguments[1].getStart();
+          length =
+            callExpression.arguments[1].getEnd() -
+            callExpression.arguments[1].getStart();
+          if (
+            !ts.isIdentifier(callExpression.arguments[1]) &&
+            !ts.isCallExpression(callExpression.arguments[1])
+          ) {
+            return {
+              category: ts.DiagnosticCategory.Warning,
+              code: MISSING_PERSISTED_TYPE_ARG,
+              file: source,
+              messageText:
+                'Provided argument should be an identifier or invocation of "graphql" in the shape of graphql.persisted(hash, document).',
+              start,
+              length,
+            };
+          }
+
+          const { node: found, filename: fileName } =
+            getDocumentReferenceFromDocumentNode(
+              callExpression.arguments[1],
+              filename,
+              info
+            );
+          foundNode = found;
+          foundFilename = fileName;
+          ref = callExpression.arguments[1].getText();
         }
-
-        const { node: foundNode } = getDocumentReferenceFromTypeQuery(
-          typeQuery,
-          filename,
-          info
-        );
 
         if (!foundNode) {
           return {
             category: ts.DiagnosticCategory.Warning,
             code: MISSING_PERSISTED_DOCUMENT,
             file: source,
-            messageText: `Can't find reference to "${typeQuery.getText()}".`,
-            start: typeQuery.getStart(),
-            length: typeQuery.getEnd() - typeQuery.getStart(),
+            messageText: `Can't find reference to "${ref}".`,
+            start,
+            length,
           };
         }
 
-        const initializer = foundNode.initializer;
+        const initializer = foundNode;
         if (
           !initializer ||
           !ts.isCallExpression(initializer) ||
@@ -191,9 +230,9 @@ export function getGraphQLDiagnostics(
             category: ts.DiagnosticCategory.Warning,
             code: MISSING_PERSISTED_DOCUMENT,
             file: source,
-            messageText: `Referenced type "${typeQuery.getText()}" is not a GraphQL document.`,
-            start: typeQuery.getStart(),
-            length: typeQuery.getEnd() - typeQuery.getStart(),
+            messageText: `Referenced type "${ref}" is not a GraphQL document.`,
+            start,
+            length,
           };
         }
 
@@ -451,13 +490,14 @@ const runDiagnostics = (
   }));
 
   if (isCallExpression) {
-    const usageDiagnostics = checkFieldUsageInFile(
-      source,
-      nodes as ts.NoSubstitutionTemplateLiteral[],
-      info
-    ) || [];
+    const usageDiagnostics =
+      checkFieldUsageInFile(
+        source,
+        nodes as ts.NoSubstitutionTemplateLiteral[],
+        info
+      ) || [];
 
-    if (!usageDiagnostics) return tsDiagnostics
+    if (!usageDiagnostics) return tsDiagnostics;
 
     return [...tsDiagnostics, ...usageDiagnostics];
   } else {

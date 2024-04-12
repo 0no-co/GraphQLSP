@@ -80,20 +80,38 @@ export function getPersistedCodeFixAtPosition(
   if (
     !ts.isCallExpression(callExpression) ||
     !isPersistedCall(callExpression.expression) ||
-    !callExpression.typeArguments
+    (!callExpression.typeArguments && !callExpression.arguments[1])
   )
     return undefined;
 
-  const [typeQuery] = callExpression.typeArguments;
+  let foundNode,
+    foundFilename = filename;
+  if (callExpression.typeArguments) {
+    const [typeQuery] = callExpression.typeArguments;
+    if (!ts.isTypeQueryNode(typeQuery)) return undefined;
+    const { node: found, filename: fileName } =
+      getDocumentReferenceFromTypeQuery(typeQuery, filename, info);
+    foundNode = found;
+    foundFilename = fileName;
+  } else if (callExpression.arguments[1]) {
+    if (
+      !ts.isIdentifier(callExpression.arguments[1]) &&
+      !ts.isCallExpression(callExpression.arguments[1])
+    )
+      return undefined;
+    const { node: found, filename: fileName } =
+      getDocumentReferenceFromDocumentNode(
+        callExpression.arguments[1],
+        filename,
+        info
+      );
+    foundNode = found;
+    foundFilename = fileName;
+  }
 
-  if (!ts.isTypeQueryNode(typeQuery)) return undefined;
+  if (!foundNode) return undefined;
 
-  const { node: found, filename: foundFilename } =
-    getDocumentReferenceFromTypeQuery(typeQuery, filename, info);
-
-  if (!found) return undefined;
-
-  const initializer = found.initializer;
+  const initializer = foundNode;
   if (
     !initializer ||
     !ts.isCallExpression(initializer) ||
@@ -174,7 +192,7 @@ export const getDocumentReferenceFromTypeQuery = (
   typeQuery: ts.TypeQueryNode,
   filename: string,
   info: ts.server.PluginCreateInfo
-): { node: ts.VariableDeclaration | null; filename: string } => {
+): { node: ts.CallExpression | null; filename: string } => {
   // We look for the references of the generic so that we can use the document
   // to generate the hash.
   const references = info.languageService.getReferencesAtPosition(
@@ -184,7 +202,7 @@ export const getDocumentReferenceFromTypeQuery = (
 
   if (!references) return { node: null, filename };
 
-  let found: ts.VariableDeclaration | null = null;
+  let found: ts.CallExpression | null = null;
   let foundFilename = filename;
   references.forEach(ref => {
     if (found) return;
@@ -194,11 +212,58 @@ export const getDocumentReferenceFromTypeQuery = (
     const foundNode = findNode(source, ref.textSpan.start);
     if (!foundNode) return;
 
-    if (ts.isVariableDeclaration(foundNode.parent)) {
-      found = foundNode.parent;
+    if (
+      ts.isVariableDeclaration(foundNode.parent) &&
+      foundNode.parent.initializer &&
+      ts.isCallExpression(foundNode.parent.initializer) &&
+      templates.has(foundNode.parent.initializer.expression.getText())
+    ) {
+      found = foundNode.parent.initializer;
       foundFilename = ref.fileName;
     }
   });
 
   return { node: found, filename: foundFilename };
+};
+
+export const getDocumentReferenceFromDocumentNode = (
+  documentNodeArgument: ts.Identifier | ts.CallExpression,
+  filename: string,
+  info: ts.server.PluginCreateInfo
+): { node: ts.CallExpression | null; filename: string } => {
+  if (ts.isIdentifier(documentNodeArgument)) {
+    // We look for the references of the generic so that we can use the document
+    // to generate the hash.
+    const references = info.languageService.getReferencesAtPosition(
+      filename,
+      documentNodeArgument.getStart()
+    );
+
+    if (!references) return { node: null, filename };
+
+    let found: ts.CallExpression | null = null;
+    let foundFilename = filename;
+    references.forEach(ref => {
+      if (found) return;
+
+      const source = getSource(info, ref.fileName);
+      if (!source) return;
+      const foundNode = findNode(source, ref.textSpan.start);
+      if (!foundNode) return;
+
+      if (
+        ts.isVariableDeclaration(foundNode.parent) &&
+        foundNode.parent.initializer &&
+        ts.isCallExpression(foundNode.parent.initializer) &&
+        templates.has(foundNode.parent.initializer.expression.getText())
+      ) {
+        found = foundNode.parent.initializer;
+        foundFilename = ref.fileName;
+      }
+    });
+
+    return { node: found, filename: foundFilename };
+  } else {
+    return { node: documentNodeArgument, filename };
+  }
 };

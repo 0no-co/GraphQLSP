@@ -456,7 +456,7 @@ const runDiagnostics = (
           ) as OperationDefinitionNode;
           if (!op.name) {
             graphQLDiagnostics.push({
-              message: 'Operation needs a name for types to be generated.',
+              message: 'Operation should contain a name.',
               start: node.getStart(),
               code: MISSING_OPERATION_NAME_CODE,
               length: originalNode.getText().length,

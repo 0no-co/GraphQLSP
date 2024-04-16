@@ -48,8 +48,6 @@ const clientDirectives = new Set([
   'inline',
 ]);
 
-const directiveRegex = /Unknown directive "@([^)]+)"/g;
-
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const MISSING_OPERATION_NAME_CODE = 52002;
 export const USING_DEPRECATED_FIELD_CODE = 52004;
@@ -385,7 +383,7 @@ const runDiagnostics = (
           if (!diag.message.includes('Unknown directive')) return true;
 
           const [message] = diag.message.split('(');
-          const matches = directiveRegex.exec(message);
+          const matches = /Unknown directive "@([^)]+)"/g.exec(message);
           if (!matches) return true;
           const directiveNmae = matches[1];
           return !clientDirectives.has(directiveNmae);

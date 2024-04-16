@@ -1,5 +1,16 @@
 # @0no-co/graphqlsp
 
+## 1.10.1
+
+### Patch Changes
+
+- switch error message for missing operation-name to not allude to typegen
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#290](https://github.com/0no-co/GraphQLSP/pull/290))
+- Swap-write introspection file instead of overwriting it directly
+  Submitted by [@kitten](https://github.com/kitten) (See [#291](https://github.com/0no-co/GraphQLSP/pull/291))
+- ⚠️ Fix directives being misreported due to globally declared regex maintaining state
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#293](https://github.com/0no-co/GraphQLSP/pull/293))
+
 ## 1.10.0
 
 ### Minor Changes

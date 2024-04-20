@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.10.3
+
+### Patch Changes
+
+- Correctly identify unused fields on a fragment-definition, these have no parent to group by so we display them as unused leaves
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#299](https://github.com/0no-co/GraphQLSP/pull/299))
+
 ## 1.10.2
 
 ### Patch Changes

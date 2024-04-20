@@ -495,18 +495,22 @@ export const checkFieldUsageInFile = (
       const unused = allPaths.filter(x => !allAccess.includes(x));
       const aggregatedUnusedFields = new Set<string>();
       const unusedChildren: { [key: string]: Set<string> } = {};
+      const unusedFragmentLeaf = new Set<string>();
       unused.forEach(unusedField => {
         const split = unusedField.split('.');
         split.pop();
         const parentField = split.join('.');
         const loc = fieldToLoc.get(parentField);
-        if (!loc) return;
 
-        aggregatedUnusedFields.add(parentField);
-        if (unusedChildren[parentField]) {
-          unusedChildren[parentField].add(unusedField);
+        if (loc) {
+          aggregatedUnusedFields.add(parentField);
+          if (unusedChildren[parentField]) {
+            unusedChildren[parentField].add(unusedField);
+          } else {
+            unusedChildren[parentField] = new Set([unusedField]);
+          }
         } else {
-          unusedChildren[parentField] = new Set([unusedField]);
+          unusedFragmentLeaf.add(unusedField);
         }
       });
 
@@ -522,6 +526,18 @@ export const checkFieldUsageInFile = (
           messageText: `Field(s) ${[...unusedFields]
             .map(x => `'${x}'`)
             .join(', ')} are not used.`,
+        });
+      });
+
+      unusedFragmentLeaf.forEach(field => {
+        const loc = fieldToLoc.get(field)!;
+        diagnostics.push({
+          file: source,
+          length: loc.length,
+          start: node.getStart() + loc.start + 1,
+          category: ts.DiagnosticCategory.Warning,
+          code: UNUSED_FIELD_CODE,
+          messageText: `Field ${field} is not used.`,
         });
       });
     });

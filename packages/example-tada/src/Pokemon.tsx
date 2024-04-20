@@ -3,6 +3,7 @@ import { FragmentOf, graphql, readFragment } from './graphql';
 export const Fields = { Pokemon: graphql(`
   fragment Pok on Pokemon {
     resistant
+    types
   }`)
 }
 

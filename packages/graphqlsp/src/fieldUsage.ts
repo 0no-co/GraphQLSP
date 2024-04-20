@@ -344,7 +344,10 @@ export const checkFieldUsageInFile = (
       if ('target' in type) {
         const typeArguments = (type as any)
           .resolvedTypeArguments as readonly ts.Type[];
-        dataType = typeArguments.length > 1 ? typeArguments[0] : undefined;
+        dataType =
+          typeArguments && typeArguments.length > 1
+            ? typeArguments[0]
+            : undefined;
       }
       // Fallback to resolving the type from scratch
       if (!dataType) {

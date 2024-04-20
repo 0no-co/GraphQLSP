@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.10.2
+
+### Patch Changes
+
+- ⚠️ Fix crash due to typeArguments being undefined
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#297](https://github.com/0no-co/GraphQLSP/pull/297))
+
 ## 1.10.1
 
 ### Patch Changes

@@ -119,37 +119,11 @@ export function getPersistedCodeFixAtPosition(
   )
     return undefined;
 
-  const externalSource = getSource(info, foundFilename)!;
-  const { fragments } = findAllCallExpressions(externalSource, info);
-
-  const text = resolveTemplate(
+  const hash = generateHashForDocument(
+    info,
     initializer.arguments[0],
-    foundFilename,
-    info
-  ).combinedText;
-  const parsed = parse(text);
-  const spreads = new Set();
-  visit(parsed, {
-    FragmentSpread: node => {
-      spreads.add(node.name.value);
-    },
-  });
-
-  let resolvedText = text;
-  [...spreads].forEach(spreadName => {
-    const fragmentDefinition = fragments.find(x => x.name.value === spreadName);
-    if (!fragmentDefinition) {
-      console.warn(
-        `[GraphQLSP] could not find fragment for spread ${spreadName}!`
-      );
-      return;
-    }
-
-    resolvedText = `${resolvedText}\n\n${print(fragmentDefinition)}`;
-  });
-
-  const hash = createHash('sha256').update(text).digest('hex');
-
+    foundFilename
+  );
   const existingHash = callExpression.arguments[0];
   // We assume for now that this is either undefined or an existing string literal
   if (!existingHash) {
@@ -187,6 +161,45 @@ export function getPersistedCodeFixAtPosition(
     return undefined;
   }
 }
+
+export const generateHashForDocument = (
+  info: ts.server.PluginCreateInfo,
+  templateLiteral:
+    | ts.NoSubstitutionTemplateLiteral
+    | ts.TaggedTemplateExpression,
+  foundFilename: string
+): string | undefined => {
+  const externalSource = getSource(info, foundFilename)!;
+  const { fragments } = findAllCallExpressions(externalSource, info);
+
+  const text = resolveTemplate(
+    templateLiteral,
+    foundFilename,
+    info
+  ).combinedText;
+  const parsed = parse(text);
+  const spreads = new Set();
+  visit(parsed, {
+    FragmentSpread: node => {
+      spreads.add(node.name.value);
+    },
+  });
+
+  let resolvedText = text;
+  [...spreads].forEach(spreadName => {
+    const fragmentDefinition = fragments.find(x => x.name.value === spreadName);
+    if (!fragmentDefinition) {
+      console.warn(
+        `[GraphQLSP] could not find fragment for spread ${spreadName}!`
+      );
+      return;
+    }
+
+    resolvedText = `${resolvedText}\n\n${print(fragmentDefinition)}`;
+  });
+
+  return createHash('sha256').update(text).digest('hex');
+};
 
 export const getDocumentReferenceFromTypeQuery = (
   typeQuery: ts.TypeQueryNode,

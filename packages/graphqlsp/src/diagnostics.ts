@@ -25,6 +25,7 @@ import {
   getColocatedFragmentNames,
 } from './checkImports';
 import {
+  generateHashForDocument,
   getDocumentReferenceFromDocumentNode,
   getDocumentReferenceFromTypeQuery,
 } from './persisted';
@@ -252,40 +253,11 @@ export function getGraphQLDiagnostics(
 
         const hash = callExpression.arguments[0].getText().slice(1, -1);
         if (hash.startsWith('sha256:')) {
-          const externalSource = getSource(info, foundFilename)!;
-          const { fragments } = findAllCallExpressions(externalSource, info);
-
-          const text = resolveTemplate(
+          const upToDateHash = `sha256:${generateHashForDocument(
+            info,
             initializer.arguments[0],
-            foundFilename,
-            info
-          ).combinedText;
-          const parsed = parse(text);
-          const spreads = new Set();
-          visit(parsed, {
-            FragmentSpread: node => {
-              spreads.add(node.name.value);
-            },
-          });
-
-          let resolvedText = text;
-          [...spreads].forEach(spreadName => {
-            const fragmentDefinition = fragments.find(
-              x => x.name.value === spreadName
-            );
-            if (!fragmentDefinition) {
-              console.warn(
-                `[GraphQLSP] could not find fragment for spread ${spreadName}!`
-              );
-              return;
-            }
-
-            resolvedText = `${resolvedText}\n\n${print(fragmentDefinition)}`;
-          });
-
-          const upToDateHash = `sha256:${createHash('sha256')
-            .update(text)
-            .digest('hex')}`;
+            foundFilename
+          )}`;
           if (upToDateHash !== hash) {
             return {
               category: ts.DiagnosticCategory.Warning,

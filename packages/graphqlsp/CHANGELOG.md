@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.11.0
+
+### Minor Changes
+
+- Add validation step to check that the persisted-operations hash has been updated when the document changes
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#301](https://github.com/0no-co/GraphQLSP/pull/301))
+
 ## 1.10.3
 
 ### Patch Changes

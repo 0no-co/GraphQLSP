@@ -252,11 +252,13 @@ export function getGraphQLDiagnostics(
 
         const hash = callExpression.arguments[0].getText().slice(1, -1);
         if (hash.startsWith('sha256:')) {
-          const upToDateHash = `sha256:${generateHashForDocument(
+          const hash = generateHashForDocument(
             info,
             initializer.arguments[0],
             foundFilename
-          )}`;
+          );
+          if (!hash) return null;
+          const upToDateHash = `sha256:${hash}`;
           if (upToDateHash !== hash) {
             return {
               category: ts.DiagnosticCategory.Warning,

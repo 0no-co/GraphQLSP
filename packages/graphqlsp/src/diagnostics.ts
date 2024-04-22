@@ -28,6 +28,7 @@ import {
   getDocumentReferenceFromDocumentNode,
   getDocumentReferenceFromTypeQuery,
 } from './persisted';
+import { createHash } from 'node:crypto';
 
 const clientDirectives = new Set([
   'populate',
@@ -54,6 +55,7 @@ export const USING_DEPRECATED_FIELD_CODE = 52004;
 export const MISSING_PERSISTED_TYPE_ARG = 520100;
 export const MISSING_PERSISTED_CODE_ARG = 520101;
 export const MISSING_PERSISTED_DOCUMENT = 520102;
+export const MISSMATCH_HASH_TO_DOCUMENT = 520103;
 export const ALL_DIAGNOSTICS = [
   SEMANTIC_DIAGNOSTIC_CODE,
   MISSING_OPERATION_NAME_CODE,
@@ -63,6 +65,7 @@ export const ALL_DIAGNOSTICS = [
   MISSING_PERSISTED_TYPE_ARG,
   MISSING_PERSISTED_CODE_ARG,
   MISSING_PERSISTED_DOCUMENT,
+  MISSMATCH_HASH_TO_DOCUMENT,
 ];
 
 const cache = new LRUCache<number, ts.Diagnostic[]>({
@@ -245,6 +248,55 @@ export function getGraphQLDiagnostics(
             start: callExpression.arguments.pos,
             length: callExpression.arguments.end - callExpression.arguments.pos,
           };
+        }
+
+        const hash = callExpression.arguments[0].getText().slice(1, -1);
+        if (hash.startsWith('sha256:')) {
+          const externalSource = getSource(info, foundFilename)!;
+          const { fragments } = findAllCallExpressions(externalSource, info);
+
+          const text = resolveTemplate(
+            initializer.arguments[0],
+            foundFilename,
+            info
+          ).combinedText;
+          const parsed = parse(text);
+          const spreads = new Set();
+          visit(parsed, {
+            FragmentSpread: node => {
+              spreads.add(node.name.value);
+            },
+          });
+
+          let resolvedText = text;
+          [...spreads].forEach(spreadName => {
+            const fragmentDefinition = fragments.find(
+              x => x.name.value === spreadName
+            );
+            if (!fragmentDefinition) {
+              console.warn(
+                `[GraphQLSP] could not find fragment for spread ${spreadName}!`
+              );
+              return;
+            }
+
+            resolvedText = `${resolvedText}\n\n${print(fragmentDefinition)}`;
+          });
+
+          const upToDateHash = `sha256:${createHash('sha256')
+            .update(text)
+            .digest('hex')}`;
+          if (upToDateHash !== hash) {
+            return {
+              category: ts.DiagnosticCategory.Warning,
+              code: MISSMATCH_HASH_TO_DOCUMENT,
+              file: source,
+              messageText: `The Persisted-Document hash is not up to date with the linked document.`,
+              start: callExpression.arguments.pos,
+              length:
+                callExpression.arguments.end - callExpression.arguments.pos,
+            };
+          }
         }
 
         return null;

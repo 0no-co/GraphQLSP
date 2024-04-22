@@ -29,7 +29,6 @@ import {
   getDocumentReferenceFromDocumentNode,
   getDocumentReferenceFromTypeQuery,
 } from './persisted';
-import { createHash } from 'node:crypto';
 
 const clientDirectives = new Set([
   'populate',

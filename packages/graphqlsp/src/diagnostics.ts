@@ -264,7 +264,7 @@ export function getGraphQLDiagnostics(
               category: ts.DiagnosticCategory.Warning,
               code: MISSMATCH_HASH_TO_DOCUMENT,
               file: source,
-              messageText: `The Persisted-Document hash is not up to date with the linked document.`,
+              messageText: `The persisted document's hash is outdated`,
               start: callExpression.arguments.pos,
               length:
                 callExpression.arguments.end - callExpression.arguments.pos,

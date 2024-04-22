@@ -25,6 +25,7 @@ import {
   getColocatedFragmentNames,
 } from './checkImports';
 import {
+  generateHashForDocument,
   getDocumentReferenceFromDocumentNode,
   getDocumentReferenceFromTypeQuery,
 } from './persisted';
@@ -54,6 +55,7 @@ export const USING_DEPRECATED_FIELD_CODE = 52004;
 export const MISSING_PERSISTED_TYPE_ARG = 520100;
 export const MISSING_PERSISTED_CODE_ARG = 520101;
 export const MISSING_PERSISTED_DOCUMENT = 520102;
+export const MISSMATCH_HASH_TO_DOCUMENT = 520103;
 export const ALL_DIAGNOSTICS = [
   SEMANTIC_DIAGNOSTIC_CODE,
   MISSING_OPERATION_NAME_CODE,
@@ -63,6 +65,7 @@ export const ALL_DIAGNOSTICS = [
   MISSING_PERSISTED_TYPE_ARG,
   MISSING_PERSISTED_CODE_ARG,
   MISSING_PERSISTED_DOCUMENT,
+  MISSMATCH_HASH_TO_DOCUMENT,
 ];
 
 const cache = new LRUCache<number, ts.Diagnostic[]>({
@@ -245,6 +248,28 @@ export function getGraphQLDiagnostics(
             start: callExpression.arguments.pos,
             length: callExpression.arguments.end - callExpression.arguments.pos,
           };
+        }
+
+        const hash = callExpression.arguments[0].getText().slice(1, -1);
+        if (hash.startsWith('sha256:')) {
+          const hash = generateHashForDocument(
+            info,
+            initializer.arguments[0],
+            foundFilename
+          );
+          if (!hash) return null;
+          const upToDateHash = `sha256:${hash}`;
+          if (upToDateHash !== hash) {
+            return {
+              category: ts.DiagnosticCategory.Warning,
+              code: MISSMATCH_HASH_TO_DOCUMENT,
+              file: source,
+              messageText: `The persisted document's hash is outdated`,
+              start: callExpression.arguments.pos,
+              length:
+                callExpression.arguments.end - callExpression.arguments.pos,
+            };
+          }
         }
 
         return null;

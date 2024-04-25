@@ -3,13 +3,8 @@
     "plugins": [
       {
         "name": "@0no-co/graphqlsp",
-        "schemas": [
-          {
-            "name": "pokemons",
-            "schema": "./schema.graphql",
-            "tadaOutputLocation": "./introspection.d.ts"
-          }
-        ]
+        "schema": "./schema.graphql",
+        "tadaOutputLocation": "./introspection.d.ts"
       }
     ],
     "jsx": "react-jsx",

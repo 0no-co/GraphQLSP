@@ -127,8 +127,8 @@ export function unrollTadaFragments(
 export const getSchemaName = (
   node: ts.CallExpression,
   typeChecker?: ts.TypeChecker
-): string => {
-  if (!typeChecker) return 'default';
+): string | null => {
+  if (!typeChecker) return null;
 
   const expression = ts.isPropertyAccessExpression(node.expression)
     ? node.expression.expression
@@ -140,14 +140,14 @@ export const getSchemaName = (
       const brand = typeChecker.getTypeOfSymbol(brandTypeSymbol);
       if (brand.isUnionOrIntersection()) {
         const found = brand.types.find(x => x.isStringLiteral());
-        return found && found.isStringLiteral() ? found.value : 'default';
+        return found && found.isStringLiteral() ? found.value : null;
       } else if (brand.isStringLiteral()) {
         return brand.value;
       }
     }
   }
 
-  return 'default';
+  return null;
 };
 
 export function findAllCallExpressions(
@@ -155,13 +155,16 @@ export function findAllCallExpressions(
   info: ts.server.PluginCreateInfo,
   shouldSearchFragments: boolean = true
 ): {
-  nodes: Array<{ node: ts.NoSubstitutionTemplateLiteral; schema: string }>;
+  nodes: Array<{
+    node: ts.NoSubstitutionTemplateLiteral;
+    schema: string | null;
+  }>;
   fragments: Array<FragmentDefinitionNode>;
 } {
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   const result: Array<{
     node: ts.NoSubstitutionTemplateLiteral;
-    schema: string;
+    schema: string | null;
   }> = [];
   let fragments: Array<FragmentDefinitionNode> = [];
   let hasTriedToFindFragments = shouldSearchFragments ? false : true;
@@ -206,8 +209,8 @@ export function findAllCallExpressions(
 export function findAllPersistedCallExpressions(
   sourceFile: ts.SourceFile,
   info: ts.server.PluginCreateInfo
-): Array<{ node: ts.CallExpression; schema: string }> {
-  const result: Array<{ node: ts.CallExpression; schema: string }> = [];
+): Array<{ node: ts.CallExpression; schema: string | null }> {
+  const result: Array<{ node: ts.CallExpression; schema: string | null }> = [];
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   function find(node: ts.Node) {
     if (ts.isCallExpression(node)) {

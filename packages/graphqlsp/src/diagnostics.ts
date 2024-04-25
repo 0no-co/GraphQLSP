@@ -88,7 +88,7 @@ export function getGraphQLDiagnostics(
   let fragments: Array<FragmentDefinitionNode> = [],
     nodes: {
       node: ts.NoSubstitutionTemplateLiteral | ts.TaggedTemplateExpression;
-      schema: string;
+      schema: string | null;
     }[];
   if (isCallExpression) {
     const result = findAllCallExpressions(source, info);
@@ -339,7 +339,7 @@ const runDiagnostics = (
   }: {
     nodes: {
       node: ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral;
-      schema: string;
+      schema: string | null;
     }[];
     fragments: FragmentDefinitionNode[];
   },
@@ -406,9 +406,15 @@ const runDiagnostics = (
         } catch (e) {}
       }
 
-      const schemaToUse = schema.multi[originalNode.schema]
-        ? schema.multi[originalNode.schema]!.schema
-        : schema.current!.schema;
+      const schemaToUse =
+        originalNode.schema && schema.multi[originalNode.schema]
+          ? schema.multi[originalNode.schema]?.schema
+          : schema.current?.schema;
+
+      if (!schemaToUse) {
+        return undefined;
+      }
+
       const graphQLDiagnostics = getDiagnostics(
         text,
         schemaToUse,

@@ -48,7 +48,7 @@ export function getGraphQLCompletions(
     ? bubbleUpCallExpression(node)
     : bubbleUpTemplate(node);
 
-  let text, cursor, schemaToUse: GraphQLSchema;
+  let text, cursor, schemaToUse: GraphQLSchema | undefined;
   if (
     ts.isCallExpression(node) &&
     isCallExpression &&
@@ -59,18 +59,19 @@ export function getGraphQLCompletions(
     const typeChecker = info.languageService.getProgram()?.getTypeChecker();
     const schemaName = getSchemaName(node, typeChecker);
 
+    schemaToUse =
+      schemaName && schema.multi[schemaName]
+        ? schema.multi[schemaName]?.schema
+        : schema.current?.schema;
+
     const foundToken = getToken(node.arguments[0], cursorPosition);
-    if ((!schema.current && !schema.multi[schemaName]) || !foundToken)
-      return undefined;
+    if (!schemaToUse || !foundToken) return undefined;
 
     const queryText = node.arguments[0].getText().slice(1, -1);
     const fragments = getAllFragments(filename, node, info);
 
     text = `${queryText}\n${fragments.map(x => print(x)).join('\n')}`;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
-    schemaToUse = schema.multi[schemaName]
-      ? schema.multi[schemaName]!.schema
-      : schema.current!.schema;
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
 

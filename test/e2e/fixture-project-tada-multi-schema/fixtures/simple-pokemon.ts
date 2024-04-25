@@ -6,7 +6,7 @@ const x = graphql(`
     pokemons(limit: $limit) {
       id
       name
-
+      
       fleeRate
       classification
       __typename

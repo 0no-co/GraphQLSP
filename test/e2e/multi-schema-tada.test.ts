@@ -57,6 +57,9 @@ describe('Multiple schemas', () => {
       file: outfileTodoTest,
       tmpfile: outfileTodoTest,
     } satisfies ts.server.protocol.SavetoRequestArgs);
+
+    // Give TS some time to figure this out...
+    await new Promise(resolve => setTimeout(resolve, 1000));
   });
 
   afterAll(() => {
@@ -65,6 +68,37 @@ describe('Multiple schemas', () => {
       fs.unlinkSync(outfileTodoTest);
     } catch {}
   });
+
+  it('gives diagnostics about unused fields', async () => {
+    await server.waitForResponse(
+      e => e.type === 'event' && e.event === 'semanticDiag'
+    );
+    const res = server.responses.filter(
+      resp =>
+        resp.type === 'event' &&
+        resp.event === 'semanticDiag' &&
+        resp.body?.file === outfilePokemonTest
+    );
+
+    expect(res).toBeDefined();
+    expect(res).toHaveLength(1);
+    expect(res[0].body.diagnostics).toHaveLength(1);
+    expect(res[0].body.diagnostics[0]).toMatchInlineSnapshot(`
+      {
+        "category": "warning",
+        "code": 52004,
+        "end": {
+          "line": 12,
+          "offset": 1,
+        },
+        "start": {
+          "line": 11,
+          "offset": 7,
+        },
+        "text": "The field Pokemon.classification is deprecated. And this is the reason why",
+      }
+    `);
+  }, 30000);
 
   it('gives quick-info for the pokemon document', async () => {
     server.send({
@@ -94,7 +128,7 @@ describe('Multiple schemas', () => {
 
   it('gives quick-info for the todo document', async () => {
     server.send({
-      seq: 9,
+      seq: 10,
       type: 'request',
       command: 'quickinfo',
       arguments: {
@@ -116,5 +150,215 @@ describe('Multiple schemas', () => {
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
     expect(res?.body.documentation).toEqual(`Todo.id: ID!`);
+  }, 30000);
+
+  it('gives completion-info for the pokemon document', async () => {
+    server.send({
+      seq: 11,
+      type: 'request',
+      command: 'completionInfo',
+      arguments: {
+        file: outfilePokemonTest,
+        line: 9,
+        offset: 7,
+        includeExternalModuleExports: true,
+        includeInsertTextCompletions: true,
+        triggerKind: 1,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'completionInfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(
+        resp => resp.type === 'response' && resp.command === 'completionInfo'
+      );
+
+    expect(res).toBeDefined();
+    expect(res).toMatchInlineSnapshot(`
+      {
+        "body": {
+          "entries": [
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "detail": " AttacksConnection",
+              },
+              "name": "attacks",
+              "sortText": "0attacks",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "detail": " [EvolutionRequirement]",
+              },
+              "name": "evolutionRequirements",
+              "sortText": "2evolutionRequirements",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "detail": " [Pokemon]",
+              },
+              "name": "evolutions",
+              "sortText": "3evolutions",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "detail": " PokemonDimension",
+              },
+              "name": "height",
+              "sortText": "5height",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "description": "Maximum combat power a Pokémon may achieve at max level.",
+                "detail": " Int",
+              },
+              "name": "maxCP",
+              "sortText": "7maxCP",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "description": "Maximum health points a Pokémon may achieve at max level.",
+                "detail": " Int",
+              },
+              "name": "maxHP",
+              "sortText": "8maxHP",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "detail": " [PokemonType]",
+              },
+              "name": "resistant",
+              "sortText": "10resistant",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "detail": " [PokemonType]",
+              },
+              "name": "types",
+              "sortText": "11types",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "detail": " [PokemonType]",
+              },
+              "name": "weaknesses",
+              "sortText": "12weaknesses",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "detail": " PokemonDimension",
+              },
+              "name": "weight",
+              "sortText": "13weight",
+            },
+          ],
+          "isGlobalCompletion": false,
+          "isMemberCompletion": false,
+          "isNewIdentifierLocation": false,
+        },
+        "command": "completionInfo",
+        "request_seq": 11,
+        "seq": 0,
+        "success": true,
+        "type": "response",
+      }
+    `);
+  }, 30000);
+
+  it('gives completion-info for the todo document', async () => {
+    server.send({
+      seq: 11,
+      type: 'request',
+      command: 'completionInfo',
+      arguments: {
+        file: outfileTodoTest,
+        line: 8,
+        offset: 7,
+        includeExternalModuleExports: true,
+        includeInsertTextCompletions: true,
+        triggerKind: 1,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'completionInfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(
+        resp => resp.type === 'response' && resp.command === 'completionInfo'
+      );
+
+    expect(res).toBeDefined();
+    expect(res).toMatchInlineSnapshot(`
+      {
+        "body": {
+          "entries": [
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "detail": " String!",
+              },
+              "name": "text",
+              "sortText": "1text",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "detail": " Boolean!",
+              },
+              "name": "completed",
+              "sortText": "2completed",
+            },
+            {
+              "kind": "var",
+              "kindModifiers": "declare",
+              "labelDetails": {
+                "description": "The name of the current Object type at runtime.",
+                "detail": " String!",
+              },
+              "name": "__typename",
+              "sortText": "3__typename",
+            },
+          ],
+          "isGlobalCompletion": false,
+          "isMemberCompletion": false,
+          "isNewIdentifierLocation": false,
+        },
+        "command": "completionInfo",
+        "request_seq": 11,
+        "seq": 0,
+        "success": true,
+        "type": "response",
+      }
+    `);
   }, 30000);
 });

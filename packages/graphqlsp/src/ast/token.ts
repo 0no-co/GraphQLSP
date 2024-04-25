@@ -11,7 +11,7 @@ export interface Token {
 }
 
 export const getToken = (
-  template: ts.TemplateLiteral,
+  template: ts.StringLiteralLike,
   cursorPosition: number
 ): Token | undefined => {
   const text = template.getText().slice(1, -1);

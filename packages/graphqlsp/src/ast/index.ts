@@ -207,11 +207,21 @@ export function findAllCallExpressions(
 }
 
 export function findAllPersistedCallExpressions(
+  sourceFile: ts.SourceFile
+): Array<ts.CallExpression>;
+export function findAllPersistedCallExpressions(
   sourceFile: ts.SourceFile,
   info: ts.server.PluginCreateInfo
-): Array<{ node: ts.CallExpression; schema: string | null }> {
-  const result: Array<{ node: ts.CallExpression; schema: string | null }> = [];
-  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+): Array<{ node: ts.CallExpression; schema: string | null }>;
+
+export function findAllPersistedCallExpressions(
+  sourceFile: ts.SourceFile,
+  info?: ts.server.PluginCreateInfo
+) {
+  const result: Array<
+    ts.CallExpression | { node: ts.CallExpression; schema: string | null }
+  > = [];
+  const typeChecker = info?.languageService.getProgram()?.getTypeChecker();
   function find(node: ts.Node) {
     if (node && ts.isCallExpression(node)) {
       // This expression ideally for us looks like <template>.persisted
@@ -222,9 +232,12 @@ export function findAllPersistedCallExpressions(
       const [template, method] = parts;
       if (!templates.has(template) || method !== 'persisted') return;
 
-      const name = getSchemaName(node, typeChecker);
-
-      result.push({ node, schema: name });
+      if (info) {
+        const name = getSchemaName(node, typeChecker);
+        result.push({ node, schema: name });
+      } else {
+        result.push(node);
+      }
     } else {
       ts.forEachChild(node, find);
     }

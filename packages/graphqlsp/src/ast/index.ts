@@ -30,6 +30,7 @@ export function findAllTaggedTemplateNodes(
   const result: Array<
     ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral
   > = [];
+  // NOTE: This is not relevant for gql.tada
   function find(node: ts.Node) {
     if (
       (ts.isTaggedTemplateExpression(node) &&
@@ -50,7 +51,8 @@ export function findAllTaggedTemplateNodes(
 
 function unrollFragment(
   element: ts.Identifier,
-  info: ts.server.PluginCreateInfo
+  info: ts.server.PluginCreateInfo,
+  typeChecker: ts.TypeChecker | undefined
 ): Array<FragmentDefinitionNode> {
   const fragments: Array<FragmentDefinitionNode> = [];
   const definitions = info.languageService.getDefinitionAtPosition(
@@ -78,25 +80,35 @@ function unrollFragment(
     found = found.parent.initializer;
   }
 
-  if (ts.isCallExpression(found) && templates.has(found.expression.getText())) {
+  // Check whether we've got a `graphql()` or `gql()` call, by the
+  // call expression's identifier
+  if (!ts.isCallExpression(found)) {
+    return fragments;
+  } else if (
+    !ts.isIdentifier(found.expression) ||
+    !templates.has(found.expression.escapedText as string)
+  ) {
+    if (!isTadaGraphQLCall(found, typeChecker)) {
+      return fragments;
+    }
+  }
+
+  try {
     const [arg, arg2] = found.arguments;
     if (arg2 && ts.isArrayLiteralExpression(arg2)) {
       arg2.elements.forEach(element => {
         if (ts.isIdentifier(element)) {
-          fragments.push(...unrollFragment(element, info));
+          fragments.push(...unrollFragment(element, info, typeChecker));
         }
       });
     }
-
-    try {
-      const parsed = parse(arg.getText().slice(1, -1), { noLocation: true });
-      parsed.definitions.forEach(definition => {
-        if (definition.kind === 'FragmentDefinition') {
-          fragments.push(definition);
-        }
-      });
-    } catch (e) {}
-  }
+    const parsed = parse(arg.getText().slice(1, -1), { noLocation: true });
+    parsed.definitions.forEach(definition => {
+      if (definition.kind === 'FragmentDefinition') {
+        fragments.push(definition);
+      }
+    });
+  } catch (e) {}
 
   return fragments;
 }
@@ -106,9 +118,10 @@ export function unrollTadaFragments(
   wip: FragmentDefinitionNode[],
   info: ts.server.PluginCreateInfo
 ): FragmentDefinitionNode[] {
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   fragmentsArray.elements.forEach(element => {
     if (ts.isIdentifier(element)) {
-      wip.push(...unrollFragment(element, info));
+      wip.push(...unrollFragment(element, info, typeChecker));
     } else if (ts.isPropertyAccessExpression(element)) {
       let el = element;
       while (ts.isPropertyAccessExpression(el.expression)) {
@@ -116,7 +129,7 @@ export function unrollTadaFragments(
       }
 
       if (ts.isIdentifier(el.name)) {
-        wip.push(...unrollFragment(el.name, info));
+        wip.push(...unrollFragment(el.name, info, typeChecker));
       }
     }
   });
@@ -231,7 +244,7 @@ export function findAllCallExpressions(
     } else if (arg2 && ts.isArrayLiteralExpression(arg2)) {
       arg2.elements.forEach(element => {
         if (ts.isIdentifier(element)) {
-          fragments.push(...unrollFragment(element, info));
+          fragments.push(...unrollFragment(element, info, typeChecker));
         } else if (ts.isPropertyAccessExpression(element)) {
           let el = element;
           while (ts.isPropertyAccessExpression(el.expression)) {
@@ -239,7 +252,7 @@ export function findAllCallExpressions(
           }
 
           if (ts.isIdentifier(el.name)) {
-            fragments.push(...unrollFragment(el.name, info));
+            fragments.push(...unrollFragment(el.name, info, typeChecker));
           }
         }
       });
@@ -317,10 +330,11 @@ export function getAllFragments(
   if (!definitions || !definitions.length) return fragments;
 
   if (node.arguments[1] && ts.isArrayLiteralExpression(node.arguments[1])) {
+    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
     const arg2 = node.arguments[1] as ts.ArrayLiteralExpression;
     arg2.elements.forEach(element => {
       if (ts.isIdentifier(element)) {
-        fragments.push(...unrollFragment(element, info));
+        fragments.push(...unrollFragment(element, info, typeChecker));
       }
     });
     return fragments;

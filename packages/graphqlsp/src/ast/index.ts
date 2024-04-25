@@ -152,6 +152,13 @@ export const isTadaGraphQLCall = (
   return false;
 };
 
+export const isIIFE = (node: ts.CallExpression) =>
+  node.arguments.length === 0 &&
+  (ts.isFunctionExpression(node.expression) ||
+    ts.isArrowFunction(node.expression)) &&
+  !node.expression.asteriskToken &&
+  !node.expression.modifiers?.length;
+
 export const getSchemaName = (
   node: ts.CallExpression,
   typeChecker?: ts.TypeChecker
@@ -198,7 +205,7 @@ export function findAllCallExpressions(
   let hasTriedToFindFragments = shouldSearchFragments ? false : true;
 
   function find(node: ts.Node): void {
-    if (!ts.isCallExpression(node)) {
+    if (!ts.isCallExpression(node) || isIIFE(node)) {
       return ts.forEachChild(node, find);
     }
 
@@ -260,24 +267,24 @@ export function findAllPersistedCallExpressions(
     ts.CallExpression | { node: ts.CallExpression; schema: string | null }
   > = [];
   const typeChecker = info?.languageService.getProgram()?.getTypeChecker();
-  function find(node: ts.Node) {
-    if (node && ts.isCallExpression(node)) {
-      // This expression ideally for us looks like <template>.persisted
-      const expression = node.expression.getText();
-      const parts = expression.split('.');
-      if (parts.length !== 2) return;
+  function find(node: ts.Node): void {
+    if (!ts.isCallExpression(node) || isIIFE(node)) {
+      return ts.forEachChild(node, find);
+    }
 
-      const [template, method] = parts;
-      if (!templates.has(template) || method !== 'persisted') return;
+    // This expression ideally for us looks like <template>.persisted
+    const expression = node.expression.getText();
+    const parts = expression.split('.');
+    if (parts.length !== 2) return;
 
-      if (info) {
-        const name = getSchemaName(node, typeChecker);
-        result.push({ node, schema: name });
-      } else {
-        result.push(node);
-      }
+    const [template, method] = parts;
+    if (!templates.has(template) || method !== 'persisted') return;
+
+    if (info) {
+      const name = getSchemaName(node, typeChecker);
+      result.push({ node, schema: name });
     } else {
-      ts.forEachChild(node, find);
+      result.push(node);
     }
   }
   find(sourceFile);

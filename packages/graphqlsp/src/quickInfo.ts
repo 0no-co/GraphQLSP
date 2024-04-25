@@ -6,17 +6,19 @@ import {
   bubbleUpCallExpression,
   bubbleUpTemplate,
   findNode,
+  getSchemaName,
   getSource,
 } from './ast';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
 import { templates } from './ast/templates';
+import { SchemaRef } from './graphql/getSchema';
 
 export function getGraphQLQuickInfo(
   filename: string,
   cursorPosition: number,
-  schema: { current: GraphQLSchema | null },
+  schema: SchemaRef,
   info: ts.server.PluginCreateInfo
 ): ts.QuickInfo | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
@@ -31,7 +33,7 @@ export function getGraphQLQuickInfo(
     ? bubbleUpCallExpression(node)
     : bubbleUpTemplate(node);
 
-  let cursor, text;
+  let cursor, text, schemaToUse: GraphQLSchema | undefined;
   if (
     ts.isCallExpression(node) &&
     isCallExpression &&
@@ -39,8 +41,16 @@ export function getGraphQLQuickInfo(
     node.arguments.length > 0 &&
     ts.isNoSubstitutionTemplateLiteral(node.arguments[0])
   ) {
+    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+    const schemaName = getSchemaName(node, typeChecker);
+
+    schemaToUse =
+      schemaName && schema.multi[schemaName]
+        ? schema.multi[schemaName]?.schema
+        : schema.current?.schema;
+
     const foundToken = getToken(node.arguments[0], cursorPosition);
-    if (!schema.current || !foundToken) return undefined;
+    if (!schemaToUse || !foundToken) return undefined;
 
     text = node.arguments[0].getText();
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
@@ -69,11 +79,12 @@ export function getGraphQLQuickInfo(
     foundToken.line = foundToken.line + amountOfLines;
     text = combinedText;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
+    schemaToUse = schema.current.schema;
   } else {
     return undefined;
   }
 
-  const hoverInfo = getHoverInformation(schema.current, text, cursor);
+  const hoverInfo = getHoverInformation(schemaToUse, text, cursor);
 
   return {
     kind: ts.ScriptElementKind.label,

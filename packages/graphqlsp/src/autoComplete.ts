@@ -20,6 +20,7 @@ import {
   bubbleUpTemplate,
   findNode,
   getAllFragments,
+  getSchemaName,
   getSource,
 } from './ast';
 import { Cursor } from './ast/cursor';
@@ -27,11 +28,12 @@ import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { getSuggestionsForFragmentSpread } from './graphql/getFragmentSpreadSuggestions';
 import { templates } from './ast/templates';
+import { SchemaRef } from './graphql/getSchema';
 
 export function getGraphQLCompletions(
   filename: string,
   cursorPosition: number,
-  schema: { current: GraphQLSchema | null },
+  schema: SchemaRef,
   info: ts.server.PluginCreateInfo
 ): ts.WithMetadata<ts.CompletionInfo> | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
@@ -46,7 +48,7 @@ export function getGraphQLCompletions(
     ? bubbleUpCallExpression(node)
     : bubbleUpTemplate(node);
 
-  let text, cursor;
+  let text, cursor, schemaToUse: GraphQLSchema | undefined;
   if (
     ts.isCallExpression(node) &&
     isCallExpression &&
@@ -54,8 +56,16 @@ export function getGraphQLCompletions(
     node.arguments.length > 0 &&
     ts.isNoSubstitutionTemplateLiteral(node.arguments[0])
   ) {
+    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+    const schemaName = getSchemaName(node, typeChecker);
+
+    schemaToUse =
+      schemaName && schema.multi[schemaName]
+        ? schema.multi[schemaName]?.schema
+        : schema.current?.schema;
+
     const foundToken = getToken(node.arguments[0], cursorPosition);
-    if (!schema.current || !foundToken) return undefined;
+    if (!schemaToUse || !foundToken) return undefined;
 
     const queryText = node.arguments[0].getText().slice(1, -1);
     const fragments = getAllFragments(filename, node, info);
@@ -88,12 +98,13 @@ export function getGraphQLCompletions(
 
     text = combinedText;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
+    schemaToUse = schema.current.schema;
   } else {
     return undefined;
   }
 
   const [suggestions, spreadSuggestions] = getSuggestionsInternal(
-    schema.current,
+    schemaToUse,
     text,
     cursor
   );

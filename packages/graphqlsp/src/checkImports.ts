@@ -174,7 +174,7 @@ function getFragmentsInSource(
   const exports = typeChecker.getExportsOfModule(symbol);
   const exportedNames = exports.map(symb => symb.name);
   const nodes = callExpressions.nodes.filter(x => {
-    let parent = x.parent;
+    let parent = x.node.parent;
     while (
       parent &&
       !ts.isSourceFile(parent) &&
@@ -191,7 +191,7 @@ function getFragmentsInSource(
   });
 
   nodes.forEach(node => {
-    const text = resolveTemplate(node, src.fileName, info).combinedText;
+    const text = resolveTemplate(node.node, src.fileName, info).combinedText;
     try {
       const parsed = parse(text, { noLocation: true });
       if (parsed.definitions.every(x => x.kind === Kind.FRAGMENT_DEFINITION)) {

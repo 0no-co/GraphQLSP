@@ -78,7 +78,7 @@ export function getPersistedCodeFixAtPosition(
   // is more defined we will need to use the ts.Symbol to support re-exporting
   // this function by means of "export const peristed = graphql.persisted".
   if (
-    !ts.isCallExpression(callExpression) ||
+    (callExpression && !ts.isCallExpression(callExpression)) ||
     !isPersistedCall(callExpression.expression) ||
     (!callExpression.typeArguments && !callExpression.arguments[1])
   )

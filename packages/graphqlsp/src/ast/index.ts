@@ -130,7 +130,10 @@ export const getSchemaName = (
 ): string => {
   if (!typeChecker) return 'defeault';
 
-  const type = typeChecker.getTypeAtLocation(node.expression);
+  const expression = ts.isPropertyAccessExpression(node.expression)
+    ? node.expression.expression
+    : node.expression;
+  const type = typeChecker.getTypeAtLocation(expression);
   if (type) {
     const brandTypeSymbol = type.getProperty('__brand');
     if (brandTypeSymbol) {
@@ -205,7 +208,6 @@ export function findAllPersistedCallExpressions(
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   function find(node: ts.Node) {
     if (ts.isCallExpression(node)) {
-      const name = getSchemaName(node, typeChecker);
       // This expression ideally for us looks like <template>.persisted
       const expression = node.expression.getText();
       const parts = expression.split('.');
@@ -213,6 +215,8 @@ export function findAllPersistedCallExpressions(
 
       const [template, method] = parts;
       if (!templates.has(template) || method !== 'persisted') return;
+
+      const name = getSchemaName(node, typeChecker);
 
       result.push({ node, schema: name });
     } else {

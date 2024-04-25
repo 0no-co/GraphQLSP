@@ -1,4 +1,5 @@
 import { ts } from '../ts';
+import { templates } from './templates';
 
 export const isIIFE = (node: ts.Node): boolean =>
   ts.isCallExpression(node) &&
@@ -7,6 +8,11 @@ export const isIIFE = (node: ts.Node): boolean =>
     ts.isArrowFunction(node.expression)) &&
   !node.expression.asteriskToken &&
   !node.expression.modifiers?.length;
+
+export const isGraphQLFunctionIdentifier = (
+  node: ts.Node
+): node is ts.Identifier =>
+  ts.isIdentifier(node) && templates.has(node.escapedText as string);
 
 export const isTadaGraphQLFunction = (
   node: ts.Node,
@@ -39,6 +45,38 @@ export const isTadaGraphQLCall = (
     return false;
   }
   return checker ? isTadaGraphQLFunction(node.expression, checker) : false;
+};
+
+export const isTadaPersistedCall = (
+  node: ts.Node,
+  checker: ts.TypeChecker | undefined
+): node is ts.CallExpression => {
+  if (!ts.isCallExpression(node)) {
+    return false;
+  } else if (!ts.isPropertyAccessExpression(node.expression)) {
+    return false; // rejecting non property access calls: <expression>.<name>()
+  } else if (
+    !ts.isIdentifier(node.expression.name) ||
+    node.expression.name.escapedText !== 'persisted'
+  ) {
+    return false; // rejecting calls on anyting but 'persisted': <expression>.persisted()
+  } else if (isGraphQLFunctionIdentifier(node.expression.expression)) {
+    return true;
+  } else {
+    return isTadaGraphQLFunction(node.expression.expression, checker);
+  }
+};
+
+export const isGraphQLCall = (
+  node: ts.Node,
+  checker: ts.TypeChecker | undefined
+): node is ts.CallExpression => {
+  return (
+    ts.isCallExpression(node) &&
+    (node.arguments.length > 1 || node.arguments.length <= 2) &&
+    (isGraphQLFunctionIdentifier(node.expression) ||
+      isTadaGraphQLCall(node, checker))
+  );
 };
 
 export const getSchemaName = (

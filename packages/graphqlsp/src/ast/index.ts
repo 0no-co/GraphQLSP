@@ -1,6 +1,5 @@
 import { ts } from '../ts';
 import { FragmentDefinitionNode, parse } from 'graphql';
-import { templates } from './templates';
 import * as checks from './checks';
 
 export { getSchemaName } from './checks';
@@ -37,10 +36,10 @@ export function findAllTaggedTemplateNodes(
   function find(node: ts.Node) {
     if (
       (ts.isTaggedTemplateExpression(node) &&
-        templates.has(node.tag.getText())) ||
+        checks.isGraphQLFunctionIdentifier(node.tag)) ||
       (ts.isNoSubstitutionTemplateLiteral(node) &&
         ts.isTaggedTemplateExpression(node.parent) &&
-        templates.has(node.parent.tag.getText()))
+        checks.isGraphQLFunctionIdentifier(node.parent.tag))
     ) {
       result.push(node);
       return;
@@ -85,15 +84,8 @@ function unrollFragment(
 
   // Check whether we've got a `graphql()` or `gql()` call, by the
   // call expression's identifier
-  if (!ts.isCallExpression(found)) {
+  if (!checks.isGraphQLCall(found, typeChecker)) {
     return fragments;
-  } else if (
-    !ts.isIdentifier(found.expression) ||
-    !templates.has(found.expression.escapedText as string)
-  ) {
-    if (!checks.isTadaGraphQLCall(found, typeChecker)) {
-      return fragments;
-    }
   }
 
   try {
@@ -166,13 +158,8 @@ export function findAllCallExpressions(
 
     // Check whether we've got a `graphql()` or `gql()` call, by the
     // call expression's identifier
-    if (
-      !ts.isIdentifier(node.expression) ||
-      !templates.has(node.expression.escapedText as string)
-    ) {
-      if (!checks.isTadaGraphQLCall(node, typeChecker)) {
-        return;
-      }
+    if (!checks.isGraphQLCall(node, typeChecker)) {
+      return;
     }
 
     const name = checks.getSchemaName(node, typeChecker);
@@ -227,25 +214,9 @@ export function findAllPersistedCallExpressions(
       return ts.forEachChild(node, find);
     }
 
-    if (!ts.isPropertyAccessExpression(node.expression)) {
-      return; // rejecting non property access calls: <expression>.<name>()
-    } else if (
-      !ts.isIdentifier(node.expression.name) ||
-      node.expression.name.escapedText !== 'persisted'
-    ) {
-      return; // rejecting calls on anyting but 'persisted': <expression>.persisted()
-    }
-
-    if (
-      !ts.isIdentifier(node.expression.expression) ||
-      !templates.has(node.expression.expression.escapedText as string)
-    ) {
-      if (!checks.isTadaGraphQLFunction(node, typeChecker)) {
-        return;
-      }
-    }
-
-    if (info) {
+    if (!checks.isTadaPersistedCall(node, typeChecker)) {
+      return;
+    } else if (info) {
       const name = checks.getSchemaName(node, typeChecker);
       result.push({ node, schema: name });
     } else {

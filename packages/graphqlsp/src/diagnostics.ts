@@ -76,7 +76,13 @@ const cache = new LRUCache<number, ts.Diagnostic[]>({
 
 export function getGraphQLDiagnostics(
   filename: string,
-  schema: { current: GraphQLSchema | null; version: number },
+  schema: {
+    current:
+      | GraphQLSchema
+      | { schemas: { [name: string]: GraphQLSchema } }
+      | null;
+    version: number;
+  },
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
@@ -85,16 +91,22 @@ export function getGraphQLDiagnostics(
   if (!source) return undefined;
 
   let fragments: Array<FragmentDefinitionNode> = [],
-    nodes: (ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral)[];
+    nodes: {
+      node: ts.NoSubstitutionTemplateLiteral | ts.TaggedTemplateExpression;
+      schema: string;
+    }[];
   if (isCallExpression) {
     const result = findAllCallExpressions(source, info);
     fragments = result.fragments;
     nodes = result.nodes;
   } else {
-    nodes = findAllTaggedTemplateNodes(source);
+    nodes = findAllTaggedTemplateNodes(source).map(x => ({
+      node: x,
+      schema: 'default',
+    }));
   }
 
-  const texts = nodes.map(node => {
+  const texts = nodes.map(({ node }) => {
     if (
       (ts.isNoSubstitutionTemplateLiteral(node) ||
         ts.isTemplateExpression(node)) &&
@@ -131,15 +143,13 @@ export function getGraphQLDiagnostics(
   let fragmentDiagnostics: ts.Diagnostic[] = [];
 
   if (isCallExpression) {
-    const persistedCalls = findAllPersistedCallExpressions(source);
+    const persistedCalls = findAllPersistedCallExpressions(source, info);
     // We need to check whether the user has correctly inserted a hash,
     // by means of providing an argument to the function and that they
     // are establishing a reference to the document by means of the generic.
-    //
-    // OPTIONAL: we could also check whether the hash is out of date with the
-    // document but this removes support for self-generating identifiers
     const persistedDiagnostics = persistedCalls
-      .map<ts.Diagnostic | null>(callExpression => {
+      .map<ts.Diagnostic | null>(found => {
+        const { node: callExpression } = found;
         if (!callExpression.typeArguments && !callExpression.arguments[1]) {
           return {
             category: ts.DiagnosticCategory.Warning,
@@ -283,7 +293,7 @@ export function getGraphQLDiagnostics(
     const moduleSpecifierToFragments = getColocatedFragmentNames(source, info);
 
     const usedFragments = new Set();
-    nodes.forEach(node => {
+    nodes.forEach(({ node }) => {
       try {
         const parsed = parse(node.getText().slice(1, -1), {
           noLocation: true,
@@ -331,10 +341,19 @@ const runDiagnostics = (
     nodes,
     fragments,
   }: {
-    nodes: (ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral)[];
+    nodes: {
+      node: ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral;
+      schema: string;
+    }[];
     fragments: FragmentDefinitionNode[];
   },
-  schema: { current: GraphQLSchema | null; version: number },
+  schema: {
+    current:
+      | GraphQLSchema
+      | { schemas: { [name: string]: GraphQLSchema } }
+      | null;
+    version: number;
+  },
   info: ts.server.PluginCreateInfo
 ) => {
   const filename = source.fileName;
@@ -342,7 +361,7 @@ const runDiagnostics = (
 
   const diagnostics = nodes
     .map(originalNode => {
-      let node = originalNode;
+      let node = originalNode.node;
       if (
         !isCallExpression &&
         (ts.isNoSubstitutionTemplateLiteral(node) ||
@@ -397,9 +416,13 @@ const runDiagnostics = (
         } catch (e) {}
       }
 
+      const schemaToUse =
+        schema.current && 'schemas' in schema.current
+          ? schema.current.schemas[originalNode.schema]
+          : schema.current;
       const graphQLDiagnostics = getDiagnostics(
         text,
-        schema.current,
+        schemaToUse,
         undefined,
         undefined,
         docFragments
@@ -482,7 +505,7 @@ const runDiagnostics = (
               message: 'Operation should contain a name.',
               start: node.getStart(),
               code: MISSING_OPERATION_NAME_CODE,
-              length: originalNode.getText().length,
+              length: originalNode.node.getText().length,
               range: {} as any,
               severity: 2,
             } as any);
@@ -516,7 +539,7 @@ const runDiagnostics = (
     const usageDiagnostics =
       checkFieldUsageInFile(
         source,
-        nodes as ts.NoSubstitutionTemplateLiteral[],
+        nodes.map(x => x.node) as ts.NoSubstitutionTemplateLiteral[],
         info
       ) || [];
 

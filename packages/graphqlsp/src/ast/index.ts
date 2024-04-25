@@ -124,19 +124,45 @@ export function unrollTadaFragments(
   return wip;
 }
 
+export const getSchemaName = (
+  node: ts.CallExpression,
+  typeChecker?: ts.TypeChecker
+): string => {
+  if (!typeChecker) return 'defeault';
+
+  const type = typeChecker.getTypeAtLocation(node.expression);
+  if (type) {
+    const brandTypeSymbol = type.getProperty('__brand');
+    if (brandTypeSymbol) {
+      const brand = typeChecker.getTypeOfSymbol(brandTypeSymbol);
+      if (brand.isStringLiteral()) {
+        return brand.value;
+      }
+    }
+  }
+
+  return 'default';
+};
+
 export function findAllCallExpressions(
   sourceFile: ts.SourceFile,
   info: ts.server.PluginCreateInfo,
   shouldSearchFragments: boolean = true
 ): {
-  nodes: Array<ts.NoSubstitutionTemplateLiteral>;
+  nodes: Array<{ node: ts.NoSubstitutionTemplateLiteral; schema: string }>;
   fragments: Array<FragmentDefinitionNode>;
 } {
-  const result: Array<ts.NoSubstitutionTemplateLiteral> = [];
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+  const result: Array<{
+    node: ts.NoSubstitutionTemplateLiteral;
+    schema: string;
+  }> = [];
   let fragments: Array<FragmentDefinitionNode> = [];
   let hasTriedToFindFragments = shouldSearchFragments ? false : true;
   function find(node: ts.Node) {
     if (ts.isCallExpression(node) && templates.has(node.expression.getText())) {
+      const name = getSchemaName(node, typeChecker);
+
       const [arg, arg2] = node.arguments;
 
       if (!hasTriedToFindFragments && !arg2) {
@@ -160,7 +186,7 @@ export function findAllCallExpressions(
       }
 
       if (arg && ts.isNoSubstitutionTemplateLiteral(arg)) {
-        result.push(arg);
+        result.push({ node: arg, schema: name });
       }
       return;
     } else {
@@ -172,11 +198,14 @@ export function findAllCallExpressions(
 }
 
 export function findAllPersistedCallExpressions(
-  sourceFile: ts.SourceFile
-): Array<ts.CallExpression> {
-  const result: Array<ts.CallExpression> = [];
+  sourceFile: ts.SourceFile,
+  info: ts.server.PluginCreateInfo
+): Array<{ node: ts.CallExpression; schema: string }> {
+  const result: Array<{ node: ts.CallExpression; schema: string }> = [];
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   function find(node: ts.Node) {
     if (ts.isCallExpression(node)) {
+      const name = getSchemaName(node, typeChecker);
       // This expression ideally for us looks like <template>.persisted
       const expression = node.expression.getText();
       const parts = expression.split('.');
@@ -185,7 +214,7 @@ export function findAllPersistedCallExpressions(
       const [template, method] = parts;
       if (!templates.has(template) || method !== 'persisted') return;
 
-      result.push(node);
+      result.push({ node, schema: name });
     } else {
       ts.forEachChild(node, find);
     }

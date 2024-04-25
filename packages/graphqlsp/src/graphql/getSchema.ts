@@ -94,7 +94,10 @@ async function saveTadaIntrospection(
 }
 
 export interface SchemaRef {
-  current: GraphQLSchema | null;
+  current:
+    | GraphQLSchema
+    | { schemas: { [name: string]: GraphQLSchema } }
+    | null;
   version: number;
 }
 

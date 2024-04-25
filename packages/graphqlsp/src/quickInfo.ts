@@ -6,6 +6,7 @@ import {
   bubbleUpCallExpression,
   bubbleUpTemplate,
   findNode,
+  getSchemaName,
   getSource,
 } from './ast';
 import { resolveTemplate } from './ast/resolve';
@@ -16,7 +17,12 @@ import { templates } from './ast/templates';
 export function getGraphQLQuickInfo(
   filename: string,
   cursorPosition: number,
-  schema: { current: GraphQLSchema | null },
+  schema: {
+    current:
+      | GraphQLSchema
+      | { schemas: { [name: string]: GraphQLSchema } }
+      | null;
+  },
   info: ts.server.PluginCreateInfo
 ): ts.QuickInfo | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
@@ -31,7 +37,7 @@ export function getGraphQLQuickInfo(
     ? bubbleUpCallExpression(node)
     : bubbleUpTemplate(node);
 
-  let cursor, text;
+  let cursor, text, schemaToUse: GraphQLSchema;
   if (
     ts.isCallExpression(node) &&
     isCallExpression &&
@@ -39,11 +45,18 @@ export function getGraphQLQuickInfo(
     node.arguments.length > 0 &&
     ts.isNoSubstitutionTemplateLiteral(node.arguments[0])
   ) {
+    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+    const schemaName = getSchemaName(node, typeChecker);
+
     const foundToken = getToken(node.arguments[0], cursorPosition);
     if (!schema.current || !foundToken) return undefined;
 
     text = node.arguments[0].getText();
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
+    schemaToUse =
+      'schemas' in schema.current
+        ? schema.current.schemas[schemaName]
+        : schema.current;
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
     if (!ts.isIdentifier(tag) || !templates.has(tag.text)) return undefined;
@@ -69,11 +82,15 @@ export function getGraphQLQuickInfo(
     foundToken.line = foundToken.line + amountOfLines;
     text = combinedText;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
+    schemaToUse =
+      'schemas' in schema.current
+        ? schema.current.schemas['default']
+        : schema.current;
   } else {
     return undefined;
   }
 
-  const hoverInfo = getHoverInformation(schema.current, text, cursor);
+  const hoverInfo = getHoverInformation(schemaToUse, text, cursor);
 
   return {
     kind: ts.ScriptElementKind.label,

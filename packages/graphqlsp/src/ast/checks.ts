@@ -1,6 +1,7 @@
 import { ts } from '../ts';
 import { templates } from './templates';
 
+/** Checks for an immediately-invoked function expression */
 export const isIIFE = (node: ts.Node): boolean =>
   ts.isCallExpression(node) &&
   node.arguments.length === 0 &&
@@ -9,11 +10,13 @@ export const isIIFE = (node: ts.Node): boolean =>
   !node.expression.asteriskToken &&
   !node.expression.modifiers?.length;
 
+/** Checks if node is a known identifier of graphql functions ('graphql' or 'gql') */
 export const isGraphQLFunctionIdentifier = (
   node: ts.Node
 ): node is ts.Identifier =>
   ts.isIdentifier(node) && templates.has(node.escapedText as string);
 
+/** If `checker` is passed, checks if node (as identifier/expression) is a gql.tada graphql() function */
 export const isTadaGraphQLFunction = (
   node: ts.Node,
   checker: ts.TypeChecker | undefined
@@ -29,6 +32,7 @@ export const isTadaGraphQLFunction = (
   );
 };
 
+/** If `checker` is passed, checks if node is a gql.tada graphql() call */
 export const isTadaGraphQLCall = (
   node: ts.Node,
   checker: ts.TypeChecker | undefined
@@ -47,6 +51,7 @@ export const isTadaGraphQLCall = (
   return checker ? isTadaGraphQLFunction(node.expression, checker) : false;
 };
 
+/** Checks if node is a gql.tada graphql.persisted() call */
 export const isTadaPersistedCall = (
   node: ts.Node,
   checker: ts.TypeChecker | undefined
@@ -67,6 +72,7 @@ export const isTadaPersistedCall = (
   }
 };
 
+/** Checks if node is a gql.tada graphql.persisted() call */
 export const isGraphQLCall = (
   node: ts.Node,
   checker: ts.TypeChecker | undefined
@@ -79,11 +85,13 @@ export const isGraphQLCall = (
   );
 };
 
+/** Checks if node is a gql/graphql tagged template literal */
 export const isGraphQLTag = (
   node: ts.Node
 ): node is ts.TaggedTemplateExpression =>
   ts.isTaggedTemplateExpression(node) && isGraphQLFunctionIdentifier(node.tag);
 
+/** Retrieves the `__name` branded tag from gql.tada `graphql()` or `graphql.persisted()` calls */
 export const getSchemaName = (
   node: ts.CallExpression,
   typeChecker: ts.TypeChecker | undefined

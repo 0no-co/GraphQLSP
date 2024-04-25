@@ -11,9 +11,7 @@ const projectPath = path.resolve(
   __dirname,
   'fixture-project-tada-multi-schema'
 );
-describe('Fragment + operations', () => {
-  const outfilePokemonTypes = path.join(projectPath, 'pokemon.ts');
-  const outfileTodoTypes = path.join(projectPath, 'todo.ts');
+describe('Multiple schemas', () => {
   const outfilePokemonTest = path.join(projectPath, 'simple-pokemon.ts');
   const outfileTodoTest = path.join(projectPath, 'simple-todo.ts');
 
@@ -21,16 +19,6 @@ describe('Fragment + operations', () => {
   beforeAll(async () => {
     server = new TSServer(projectPath, { debugLog: false });
 
-    server.sendCommand('open', {
-      file: outfilePokemonTypes,
-      fileContent: '// empty',
-      scriptKindName: 'TS',
-    } satisfies ts.server.protocol.OpenRequestArgs);
-    server.sendCommand('open', {
-      file: outfileTodoTypes,
-      fileContent: '// empty',
-      scriptKindName: 'TS',
-    } satisfies ts.server.protocol.OpenRequestArgs);
     server.sendCommand('open', {
       file: outfilePokemonTest,
       fileContent: '// empty',
@@ -44,20 +32,6 @@ describe('Fragment + operations', () => {
 
     server.sendCommand('updateOpen', {
       openFiles: [
-        {
-          file: outfilePokemonTypes,
-          fileContent: fs.readFileSync(
-            path.join(projectPath, 'fixtures/pokemon.ts'),
-            'utf-8'
-          ),
-        },
-        {
-          file: outfileTodoTypes,
-          fileContent: fs.readFileSync(
-            path.join(projectPath, 'fixtures/todo.ts'),
-            'utf-8'
-          ),
-        },
         {
           file: outfilePokemonTest,
           fileContent: fs.readFileSync(
@@ -76,14 +50,6 @@ describe('Fragment + operations', () => {
     } satisfies ts.server.protocol.UpdateOpenRequestArgs);
 
     server.sendCommand('saveto', {
-      file: outfilePokemonTypes,
-      tmpfile: outfilePokemonTypes,
-    } satisfies ts.server.protocol.SavetoRequestArgs);
-    server.sendCommand('saveto', {
-      file: outfileTodoTypes,
-      tmpfile: outfileTodoTypes,
-    } satisfies ts.server.protocol.SavetoRequestArgs);
-    server.sendCommand('saveto', {
       file: outfilePokemonTest,
       tmpfile: outfilePokemonTest,
     } satisfies ts.server.protocol.SavetoRequestArgs);
@@ -95,8 +61,6 @@ describe('Fragment + operations', () => {
 
   afterAll(() => {
     try {
-      fs.unlinkSync(outfilePokemonTypes);
-      fs.unlinkSync(outfileTodoTypes);
       fs.unlinkSync(outfilePokemonTest);
       fs.unlinkSync(outfileTodoTest);
     } catch {}

@@ -5,9 +5,9 @@
         "name": "@0no-co/graphqlsp",
         "schemas": [
           {
-            "name": "pokemon",
-            "schema": "./pokemon.graphql",
-            "tadaOutputLocation": "./pokemon.d.ts"
+            "name": "pokemons",
+            "schema": "./pokemons.graphql",
+            "tadaOutputLocation": "./pokemons.d.ts"
           },
           {
             "name": "todos",

@@ -1,6 +1,5 @@
 import { initGraphQLTada } from 'gql.tada';
-// @ts-ignore
-import type { introspection } from './todos';
+import type { introspection } from '../todos';
 
 export const graphql = initGraphQLTada<{
   introspection: introspection;

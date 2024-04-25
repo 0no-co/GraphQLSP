@@ -1,5 +1,5 @@
 import { initGraphQLTada } from 'gql.tada';
-import type { introspection } from '../pokemons';
+import type { introspection } from './pokemons';
 
 export const graphql = initGraphQLTada<{
   introspection: introspection;

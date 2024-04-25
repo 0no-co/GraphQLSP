@@ -135,17 +135,33 @@ export const loadSchema = (
       Object.values(ref.multi).forEach(value => {
         if (!value) return;
 
+        if (value.tadaOutputLocation) {
+          saveTadaIntrospection(
+            value.introspection,
+            path.resolve(rootPath, value.tadaOutputLocation),
+            tadaDisablePreprocessing,
+            logger
+          );
+        }
+      });
+    }
+
+    ref.autoupdate((schemaRef, value) => {
+      if (!value) return;
+
+      if (value.tadaOutputLocation) {
+        const found = schemaRef.multi
+          ? schemaRef.multi[value.name as string]
+          : schemaRef.current;
+        if (!found) return;
         saveTadaIntrospection(
-          value.introspection,
-          // TODO: do we want to expose the tadaOutputLocation here
+          found.introspection,
           path.resolve(rootPath, value.tadaOutputLocation),
           tadaDisablePreprocessing,
           logger
         );
-      });
-    }
-
-    ref.autoupdate();
+      }
+    });
   })();
 
   return ref;

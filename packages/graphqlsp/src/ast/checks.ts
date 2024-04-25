@@ -72,7 +72,7 @@ export const isTadaPersistedCall = (
   }
 };
 
-/** Checks if node is a gql.tada graphql.persisted() call */
+/** Checks if node is a gql.tada or regular graphql() call */
 export const isGraphQLCall = (
   node: ts.Node,
   checker: ts.TypeChecker | undefined

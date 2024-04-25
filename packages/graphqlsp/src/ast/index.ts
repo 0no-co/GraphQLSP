@@ -138,7 +138,10 @@ export const getSchemaName = (
     const brandTypeSymbol = type.getProperty('__name');
     if (brandTypeSymbol) {
       const brand = typeChecker.getTypeOfSymbol(brandTypeSymbol);
-      if (brand.isStringLiteral()) {
+      if (brand.isUnionOrIntersection()) {
+        const found = brand.types.find(x => x.isStringLiteral());
+        return found && found.isStringLiteral() ? found.value : 'default';
+      } else if (brand.isStringLiteral()) {
         return brand.value;
       }
     }

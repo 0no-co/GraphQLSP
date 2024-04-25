@@ -124,6 +124,34 @@ export function unrollTadaFragments(
   return wip;
 }
 
+export const isTadaGraphQLCall = (
+  node: ts.CallExpression,
+  checker: ts.TypeChecker | undefined
+): boolean => {
+  // We expect graphql() to be called with either a string literal
+  // or a string literal and an array of fragments
+  if (node.arguments.length < 1 || node.arguments.length > 2) {
+    return false;
+  } else if (!ts.isStringLiteralLike(node.arguments[0])) {
+    return false;
+  } else if (!/[{}]/.test(node.arguments[0].getText())) {
+    return false;
+  }
+
+  if (checker) {
+    const type = checker.getTypeAtLocation(node.expression);
+    // Any function that has both a `scalar` and `persisted` property
+    // is automatically considered a gql.tada graphql() function.
+    if (
+      type &&
+      type.getProperty('scalar') != null &&
+      type.getProperty('persisted') != null
+    )
+      return true;
+  }
+  return false;
+};
+
 export const getSchemaName = (
   node: ts.CallExpression,
   typeChecker?: ts.TypeChecker
@@ -168,38 +196,48 @@ export function findAllCallExpressions(
   }> = [];
   let fragments: Array<FragmentDefinitionNode> = [];
   let hasTriedToFindFragments = shouldSearchFragments ? false : true;
-  function find(node: ts.Node) {
-    if (ts.isCallExpression(node) && templates.has(node.expression.getText())) {
-      const name = getSchemaName(node, typeChecker);
 
-      const [arg, arg2] = node.arguments;
+  function find(node: ts.Node): void {
+    if (!ts.isCallExpression(node)) {
+      return ts.forEachChild(node, find);
+    }
 
-      if (!hasTriedToFindFragments && !arg2) {
-        hasTriedToFindFragments = true;
-        fragments.push(...getAllFragments(sourceFile.fileName, node, info));
-      } else if (arg2 && ts.isArrayLiteralExpression(arg2)) {
-        arg2.elements.forEach(element => {
-          if (ts.isIdentifier(element)) {
-            fragments.push(...unrollFragment(element, info));
-          } else if (ts.isPropertyAccessExpression(element)) {
-            let el = element;
-            while (ts.isPropertyAccessExpression(el.expression)) {
-              el = el.expression;
-            }
+    // Check whether we've got a `graphql()` or `gql()` call, by the
+    // call expression's identifier
+    if (
+      !ts.isIdentifier(node.expression) ||
+      !templates.has(node.expression.getText())
+    ) {
+      if (!isTadaGraphQLCall(node, typeChecker)) {
+        return;
+      }
+    }
 
-            if (ts.isIdentifier(el.name)) {
-              fragments.push(...unrollFragment(el.name, info));
-            }
+    const name = getSchemaName(node, typeChecker);
+    const [arg, arg2] = node.arguments;
+
+    if (!hasTriedToFindFragments && !arg2) {
+      hasTriedToFindFragments = true;
+      fragments.push(...getAllFragments(sourceFile.fileName, node, info));
+    } else if (arg2 && ts.isArrayLiteralExpression(arg2)) {
+      arg2.elements.forEach(element => {
+        if (ts.isIdentifier(element)) {
+          fragments.push(...unrollFragment(element, info));
+        } else if (ts.isPropertyAccessExpression(element)) {
+          let el = element;
+          while (ts.isPropertyAccessExpression(el.expression)) {
+            el = el.expression;
           }
-        });
-      }
 
-      if (arg && ts.isNoSubstitutionTemplateLiteral(arg)) {
-        result.push({ node: arg, schema: name });
-      }
-      return;
-    } else {
-      ts.forEachChild(node, find);
+          if (ts.isIdentifier(el.name)) {
+            fragments.push(...unrollFragment(el.name, info));
+          }
+        }
+      });
+    }
+
+    if (arg && ts.isNoSubstitutionTemplateLiteral(arg)) {
+      result.push({ node: arg, schema: name });
     }
   }
   find(sourceFile);

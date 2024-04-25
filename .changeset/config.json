@@ -4,5 +4,14 @@
   "commit": false,
   "access": "public",
   "baseBranch": "main",
-  "ignore": ["example", "fixtures"]
+  "ignore": ["example", "fixtures"],
+  "updateInternalDependencies": "minor",
+  "snapshot": {
+    "prereleaseTemplate": "{tag}-{commit}",
+    "useCalculatedVersion": true
+  },
+  "___experimentalUnsafeOptions_WILL_CHANGE_IN_PATCH": {
+    "onlyUpdatePeerDependentsWhenOutOfRange": true,
+    "updateInternalDependents": "out-of-range"
+  }
 }

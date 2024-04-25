@@ -1,0 +1,14 @@
+{
+  "name": "fixtures",
+  "private": true,
+  "dependencies": {
+    "graphql": "^16.0.0",
+    "gql.tada": "1.5.9-canary-8711af177005f46fa3e06d990b6ba28e353e7f9b",
+    "@graphql-typed-document-node/core": "^3.0.0",
+    "@0no-co/graphqlsp": "workspace:*",
+    "@urql/core": "^4.0.4"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3"
+  }
+}

@@ -79,6 +79,11 @@ export const isGraphQLCall = (
   );
 };
 
+export const isGraphQLTag = (
+  node: ts.Node
+): node is ts.TaggedTemplateExpression =>
+  ts.isTaggedTemplateExpression(node) && isGraphQLFunctionIdentifier(node.tag);
+
 export const getSchemaName = (
   node: ts.CallExpression,
   typeChecker: ts.TypeChecker | undefined

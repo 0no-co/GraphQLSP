@@ -32,14 +32,11 @@ export function findAllTaggedTemplateNodes(
   const result: Array<
     ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral
   > = [];
-  // NOTE: This is not relevant for gql.tada
   function find(node: ts.Node) {
     if (
-      (ts.isTaggedTemplateExpression(node) &&
-        checks.isGraphQLFunctionIdentifier(node.tag)) ||
+      checks.isGraphQLTag(node) ||
       (ts.isNoSubstitutionTemplateLiteral(node) &&
-        ts.isTaggedTemplateExpression(node.parent) &&
-        checks.isGraphQLFunctionIdentifier(node.parent.tag))
+        checks.isGraphQLTag(node.parent))
     ) {
       result.push(node);
       return;

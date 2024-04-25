@@ -25,6 +25,7 @@ export type Logger = (msg: string) => void;
 
 interface Config {
   schema: SchemaOrigin;
+  schemas: SchemaOrigin[];
   tadaDisablePreprocessing?: boolean;
   templateIsCallExpression?: boolean;
   shouldCheckForColocatedFragments?: boolean;
@@ -39,7 +40,7 @@ function create(info: ts.server.PluginCreateInfo) {
   const config: Config = info.config;
 
   logger('config: ' + JSON.stringify(config));
-  if (!config.schema) {
+  if (!config.schema && !config.schemas) {
     logger('Missing "schema" option in configuration.');
     throw new Error('Please provide a GraphQL Schema!');
   }
@@ -52,7 +53,7 @@ function create(info: ts.server.PluginCreateInfo) {
 
   const proxy = createBasicDecorator(info);
 
-  const schema = loadSchema(info, config.schema, logger);
+  const schema = loadSchema(info, config, logger);
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics =

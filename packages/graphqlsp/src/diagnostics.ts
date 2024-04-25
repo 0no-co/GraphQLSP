@@ -97,7 +97,7 @@ export function getGraphQLDiagnostics(
   } else {
     nodes = findAllTaggedTemplateNodes(source).map(x => ({
       node: x,
-      schema: 'default',
+      schema: null,
     }));
   }
 

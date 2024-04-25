@@ -213,7 +213,7 @@ export function findAllPersistedCallExpressions(
   const result: Array<{ node: ts.CallExpression; schema: string | null }> = [];
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   function find(node: ts.Node) {
-    if (ts.isCallExpression(node)) {
+    if (node && ts.isCallExpression(node)) {
       // This expression ideally for us looks like <template>.persisted
       const expression = node.expression.getText();
       const parts = expression.split('.');

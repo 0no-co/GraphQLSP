@@ -10,6 +10,7 @@
  * instead save to a .ts instead of a .d.ts file.
  */
 export type introspection = {
+  name: 'pokemons';
   query: 'Query';
   mutation: never;
   subscription: never;

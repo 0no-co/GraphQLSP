@@ -51,7 +51,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@gql.tada/internal": "0.3.0-canary-3d3d6fa74e6a37ac25a932c1a03b10873ecb040c",
+    "@gql.tada/internal": "0.3.0-canary-92d094cc29ae2fc73a9f8ff9c0ef6b24fdf52552",
     "graphql": "^16.8.1",
     "node-fetch": "^2.0.0"
   },

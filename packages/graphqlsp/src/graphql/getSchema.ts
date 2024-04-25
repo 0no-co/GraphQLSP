@@ -108,6 +108,7 @@ export const loadSchema = (
     const rootPath =
       (await resolveTypeScriptRootDir(info.project.getProjectName())) ||
       path.dirname(info.project.getProjectName());
+
     const tadaDisablePreprocessing =
       info.config.tadaDisablePreprocessing ?? false;
     const tadaOutputLocation =
@@ -119,7 +120,7 @@ export const loadSchema = (
 
     try {
       logger(`Loading schema...`);
-      await ref.load();
+      await ref.load({ rootPath });
     } catch (error) {
       logger(`Failed to load schema: ${error}`);
     }
@@ -146,7 +147,7 @@ export const loadSchema = (
       });
     }
 
-    ref.autoupdate((schemaRef, value) => {
+    ref.autoupdate({ rootPath }, (schemaRef, value) => {
       if (!value) return;
 
       if (value.tadaOutputLocation) {
@@ -164,5 +165,5 @@ export const loadSchema = (
     });
   })();
 
-  return ref;
+  return ref as any;
 };

@@ -2,15 +2,16 @@ import type { Stats, PathLike } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'path';
 
-import type { GraphQLSchema, IntrospectionQuery } from 'graphql';
+import type { IntrospectionQuery } from 'graphql';
 
 import {
-  type SchemaOrigin,
   type SchemaLoaderResult,
-  load,
-  resolveTypeScriptRootDir,
+  type SchemaRef as _SchemaRef,
+  type GraphQLSPConfig,
+  loadRef,
   minifyIntrospection,
   outputIntrospectionFile,
+  resolveTypeScriptRootDir,
 } from '@gql.tada/internal';
 
 import { ts } from '../ts';
@@ -93,22 +94,15 @@ async function saveTadaIntrospection(
   }
 }
 
-export interface SchemaRef {
-  current:
-    | GraphQLSchema
-    | { schemas: { [name: string]: GraphQLSchema } }
-    | null;
-  version: number;
-}
+export type SchemaRef = _SchemaRef<SchemaLoaderResult | null>;
 
 export const loadSchema = (
   // TODO: abstract info away
   info: ts.server.PluginCreateInfo,
-  origin: SchemaOrigin,
+  origin: GraphQLSPConfig,
   logger: Logger
-): SchemaRef => {
-  let loaderResult: SchemaLoaderResult | null = null;
-  const ref: SchemaRef = { current: null, version: 0 };
+): _SchemaRef<SchemaLoaderResult | null> => {
+  const ref = loadRef(origin);
 
   (async () => {
     const rootPath =
@@ -123,43 +117,35 @@ export const loadSchema = (
     logger('Got root-directory to resolve schema from: ' + rootPath);
     logger('Resolving schema from "schema" config: ' + JSON.stringify(origin));
 
-    const loader = load({ origin, rootPath });
-
     try {
-      logger(`Loading schema from "${origin}"`);
-      loaderResult = await loader.load();
+      logger(`Loading schema...`);
+      await ref.load();
     } catch (error) {
       logger(`Failed to load schema: ${error}`);
     }
 
-    // Will this just automagically give us more schemas or should we
-    // leverage a "forEach"
-    if (loaderResult) {
-      ref.current = loaderResult && loaderResult.schema;
-      ref.version++;
-      if (tadaOutputLocation) {
+    if (ref.current) {
+      saveTadaIntrospection(
+        ref.current.introspection,
+        tadaOutputLocation,
+        tadaDisablePreprocessing,
+        logger
+      );
+    } else if (ref.multi) {
+      Object.values(ref.multi).forEach(value => {
+        if (!value) return;
+
         saveTadaIntrospection(
-          loaderResult.introspection,
-          tadaOutputLocation,
+          value.introspection,
+          // TODO: do we want to expose the tadaOutputLocation here
+          path.resolve(rootPath, value.tadaOutputLocation),
           tadaDisablePreprocessing,
           logger
         );
-      }
+      });
     }
 
-    loader.notifyOnUpdate(result => {
-      logger(`Got schema for origin "${origin}"`);
-      ref.current = (loaderResult = result).schema;
-      ref.version++;
-      if (tadaOutputLocation) {
-        saveTadaIntrospection(
-          loaderResult.introspection,
-          tadaOutputLocation,
-          tadaDisablePreprocessing,
-          logger
-        );
-      }
-    });
+    ref.autoupdate();
   })();
 
   return ref;

@@ -128,14 +128,14 @@ export const getSchemaName = (
   node: ts.CallExpression,
   typeChecker?: ts.TypeChecker
 ): string => {
-  if (!typeChecker) return 'defeault';
+  if (!typeChecker) return 'default';
 
   const expression = ts.isPropertyAccessExpression(node.expression)
     ? node.expression.expression
     : node.expression;
   const type = typeChecker.getTypeAtLocation(expression);
   if (type) {
-    const brandTypeSymbol = type.getProperty('__brand');
+    const brandTypeSymbol = type.getProperty('__name');
     if (brandTypeSymbol) {
       const brand = typeChecker.getTypeOfSymbol(brandTypeSymbol);
       if (brand.isStringLiteral()) {

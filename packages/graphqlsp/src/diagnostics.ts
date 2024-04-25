@@ -405,10 +405,9 @@ const runDiagnostics = (
         } catch (e) {}
       }
 
-      const schemaToUse =
-        schema.current && 'schemas' in schema.current
-          ? schema.current.schemas[originalNode.schema]
-          : schema.current;
+      const schemaToUse = schema.multi[originalNode.schema]
+        ? schema.multi[originalNode.schema]!.schema
+        : schema.current!.schema;
       const graphQLDiagnostics = getDiagnostics(
         text,
         schemaToUse,

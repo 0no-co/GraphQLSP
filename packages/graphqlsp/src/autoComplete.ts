@@ -60,17 +60,17 @@ export function getGraphQLCompletions(
     const schemaName = getSchemaName(node, typeChecker);
 
     const foundToken = getToken(node.arguments[0], cursorPosition);
-    if (!schema.current || !foundToken) return undefined;
+    if ((!schema.current && !schema.multi[schemaName]) || !foundToken)
+      return undefined;
 
     const queryText = node.arguments[0].getText().slice(1, -1);
     const fragments = getAllFragments(filename, node, info);
 
     text = `${queryText}\n${fragments.map(x => print(x)).join('\n')}`;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
-    schemaToUse =
-      'schemas' in schema.current
-        ? schema.current.schemas[schemaName]
-        : schema.current;
+    schemaToUse = schema.multi[schemaName]
+      ? schema.multi[schemaName]!.schema
+      : schema.current!.schema;
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
 
@@ -97,10 +97,7 @@ export function getGraphQLCompletions(
 
     text = combinedText;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
-    schemaToUse =
-      'schemas' in schema.current
-        ? schema.current.schemas['default']
-        : schema.current;
+    schemaToUse = schema.current.schema;
   } else {
     return undefined;
   }

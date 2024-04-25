@@ -45,14 +45,14 @@ export function getGraphQLQuickInfo(
     const schemaName = getSchemaName(node, typeChecker);
 
     const foundToken = getToken(node.arguments[0], cursorPosition);
-    if (!schema.current || !foundToken) return undefined;
+    if ((!schema.current && !schema.multi[schemaName]) || !foundToken)
+      return undefined;
 
     text = node.arguments[0].getText();
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
-    schemaToUse =
-      'schemas' in schema.current
-        ? schema.current.schemas[schemaName]
-        : schema.current;
+    schemaToUse = schema.multi[schemaName]
+      ? schema.multi[schemaName]!.schema
+      : schema.current!.schema;
   } else if (ts.isTaggedTemplateExpression(node)) {
     const { template, tag } = node;
     if (!ts.isIdentifier(tag) || !templates.has(tag.text)) return undefined;
@@ -78,10 +78,7 @@ export function getGraphQLQuickInfo(
     foundToken.line = foundToken.line + amountOfLines;
     text = combinedText;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
-    schemaToUse =
-      'schemas' in schema.current
-        ? schema.current.schemas['default']
-        : schema.current;
+    schemaToUse = schema.current.schema;
   } else {
     return undefined;
   }

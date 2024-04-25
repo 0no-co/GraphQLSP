@@ -175,8 +175,8 @@ importers:
   packages/graphqlsp:
     dependencies:
       '@gql.tada/internal':
-        specifier: ^0.1.2
-        version: 0.1.2(graphql@16.8.1)(typescript@5.3.3)
+        specifier: 0.3.0-canary-3c09253dc57ece41320907f966ceceb5265b2b49
+        version: 0.3.0-canary-3c09253dc57ece41320907f966ceceb5265b2b49(graphql@16.8.1)(typescript@5.3.3)
       graphql:
         specifier: ^16.8.1
         version: 16.8.1
@@ -213,7 +213,7 @@ importers:
         version: link:../../../packages/graphqlsp
       '@urql/core':
         specifier: ^4.0.4
-        version: 4.2.2(graphql@16.8.1)
+        version: 4.2.2
     devDependencies:
       typescript:
         specifier: ^5.3.3
@@ -1373,11 +1373,11 @@ packages:
       typescript: 5.3.3
     dev: false
 
-  /@gql.tada/internal@0.1.2(graphql@16.8.1)(typescript@5.3.3):
-    resolution: {integrity: sha512-8I4Z1zxYYGK66FWdB3yIZBn3cITLPnciEgjChp3K2+Ha1e/AEBGtZv9AUlodraO/RZafDMkpFhoi+tMpluBjeg==}
+  /@gql.tada/internal@0.3.0-canary-3c09253dc57ece41320907f966ceceb5265b2b49(graphql@16.8.1)(typescript@5.3.3):
+    resolution: {integrity: sha512-HCXEY62QYGR98mRT7VRCLJck2YL4MP8DPJQ30jZzeW8c+mjud7pfHDQvnjQfe8jN/eL6ndI6rTgYP7Ac6J0xeg==}
     peerDependencies:
       graphql: ^16.8.1
-      typescript: ^5.3.3
+      typescript: ^5.0.0
     dependencies:
       '@0no-co/graphql.web': 1.0.6(graphql@16.8.1)
       graphql: 16.8.1
@@ -2268,7 +2268,7 @@ packages:
     peerDependencies:
       rollup: ^2.14.0||^3.0.0||^4.0.0
       tslib: '*'
-      typescript: ^5.3.3
+      typescript: '>=3.7.0'
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -2515,10 +2515,19 @@ packages:
       wonka: 6.3.4
     dev: false
 
-  /@urql/core@4.2.2(graphql@16.8.1):
+  /@urql/core@4.2.2:
     resolution: {integrity: sha512-TP1kheq9bnrEdnVbJqh0g0ZY/wfdpPeAzjiiDK+Tm+Pbi0O1Xdu6+fUJ/wJo5QpHZzkIyya4/AecG63e6scFqQ==}
     dependencies:
       '@0no-co/graphql.web': 1.0.4(graphql@16.8.1)
+      wonka: 6.3.4
+    transitivePeerDependencies:
+      - graphql
+    dev: false
+
+  /@urql/core@4.2.2(graphql@16.8.1):
+    resolution: {integrity: sha512-TP1kheq9bnrEdnVbJqh0g0ZY/wfdpPeAzjiiDK+Tm+Pbi0O1Xdu6+fUJ/wJo5QpHZzkIyya4/AecG63e6scFqQ==}
+    dependencies:
+      '@0no-co/graphql.web': 1.0.6(graphql@16.8.1)
       wonka: 6.3.4
     transitivePeerDependencies:
       - graphql
@@ -3174,7 +3183,7 @@ packages:
     resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
     engines: {node: '>=14'}
     peerDependencies:
-      typescript: ^5.3.3
+      typescript: '>=4.9.5'
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -5301,7 +5310,7 @@ packages:
     engines: {node: '>=16'}
     peerDependencies:
       rollup: ^3.29.4 || ^4
-      typescript: ^5.3.3
+      typescript: ^4.5 || ^5.0
     dependencies:
       magic-string: 0.30.5
       rollup: 4.9.5
@@ -5801,7 +5810,7 @@ packages:
       '@swc/core': '>=1.2.50'
       '@swc/wasm': '>=1.2.50'
       '@types/node': '*'
-      typescript: ^5.3.3
+      typescript: '>=2.7'
     peerDependenciesMeta:
       '@swc/core':
         optional: true
@@ -6364,9 +6373,9 @@ packages:
     id: file:packages/graphqlsp
     name: '@0no-co/graphqlsp'
     peerDependencies:
-      typescript: ^5.3.3
+      typescript: ^5.0.0
     dependencies:
-      '@gql.tada/internal': 0.1.2(graphql@16.8.1)(typescript@5.3.3)
+      '@gql.tada/internal': 0.3.0-canary-3c09253dc57ece41320907f966ceceb5265b2b49(graphql@16.8.1)(typescript@5.3.3)
       graphql: 16.8.1
       node-fetch: 2.6.7
       typescript: 5.3.3

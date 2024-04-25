@@ -14,11 +14,11 @@ type TemplateResult = {
 };
 
 export function resolveTemplate(
-  node: ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral,
+  node: ts.TaggedTemplateExpression | ts.StringLiteralLike,
   filename: string,
   info: ts.server.PluginCreateInfo
 ): TemplateResult {
-  if (ts.isNoSubstitutionTemplateLiteral(node)) {
+  if (ts.isStringLiteralLike(node)) {
     return { combinedText: node.getText().slice(1, -1), resolvedSpans: [] };
   }
 

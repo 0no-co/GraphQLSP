@@ -13,16 +13,12 @@ import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
 import { templates } from './ast/templates';
+import { SchemaRef } from './graphql/getSchema';
 
 export function getGraphQLQuickInfo(
   filename: string,
   cursorPosition: number,
-  schema: {
-    current:
-      | GraphQLSchema
-      | { schemas: { [name: string]: GraphQLSchema } }
-      | null;
-  },
+  schema: SchemaRef,
   info: ts.server.PluginCreateInfo
 ): ts.QuickInfo | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;

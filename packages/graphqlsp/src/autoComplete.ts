@@ -28,16 +28,12 @@ import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { getSuggestionsForFragmentSpread } from './graphql/getFragmentSpreadSuggestions';
 import { templates } from './ast/templates';
+import { SchemaRef } from './graphql/getSchema';
 
 export function getGraphQLCompletions(
   filename: string,
   cursorPosition: number,
-  schema: {
-    current:
-      | GraphQLSchema
-      | { schemas: { [name: string]: GraphQLSchema } }
-      | null;
-  },
+  schema: SchemaRef,
   info: ts.server.PluginCreateInfo
 ): ts.WithMetadata<ts.CompletionInfo> | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;

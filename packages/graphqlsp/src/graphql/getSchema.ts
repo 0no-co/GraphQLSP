@@ -132,6 +132,8 @@ export const loadSchema = (
       logger(`Failed to load schema: ${error}`);
     }
 
+    // Will this just automagically give us more schemas or should we
+    // leverage a "forEach"
     if (loaderResult) {
       ref.current = loaderResult && loaderResult.schema;
       ref.version++;

@@ -29,6 +29,7 @@ import {
   getDocumentReferenceFromDocumentNode,
   getDocumentReferenceFromTypeQuery,
 } from './persisted';
+import { SchemaRef } from './graphql/getSchema';
 
 const clientDirectives = new Set([
   'populate',
@@ -76,13 +77,7 @@ const cache = new LRUCache<number, ts.Diagnostic[]>({
 
 export function getGraphQLDiagnostics(
   filename: string,
-  schema: {
-    current:
-      | GraphQLSchema
-      | { schemas: { [name: string]: GraphQLSchema } }
-      | null;
-    version: number;
-  },
+  schema: SchemaRef,
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
@@ -347,13 +342,7 @@ const runDiagnostics = (
     }[];
     fragments: FragmentDefinitionNode[];
   },
-  schema: {
-    current:
-      | GraphQLSchema
-      | { schemas: { [name: string]: GraphQLSchema } }
-      | null;
-    version: number;
-  },
+  schema: SchemaRef,
   info: ts.server.PluginCreateInfo
 ) => {
   const filename = source.fileName;

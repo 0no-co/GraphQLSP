@@ -1,6 +1,9 @@
 import { ts } from '../ts';
 import { FragmentDefinitionNode, parse } from 'graphql';
 import { templates } from './templates';
+import * as checks from './checks';
+
+export { getSchemaName } from './checks';
 
 export function getSource(info: ts.server.PluginCreateInfo, filename: string) {
   const program = info.languageService.getProgram();
@@ -88,7 +91,7 @@ function unrollFragment(
     !ts.isIdentifier(found.expression) ||
     !templates.has(found.expression.escapedText as string)
   ) {
-    if (!isTadaGraphQLCall(found, typeChecker)) {
+    if (!checks.isTadaGraphQLCall(found, typeChecker)) {
       return fragments;
     }
   }
@@ -137,69 +140,6 @@ export function unrollTadaFragments(
   return wip;
 }
 
-export const isTadaGraphQLFunction = (
-  node: ts.LeftHandSideExpression,
-  checker: ts.TypeChecker | undefined
-) => {
-  const type = checker?.getTypeAtLocation(node);
-  // Any function that has both a `scalar` and `persisted` property
-  // is automatically considered a gql.tada graphql() function.
-  return (
-    type != null &&
-    type.getProperty('scalar') != null &&
-    type.getProperty('persisted') != null
-  );
-};
-
-export const isTadaGraphQLCall = (
-  node: ts.CallExpression,
-  checker: ts.TypeChecker | undefined
-): boolean => {
-  // We expect graphql() to be called with either a string literal
-  // or a string literal and an array of fragments
-  if (node.arguments.length < 1 || node.arguments.length > 2) {
-    return false;
-  } else if (!ts.isStringLiteralLike(node.arguments[0])) {
-    return false;
-  } else if (!/[{}]/.test(node.arguments[0].getText())) {
-    return false;
-  }
-  return checker ? isTadaGraphQLFunction(node.expression, checker) : false;
-};
-
-export const isIIFE = (node: ts.CallExpression) =>
-  node.arguments.length === 0 &&
-  (ts.isFunctionExpression(node.expression) ||
-    ts.isArrowFunction(node.expression)) &&
-  !node.expression.asteriskToken &&
-  !node.expression.modifiers?.length;
-
-export const getSchemaName = (
-  node: ts.CallExpression,
-  typeChecker?: ts.TypeChecker
-): string | null => {
-  if (!typeChecker) return null;
-
-  const expression = ts.isPropertyAccessExpression(node.expression)
-    ? node.expression.expression
-    : node.expression;
-  const type = typeChecker.getTypeAtLocation(expression);
-  if (type) {
-    const brandTypeSymbol = type.getProperty('__name');
-    if (brandTypeSymbol) {
-      const brand = typeChecker.getTypeOfSymbol(brandTypeSymbol);
-      if (brand.isUnionOrIntersection()) {
-        const found = brand.types.find(x => x.isStringLiteral());
-        return found && found.isStringLiteral() ? found.value : null;
-      } else if (brand.isStringLiteral()) {
-        return brand.value;
-      }
-    }
-  }
-
-  return null;
-};
-
 export function findAllCallExpressions(
   sourceFile: ts.SourceFile,
   info: ts.server.PluginCreateInfo,
@@ -220,7 +160,7 @@ export function findAllCallExpressions(
   let hasTriedToFindFragments = shouldSearchFragments ? false : true;
 
   function find(node: ts.Node): void {
-    if (!ts.isCallExpression(node) || isIIFE(node)) {
+    if (!ts.isCallExpression(node) || checks.isIIFE(node)) {
       return ts.forEachChild(node, find);
     }
 
@@ -230,12 +170,12 @@ export function findAllCallExpressions(
       !ts.isIdentifier(node.expression) ||
       !templates.has(node.expression.escapedText as string)
     ) {
-      if (!isTadaGraphQLCall(node, typeChecker)) {
+      if (!checks.isTadaGraphQLCall(node, typeChecker)) {
         return;
       }
     }
 
-    const name = getSchemaName(node, typeChecker);
+    const name = checks.getSchemaName(node, typeChecker);
     const [arg, arg2] = node.arguments;
 
     if (!hasTriedToFindFragments && !arg2) {
@@ -283,7 +223,7 @@ export function findAllPersistedCallExpressions(
   > = [];
   const typeChecker = info?.languageService.getProgram()?.getTypeChecker();
   function find(node: ts.Node): void {
-    if (!ts.isCallExpression(node) || isIIFE(node)) {
+    if (!ts.isCallExpression(node) || checks.isIIFE(node)) {
       return ts.forEachChild(node, find);
     }
 
@@ -300,13 +240,13 @@ export function findAllPersistedCallExpressions(
       !ts.isIdentifier(node.expression.expression) ||
       !templates.has(node.expression.expression.escapedText as string)
     ) {
-      if (!isTadaGraphQLFunction(node, typeChecker)) {
+      if (!checks.isTadaGraphQLFunction(node, typeChecker)) {
         return;
       }
     }
 
     if (info) {
-      const name = getSchemaName(node, typeChecker);
+      const name = checks.getSchemaName(node, typeChecker);
       result.push({ node, schema: name });
     } else {
       result.push(node);

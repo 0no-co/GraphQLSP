@@ -34,9 +34,9 @@ export const isTadaGraphQLFunction = (
 
 /** If `checker` is passed, checks if node is a gql.tada graphql() call */
 export const isTadaGraphQLCall = (
-  node: ts.Node,
+  node: ts.CallExpression,
   checker: ts.TypeChecker | undefined
-): node is ts.CallExpression => {
+): boolean => {
   // We expect graphql() to be called with either a string literal
   // or a string literal and an array of fragments
   if (!ts.isCallExpression(node)) {
@@ -44,8 +44,6 @@ export const isTadaGraphQLCall = (
   } else if (node.arguments.length < 1 || node.arguments.length > 2) {
     return false;
   } else if (!ts.isStringLiteralLike(node.arguments[0])) {
-    return false;
-  } else if (!/[{}]/.test(node.arguments[0].getText())) {
     return false;
   }
   return checker ? isTadaGraphQLFunction(node.expression, checker) : false;

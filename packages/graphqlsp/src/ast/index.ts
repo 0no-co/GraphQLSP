@@ -226,18 +226,18 @@ export function findAllPersistedCallExpressions(
 
 export function getAllFragments(
   fileName: string,
-  node: ts.CallExpression,
+  node: ts.Node,
   info: ts.server.PluginCreateInfo
 ) {
   let fragments: Array<FragmentDefinitionNode> = [];
 
-  const definitions = info.languageService.getDefinitionAtPosition(
-    fileName,
-    node.expression.getStart()
-  );
-  if (!definitions || !definitions.length) return fragments;
-
-  if (node.arguments[1] && ts.isArrayLiteralExpression(node.arguments[1])) {
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+  if (!ts.isCallExpression(node)) {
+    return fragments;
+  } else if (
+    node.arguments[1] &&
+    ts.isArrayLiteralExpression(node.arguments[1])
+  ) {
     const typeChecker = info.languageService.getProgram()?.getTypeChecker();
     const arg2 = node.arguments[1] as ts.ArrayLiteralExpression;
     arg2.elements.forEach(element => {
@@ -246,7 +246,15 @@ export function getAllFragments(
       }
     });
     return fragments;
+  } else if (checks.isTadaGraphQLCall(node, typeChecker)) {
+    return fragments;
   }
+
+  const definitions = info.languageService.getDefinitionAtPosition(
+    fileName,
+    node.expression.getStart()
+  );
+  if (!definitions || !definitions.length) return fragments;
 
   const def = definitions[0];
   if (!def) return fragments;

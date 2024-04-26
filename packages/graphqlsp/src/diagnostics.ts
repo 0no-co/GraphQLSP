@@ -87,7 +87,7 @@ export function getGraphQLDiagnostics(
 
   let fragments: Array<FragmentDefinitionNode> = [],
     nodes: {
-      node: ts.NoSubstitutionTemplateLiteral | ts.TaggedTemplateExpression;
+      node: ts.StringLiteralLike | ts.TaggedTemplateExpression;
       schema: string | null;
     }[];
   if (isCallExpression) {
@@ -228,7 +228,7 @@ export function getGraphQLDiagnostics(
         if (
           !initializer ||
           !ts.isCallExpression(initializer) ||
-          !ts.isNoSubstitutionTemplateLiteral(initializer.arguments[0])
+          !ts.isStringLiteralLike(initializer.arguments[0])
         ) {
           // TODO: we can make this check more stringent where we also parse and resolve
           // the accompanying template.
@@ -338,7 +338,7 @@ const runDiagnostics = (
     fragments,
   }: {
     nodes: {
-      node: ts.TaggedTemplateExpression | ts.NoSubstitutionTemplateLiteral;
+      node: ts.TaggedTemplateExpression | ts.StringLiteralLike;
       schema: string | null;
     }[];
     fragments: FragmentDefinitionNode[];

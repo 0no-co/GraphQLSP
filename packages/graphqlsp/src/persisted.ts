@@ -106,7 +106,7 @@ export function getPersistedCodeFixAtPosition(
   if (
     !initializer ||
     !ts.isCallExpression(initializer) ||
-    !ts.isNoSubstitutionTemplateLiteral(initializer.arguments[0])
+    !ts.isStringLiteralLike(initializer.arguments[0])
   )
     return undefined;
 
@@ -155,9 +155,7 @@ export function getPersistedCodeFixAtPosition(
 
 export const generateHashForDocument = (
   info: ts.server.PluginCreateInfo,
-  templateLiteral:
-    | ts.NoSubstitutionTemplateLiteral
-    | ts.TaggedTemplateExpression,
+  templateLiteral: ts.StringLiteralLike | ts.TaggedTemplateExpression,
   foundFilename: string
 ): string | undefined => {
   const externalSource = getSource(info, foundFilename)!;

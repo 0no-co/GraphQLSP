@@ -139,14 +139,14 @@ export function findAllCallExpressions(
   shouldSearchFragments: boolean = true
 ): {
   nodes: Array<{
-    node: ts.NoSubstitutionTemplateLiteral;
+    node: ts.StringLiteralLike;
     schema: string | null;
   }>;
   fragments: Array<FragmentDefinitionNode>;
 } {
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   const result: Array<{
-    node: ts.NoSubstitutionTemplateLiteral;
+    node: ts.StringLiteralLike;
     schema: string | null;
   }> = [];
   let fragments: Array<FragmentDefinitionNode> = [];
@@ -186,7 +186,7 @@ export function findAllCallExpressions(
       });
     }
 
-    if (arg && ts.isNoSubstitutionTemplateLiteral(arg)) {
+    if (arg && ts.isStringLiteralLike(arg)) {
       result.push({ node: arg, schema: name });
     }
   }
@@ -330,7 +330,7 @@ export function bubbleUpTemplate(node: ts.Node): ts.Node {
 
 export function bubbleUpCallExpression(node: ts.Node): ts.Node {
   while (
-    ts.isNoSubstitutionTemplateLiteral(node) ||
+    ts.isStringLiteralLike(node) ||
     ts.isToken(node) ||
     ts.isTemplateExpression(node) ||
     ts.isTemplateSpan(node)

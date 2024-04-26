@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.1
+
+### Patch Changes
+
+- ⚠️ Fix schema name being determined incorrectly when calling `graphql` from namespace/property-access
+  Submitted by [@kitten](https://github.com/kitten) (See [#312](https://github.com/0no-co/GraphQLSP/pull/312))
+
 ## 1.12.0
 
 ### Minor Changes

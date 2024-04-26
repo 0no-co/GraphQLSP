@@ -1,5 +1,35 @@
 # @0no-co/graphqlsp
 
+## 1.12.0
+
+### Minor Changes
+
+- Add support for defining multiple indepenent schemas through a new config property called `schemas`, you can
+  pass a config like the following:
+  ```json
+  {
+    "name": "@0no-co/graphqlsp",
+    "schemas": [
+      {
+        "name": "pokemons",
+        "schema": "./pokemons.graphql",
+        "tadaOutputLocation": "./pokemons-introspection.d.ts"
+      },
+      {
+        "name": "weather",
+        "schema": "./weather.graphql",
+        "tadaOutputLocation": "./weather-introspection.d.ts"
+      }
+    ]
+  }
+  ```
+  The LSP will depending on what `graphql()` template you use figure out what API you are reaching out to.
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#303](https://github.com/0no-co/GraphQLSP/pull/303))
+- Expose `findAllCallExpressions` on `@0no-co/graphqlsp/api`
+  Submitted by [@kitten](https://github.com/kitten) (See [#308](https://github.com/0no-co/GraphQLSP/pull/308))
+- Expand support for `gql.tada` API. GraphQLSP will now recognize `graphql()`/`graphql.persisted()` calls regardless of variable naming and support more obscure usage patterns
+  Submitted by [@kitten](https://github.com/kitten) (See [#309](https://github.com/0no-co/GraphQLSP/pull/309))
+
 ## 1.11.0
 
 ### Minor Changes

@@ -91,6 +91,13 @@ function unrollFragment(
       arg2.elements.forEach(element => {
         if (ts.isIdentifier(element)) {
           fragments.push(...unrollFragment(element, info, typeChecker));
+        } else if (ts.isPropertyAccessExpression(element)) {
+          let el = element;
+          while (ts.isPropertyAccessExpression(el.expression))
+            el = el.expression;
+          if (ts.isIdentifier(el.name)) {
+            fragments.push(...unrollFragment(el.name, info, typeChecker));
+          }
         }
       });
     }
@@ -116,10 +123,7 @@ export function unrollTadaFragments(
       wip.push(...unrollFragment(element, info, typeChecker));
     } else if (ts.isPropertyAccessExpression(element)) {
       let el = element;
-      while (ts.isPropertyAccessExpression(el.expression)) {
-        el = el.expression;
-      }
-
+      while (ts.isPropertyAccessExpression(el.expression)) el = el.expression;
       if (ts.isIdentifier(el.name)) {
         wip.push(...unrollFragment(el.name, info, typeChecker));
       }

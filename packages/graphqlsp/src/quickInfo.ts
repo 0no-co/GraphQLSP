@@ -9,6 +9,8 @@ import {
   getSchemaName,
   getSource,
 } from './ast';
+
+import * as checks from './ast/checks';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
@@ -22,6 +24,7 @@ export function getGraphQLQuickInfo(
   info: ts.server.PluginCreateInfo
 ): ts.QuickInfo | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
 
   const source = getSource(info, filename);
   if (!source) return undefined;
@@ -34,13 +37,7 @@ export function getGraphQLQuickInfo(
     : bubbleUpTemplate(node);
 
   let cursor, text, schemaToUse: GraphQLSchema | undefined;
-  if (
-    ts.isCallExpression(node) &&
-    isCallExpression &&
-    templates.has(node.expression.getText()) &&
-    node.arguments.length > 0 &&
-    ts.isNoSubstitutionTemplateLiteral(node.arguments[0])
-  ) {
+  if (isCallExpression && checks.isGraphQLCall(node, typeChecker)) {
     const typeChecker = info.languageService.getProgram()?.getTypeChecker();
     const schemaName = getSchemaName(node, typeChecker);
 
@@ -54,12 +51,8 @@ export function getGraphQLQuickInfo(
 
     text = node.arguments[0].getText();
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
-  } else if (ts.isTaggedTemplateExpression(node)) {
-    const { template, tag } = node;
-    if (!ts.isIdentifier(tag) || !templates.has(tag.text)) return undefined;
-
-    const foundToken = getToken(template, cursorPosition);
-
+  } else if (!isCallExpression && checks.isGraphQLTag(node)) {
+    const foundToken = getToken(node.template, cursorPosition);
     if (!foundToken || !schema.current) return undefined;
 
     const { combinedText, resolvedSpans } = resolveTemplate(

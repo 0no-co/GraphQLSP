@@ -15,19 +15,18 @@ import {
 import { FragmentDefinitionNode, GraphQLSchema, Kind, parse } from 'graphql';
 import { print } from '@0no-co/graphql.web';
 
+import * as checks from './ast/checks';
 import {
   bubbleUpCallExpression,
   bubbleUpTemplate,
   findNode,
   getAllFragments,
-  getSchemaName,
   getSource,
 } from './ast';
 import { Cursor } from './ast/cursor';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { getSuggestionsForFragmentSpread } from './graphql/getFragmentSpreadSuggestions';
-import { templates } from './ast/templates';
 import { SchemaRef } from './graphql/getSchema';
 
 export function getGraphQLCompletions(
@@ -37,7 +36,7 @@ export function getGraphQLCompletions(
   info: ts.server.PluginCreateInfo
 ): ts.WithMetadata<ts.CompletionInfo> | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
-
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   const source = getSource(info, filename);
   if (!source) return undefined;
 
@@ -49,15 +48,8 @@ export function getGraphQLCompletions(
     : bubbleUpTemplate(node);
 
   let text, cursor, schemaToUse: GraphQLSchema | undefined;
-  if (
-    ts.isCallExpression(node) &&
-    isCallExpression &&
-    templates.has(node.expression.getText()) &&
-    node.arguments.length > 0 &&
-    ts.isNoSubstitutionTemplateLiteral(node.arguments[0])
-  ) {
-    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
-    const schemaName = getSchemaName(node, typeChecker);
+  if (isCallExpression && checks.isGraphQLCall(node, typeChecker)) {
+    const schemaName = checks.getSchemaName(node, typeChecker);
 
     schemaToUse =
       schemaName && schema.multi[schemaName]
@@ -72,12 +64,8 @@ export function getGraphQLCompletions(
 
     text = `${queryText}\n${fragments.map(x => print(x)).join('\n')}`;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
-  } else if (ts.isTaggedTemplateExpression(node)) {
-    const { template, tag } = node;
-
-    if (!ts.isIdentifier(tag) || !templates.has(tag.text)) return undefined;
-
-    const foundToken = getToken(template, cursorPosition);
+  } else if (!isCallExpression && checks.isGraphQLTag(node)) {
+    const foundToken = getToken(node.template, cursorPosition);
     if (!foundToken || !schema.current) return undefined;
 
     const { combinedText, resolvedSpans } = resolveTemplate(

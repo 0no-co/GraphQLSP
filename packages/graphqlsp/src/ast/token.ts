@@ -11,9 +11,13 @@ export interface Token {
 }
 
 export const getToken = (
-  template: ts.TemplateLiteral,
+  template: ts.Expression,
   cursorPosition: number
 ): Token | undefined => {
+  if (!ts.isTemplateLiteral(template) && !ts.isStringLiteralLike(template)) {
+    return undefined;
+  }
+
   const text = template.getText().slice(1, -1);
   const input = text.split('\n');
   const parser = onlineParser();

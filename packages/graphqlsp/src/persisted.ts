@@ -2,9 +2,9 @@ import { ts } from './ts';
 
 import { createHash } from 'crypto';
 
+import * as checks from './ast/checks';
 import { findAllCallExpressions, findNode, getSource } from './ast';
 import { resolveTemplate } from './ast/resolve';
-import { templates } from './ast/templates';
 import { parse, print, visit } from '@0no-co/graphql.web';
 
 type PersistedAction = {
@@ -15,19 +15,13 @@ type PersistedAction = {
   replacement: string;
 };
 
-const isPersistedCall = (expr: ts.LeftHandSideExpression) => {
-  const expressionText = expr.getText();
-  const [template, method] = expressionText.split('.');
-  return templates.has(template) && method === 'persisted';
-};
-
 export function getPersistedCodeFixAtPosition(
   filename: string,
   position: number,
   info: ts.server.PluginCreateInfo
 ): PersistedAction | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
-
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   if (!isCallExpression) return undefined;
 
   let source = getSource(info, filename);
@@ -77,12 +71,9 @@ export function getPersistedCodeFixAtPosition(
   // like "graphql.persisted", in a future iteration when the API surface
   // is more defined we will need to use the ts.Symbol to support re-exporting
   // this function by means of "export const peristed = graphql.persisted".
-  if (
-    (callExpression && !ts.isCallExpression(callExpression)) ||
-    !isPersistedCall(callExpression.expression) ||
-    (!callExpression.typeArguments && !callExpression.arguments[1])
-  )
+  if (!checks.isTadaPersistedCall(callExpression, typeChecker)) {
     return undefined;
+  }
 
   let foundNode,
     foundFilename = filename;
@@ -115,7 +106,7 @@ export function getPersistedCodeFixAtPosition(
   if (
     !initializer ||
     !ts.isCallExpression(initializer) ||
-    !ts.isNoSubstitutionTemplateLiteral(initializer.arguments[0])
+    !ts.isStringLiteralLike(initializer.arguments[0])
   )
     return undefined;
 
@@ -164,9 +155,7 @@ export function getPersistedCodeFixAtPosition(
 
 export const generateHashForDocument = (
   info: ts.server.PluginCreateInfo,
-  templateLiteral:
-    | ts.NoSubstitutionTemplateLiteral
-    | ts.TaggedTemplateExpression,
+  templateLiteral: ts.StringLiteralLike | ts.TaggedTemplateExpression,
   foundFilename: string
 ): string | undefined => {
   const externalSource = getSource(info, foundFilename)!;
@@ -189,7 +178,7 @@ export const generateHashForDocument = (
   [...spreads].forEach(spreadName => {
     const fragmentDefinition = fragments.find(x => x.name.value === spreadName);
     if (!fragmentDefinition) {
-      console.warn(
+      info.project.projectService.logger.info(
         `[GraphQLSP] could not find fragment for spread ${spreadName}!`
       );
       return;
@@ -215,6 +204,7 @@ export const getDocumentReferenceFromTypeQuery = (
 
   if (!references) return { node: null, filename };
 
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   let found: ts.CallExpression | null = null;
   let foundFilename = filename;
   references.forEach(ref => {
@@ -228,8 +218,7 @@ export const getDocumentReferenceFromTypeQuery = (
     if (
       ts.isVariableDeclaration(foundNode.parent) &&
       foundNode.parent.initializer &&
-      ts.isCallExpression(foundNode.parent.initializer) &&
-      templates.has(foundNode.parent.initializer.expression.getText())
+      checks.isGraphQLCall(foundNode.parent.initializer, typeChecker)
     ) {
       found = foundNode.parent.initializer;
       foundFilename = ref.fileName;
@@ -254,6 +243,7 @@ export const getDocumentReferenceFromDocumentNode = (
 
     if (!references) return { node: null, filename };
 
+    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
     let found: ts.CallExpression | null = null;
     let foundFilename = filename;
     references.forEach(ref => {
@@ -267,8 +257,7 @@ export const getDocumentReferenceFromDocumentNode = (
       if (
         ts.isVariableDeclaration(foundNode.parent) &&
         foundNode.parent.initializer &&
-        ts.isCallExpression(foundNode.parent.initializer) &&
-        templates.has(foundNode.parent.initializer.expression.getText())
+        checks.isGraphQLCall(foundNode.parent.initializer, typeChecker)
       ) {
         found = foundNode.parent.initializer;
         foundFilename = ref.fileName;

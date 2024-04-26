@@ -1,6 +1,9 @@
 import { ts } from '../ts';
 import { FragmentDefinitionNode, parse } from 'graphql';
-import { templates } from './templates';
+import * as checks from './checks';
+import { resolveTadaFragmentArray } from './resolve';
+
+export { getSchemaName } from './checks';
 
 export function getSource(info: ts.server.PluginCreateInfo, filename: string) {
   const program = info.languageService.getProgram();
@@ -32,11 +35,9 @@ export function findAllTaggedTemplateNodes(
   > = [];
   function find(node: ts.Node) {
     if (
-      (ts.isTaggedTemplateExpression(node) &&
-        templates.has(node.tag.getText())) ||
+      checks.isGraphQLTag(node) ||
       (ts.isNoSubstitutionTemplateLiteral(node) &&
-        ts.isTaggedTemplateExpression(node.parent) &&
-        templates.has(node.parent.tag.getText()))
+        checks.isGraphQLTag(node.parent))
     ) {
       result.push(node);
       return;
@@ -50,7 +51,8 @@ export function findAllTaggedTemplateNodes(
 
 function unrollFragment(
   element: ts.Identifier,
-  info: ts.server.PluginCreateInfo
+  info: ts.server.PluginCreateInfo,
+  typeChecker: ts.TypeChecker | undefined
 ): Array<FragmentDefinitionNode> {
   const fragments: Array<FragmentDefinitionNode> = [];
   const definitions = info.languageService.getDefinitionAtPosition(
@@ -78,25 +80,27 @@ function unrollFragment(
     found = found.parent.initializer;
   }
 
-  if (ts.isCallExpression(found) && templates.has(found.expression.getText())) {
-    const [arg, arg2] = found.arguments;
-    if (arg2 && ts.isArrayLiteralExpression(arg2)) {
-      arg2.elements.forEach(element => {
-        if (ts.isIdentifier(element)) {
-          fragments.push(...unrollFragment(element, info));
-        }
-      });
-    }
-
-    try {
-      const parsed = parse(arg.getText().slice(1, -1), { noLocation: true });
-      parsed.definitions.forEach(definition => {
-        if (definition.kind === 'FragmentDefinition') {
-          fragments.push(definition);
-        }
-      });
-    } catch (e) {}
+  // Check whether we've got a `graphql()` or `gql()` call, by the
+  // call expression's identifier
+  if (!checks.isGraphQLCall(found, typeChecker)) {
+    return fragments;
   }
+
+  try {
+    const text = found.arguments[0];
+    const fragmentRefs = resolveTadaFragmentArray(found.arguments[1]);
+    if (fragmentRefs) {
+      for (const identifier of fragmentRefs) {
+        fragments.push(...unrollFragment(identifier, info, typeChecker));
+      }
+    }
+    const parsed = parse(text.getText().slice(1, -1), { noLocation: true });
+    parsed.definitions.forEach(definition => {
+      if (definition.kind === 'FragmentDefinition') {
+        fragments.push(definition);
+      }
+    });
+  } catch (e) {}
 
   return fragments;
 }
@@ -106,17 +110,15 @@ export function unrollTadaFragments(
   wip: FragmentDefinitionNode[],
   info: ts.server.PluginCreateInfo
 ): FragmentDefinitionNode[] {
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   fragmentsArray.elements.forEach(element => {
     if (ts.isIdentifier(element)) {
-      wip.push(...unrollFragment(element, info));
+      wip.push(...unrollFragment(element, info, typeChecker));
     } else if (ts.isPropertyAccessExpression(element)) {
       let el = element;
-      while (ts.isPropertyAccessExpression(el.expression)) {
-        el = el.expression;
-      }
-
+      while (ts.isPropertyAccessExpression(el.expression)) el = el.expression;
       if (ts.isIdentifier(el.name)) {
-        wip.push(...unrollFragment(el.name, info));
+        wip.push(...unrollFragment(el.name, info, typeChecker));
       }
     }
   });
@@ -124,82 +126,51 @@ export function unrollTadaFragments(
   return wip;
 }
 
-export const getSchemaName = (
-  node: ts.CallExpression,
-  typeChecker?: ts.TypeChecker
-): string | null => {
-  if (!typeChecker) return null;
-
-  const expression = ts.isPropertyAccessExpression(node.expression)
-    ? node.expression.expression
-    : node.expression;
-  const type = typeChecker.getTypeAtLocation(expression);
-  if (type) {
-    const brandTypeSymbol = type.getProperty('__name');
-    if (brandTypeSymbol) {
-      const brand = typeChecker.getTypeOfSymbol(brandTypeSymbol);
-      if (brand.isUnionOrIntersection()) {
-        const found = brand.types.find(x => x.isStringLiteral());
-        return found && found.isStringLiteral() ? found.value : null;
-      } else if (brand.isStringLiteral()) {
-        return brand.value;
-      }
-    }
-  }
-
-  return null;
-};
-
 export function findAllCallExpressions(
   sourceFile: ts.SourceFile,
   info: ts.server.PluginCreateInfo,
   shouldSearchFragments: boolean = true
 ): {
   nodes: Array<{
-    node: ts.NoSubstitutionTemplateLiteral;
+    node: ts.StringLiteralLike;
     schema: string | null;
   }>;
   fragments: Array<FragmentDefinitionNode>;
 } {
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   const result: Array<{
-    node: ts.NoSubstitutionTemplateLiteral;
+    node: ts.StringLiteralLike;
     schema: string | null;
   }> = [];
   let fragments: Array<FragmentDefinitionNode> = [];
   let hasTriedToFindFragments = shouldSearchFragments ? false : true;
-  function find(node: ts.Node) {
-    if (ts.isCallExpression(node) && templates.has(node.expression.getText())) {
-      const name = getSchemaName(node, typeChecker);
 
-      const [arg, arg2] = node.arguments;
+  function find(node: ts.Node): void {
+    if (!ts.isCallExpression(node) || checks.isIIFE(node)) {
+      return ts.forEachChild(node, find);
+    }
 
-      if (!hasTriedToFindFragments && !arg2) {
-        hasTriedToFindFragments = true;
-        fragments.push(...getAllFragments(sourceFile.fileName, node, info));
-      } else if (arg2 && ts.isArrayLiteralExpression(arg2)) {
-        arg2.elements.forEach(element => {
-          if (ts.isIdentifier(element)) {
-            fragments.push(...unrollFragment(element, info));
-          } else if (ts.isPropertyAccessExpression(element)) {
-            let el = element;
-            while (ts.isPropertyAccessExpression(el.expression)) {
-              el = el.expression;
-            }
-
-            if (ts.isIdentifier(el.name)) {
-              fragments.push(...unrollFragment(el.name, info));
-            }
-          }
-        });
-      }
-
-      if (arg && ts.isNoSubstitutionTemplateLiteral(arg)) {
-        result.push({ node: arg, schema: name });
-      }
+    // Check whether we've got a `graphql()` or `gql()` call, by the
+    // call expression's identifier
+    if (!checks.isGraphQLCall(node, typeChecker)) {
       return;
-    } else {
-      ts.forEachChild(node, find);
+    }
+
+    const name = checks.getSchemaName(node, typeChecker);
+    const text = node.arguments[0];
+    const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
+
+    if (!hasTriedToFindFragments && !fragmentRefs) {
+      hasTriedToFindFragments = true;
+      fragments.push(...getAllFragments(sourceFile.fileName, node, info));
+    } else if (fragmentRefs) {
+      for (const identifier of fragmentRefs) {
+        fragments.push(...unrollFragment(identifier, info, typeChecker));
+      }
+    }
+
+    if (text && ts.isStringLiteralLike(text)) {
+      result.push({ node: text, schema: name });
     }
   }
   find(sourceFile);
@@ -222,24 +193,18 @@ export function findAllPersistedCallExpressions(
     ts.CallExpression | { node: ts.CallExpression; schema: string | null }
   > = [];
   const typeChecker = info?.languageService.getProgram()?.getTypeChecker();
-  function find(node: ts.Node) {
-    if (node && ts.isCallExpression(node)) {
-      // This expression ideally for us looks like <template>.persisted
-      const expression = node.expression.getText();
-      const parts = expression.split('.');
-      if (parts.length !== 2) return;
+  function find(node: ts.Node): void {
+    if (!ts.isCallExpression(node) || checks.isIIFE(node)) {
+      return ts.forEachChild(node, find);
+    }
 
-      const [template, method] = parts;
-      if (!templates.has(template) || method !== 'persisted') return;
-
-      if (info) {
-        const name = getSchemaName(node, typeChecker);
-        result.push({ node, schema: name });
-      } else {
-        result.push(node);
-      }
+    if (!checks.isTadaPersistedCall(node, typeChecker)) {
+      return;
+    } else if (info) {
+      const name = checks.getSchemaName(node, typeChecker);
+      result.push({ node, schema: name });
     } else {
-      ts.forEachChild(node, find);
+      result.push(node);
     }
   }
   find(sourceFile);
@@ -248,26 +213,32 @@ export function findAllPersistedCallExpressions(
 
 export function getAllFragments(
   fileName: string,
-  node: ts.CallExpression,
+  node: ts.Node,
   info: ts.server.PluginCreateInfo
 ) {
   let fragments: Array<FragmentDefinitionNode> = [];
+
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+  if (!ts.isCallExpression(node)) {
+    return fragments;
+  }
+
+  const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
+  if (fragmentRefs) {
+    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+    for (const identifier of fragmentRefs) {
+      fragments.push(...unrollFragment(identifier, info, typeChecker));
+    }
+    return fragments;
+  } else if (checks.isTadaGraphQLCall(node, typeChecker)) {
+    return fragments;
+  }
 
   const definitions = info.languageService.getDefinitionAtPosition(
     fileName,
     node.expression.getStart()
   );
   if (!definitions || !definitions.length) return fragments;
-
-  if (node.arguments[1] && ts.isArrayLiteralExpression(node.arguments[1])) {
-    const arg2 = node.arguments[1] as ts.ArrayLiteralExpression;
-    arg2.elements.forEach(element => {
-      if (ts.isIdentifier(element)) {
-        fragments.push(...unrollFragment(element, info));
-      }
-    });
-    return fragments;
-  }
 
   const def = definitions[0];
   if (!def) return fragments;
@@ -339,7 +310,7 @@ export function bubbleUpTemplate(node: ts.Node): ts.Node {
 
 export function bubbleUpCallExpression(node: ts.Node): ts.Node {
   while (
-    ts.isNoSubstitutionTemplateLiteral(node) ||
+    ts.isStringLiteralLike(node) ||
     ts.isToken(node) ||
     ts.isTemplateExpression(node) ||
     ts.isTemplateSpan(node)

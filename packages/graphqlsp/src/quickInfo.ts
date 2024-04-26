@@ -46,17 +46,13 @@ export function getGraphQLQuickInfo(
         ? schema.multi[schemaName]?.schema
         : schema.current?.schema;
 
-    const foundToken = ts.isStringLiteralLike(node.arguments[0])
-      ? getToken(node.arguments[0], cursorPosition)
-      : undefined;
+    const foundToken = getToken(node.arguments[0], cursorPosition);
     if (!schemaToUse || !foundToken) return undefined;
 
     text = node.arguments[0].getText();
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else if (!isCallExpression && checks.isGraphQLTag(node)) {
-    const foundToken = ts.isStringLiteralLike(node.template)
-      ? getToken(node.template, cursorPosition)
-      : undefined;
+    const foundToken = getToken(node.template, cursorPosition);
     if (!foundToken || !schema.current) return undefined;
 
     const { combinedText, resolvedSpans } = resolveTemplate(

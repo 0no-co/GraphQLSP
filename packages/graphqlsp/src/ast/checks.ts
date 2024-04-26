@@ -96,10 +96,7 @@ export const getSchemaName = (
   typeChecker: ts.TypeChecker | undefined
 ): string | null => {
   if (!typeChecker) return null;
-  const expression = ts.isPropertyAccessExpression(node.expression)
-    ? node.expression.expression
-    : node.expression;
-  const type = typeChecker.getTypeAtLocation(expression);
+  const type = typeChecker.getTypeAtLocation(node.expression);
   if (type) {
     const brandTypeSymbol = type.getProperty('__name');
     if (brandTypeSymbol) {

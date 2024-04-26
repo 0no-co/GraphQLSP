@@ -146,3 +146,20 @@ export function resolveTemplate(
 
   return { combinedText: templateText, resolvedSpans };
 }
+
+export const resolveTadaFragmentArray = (
+  node: ts.Expression | undefined
+): undefined | readonly ts.Identifier[] => {
+  if (!node) return undefined;
+  // NOTE: Remove `as T`, users may commonly use `as const` for no reason
+  while (ts.isAsExpression(node)) node = node.expression;
+  if (!ts.isArrayLiteralExpression(node)) return undefined;
+  // NOTE: Let's avoid the allocation of another array here if we can
+  if (node.elements.every(ts.isIdentifier)) return node.elements;
+  const identifiers: ts.Identifier[] = [];
+  for (let element of node.elements) {
+    while (ts.isPropertyAccessExpression(element)) element = element.expression;
+    if (ts.isIdentifier(element)) identifiers.push(element);
+  }
+  return identifiers;
+};

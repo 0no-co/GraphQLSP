@@ -1,6 +1,7 @@
 import { ts } from '../ts';
 import { FragmentDefinitionNode, parse } from 'graphql';
 import * as checks from './checks';
+import { resolveTadaFragmentArray } from './resolve';
 
 export { getSchemaName } from './checks';
 
@@ -86,22 +87,14 @@ function unrollFragment(
   }
 
   try {
-    const [arg, arg2] = found.arguments;
-    if (arg2 && ts.isArrayLiteralExpression(arg2)) {
-      arg2.elements.forEach(element => {
-        if (ts.isIdentifier(element)) {
-          fragments.push(...unrollFragment(element, info, typeChecker));
-        } else if (ts.isPropertyAccessExpression(element)) {
-          let el = element;
-          while (ts.isPropertyAccessExpression(el.expression))
-            el = el.expression;
-          if (ts.isIdentifier(el.name)) {
-            fragments.push(...unrollFragment(el.name, info, typeChecker));
-          }
-        }
-      });
+    const text = found.arguments[0];
+    const fragmentRefs = resolveTadaFragmentArray(found.arguments[1]);
+    if (fragmentRefs) {
+      for (const identifier of fragmentRefs) {
+        fragments.push(...unrollFragment(identifier, info, typeChecker));
+      }
     }
-    const parsed = parse(arg.getText().slice(1, -1), { noLocation: true });
+    const parsed = parse(text.getText().slice(1, -1), { noLocation: true });
     parsed.definitions.forEach(definition => {
       if (definition.kind === 'FragmentDefinition') {
         fragments.push(definition);
@@ -164,30 +157,20 @@ export function findAllCallExpressions(
     }
 
     const name = checks.getSchemaName(node, typeChecker);
-    const [arg, arg2] = node.arguments;
+    const text = node.arguments[0];
+    const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
 
-    if (!hasTriedToFindFragments && !arg2) {
+    if (!hasTriedToFindFragments && !fragmentRefs) {
       hasTriedToFindFragments = true;
       fragments.push(...getAllFragments(sourceFile.fileName, node, info));
-    } else if (arg2 && ts.isArrayLiteralExpression(arg2)) {
-      arg2.elements.forEach(element => {
-        if (ts.isIdentifier(element)) {
-          fragments.push(...unrollFragment(element, info, typeChecker));
-        } else if (ts.isPropertyAccessExpression(element)) {
-          let el = element;
-          while (ts.isPropertyAccessExpression(el.expression)) {
-            el = el.expression;
-          }
-
-          if (ts.isIdentifier(el.name)) {
-            fragments.push(...unrollFragment(el.name, info, typeChecker));
-          }
-        }
-      });
+    } else if (fragmentRefs) {
+      for (const identifier of fragmentRefs) {
+        fragments.push(...unrollFragment(identifier, info, typeChecker));
+      }
     }
 
-    if (arg && ts.isStringLiteralLike(arg)) {
-      result.push({ node: arg, schema: name });
+    if (text && ts.isStringLiteralLike(text)) {
+      result.push({ node: text, schema: name });
     }
   }
   find(sourceFile);
@@ -238,17 +221,14 @@ export function getAllFragments(
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   if (!ts.isCallExpression(node)) {
     return fragments;
-  } else if (
-    node.arguments[1] &&
-    ts.isArrayLiteralExpression(node.arguments[1])
-  ) {
+  }
+
+  const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
+  if (fragmentRefs) {
     const typeChecker = info.languageService.getProgram()?.getTypeChecker();
-    const arg2 = node.arguments[1] as ts.ArrayLiteralExpression;
-    arg2.elements.forEach(element => {
-      if (ts.isIdentifier(element)) {
-        fragments.push(...unrollFragment(element, info, typeChecker));
-      }
-    });
+    for (const identifier of fragmentRefs) {
+      fragments.push(...unrollFragment(identifier, info, typeChecker));
+    }
     return fragments;
   } else if (checks.isTadaGraphQLCall(node, typeChecker)) {
     return fragments;

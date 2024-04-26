@@ -79,7 +79,8 @@ export const isGraphQLCall = (
 ): node is ts.CallExpression => {
   return (
     ts.isCallExpression(node) &&
-    (node.arguments.length > 1 || node.arguments.length <= 2) &&
+    node.arguments.length >= 1 &&
+    node.arguments.length <= 2 &&
     (isGraphQLFunctionIdentifier(node.expression) ||
       isTadaGraphQLCall(node, checker))
   );

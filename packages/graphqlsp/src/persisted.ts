@@ -180,7 +180,7 @@ export const generateHashForDocument = (
   [...spreads].forEach(spreadName => {
     const fragmentDefinition = fragments.find(x => x.name.value === spreadName);
     if (!fragmentDefinition) {
-      console.warn(
+      info.project.projectService.logger.info(
         `[GraphQLSP] could not find fragment for spread ${spreadName}!`
       );
       return;

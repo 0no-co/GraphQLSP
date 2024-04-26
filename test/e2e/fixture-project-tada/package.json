@@ -3,7 +3,7 @@
   "private": true,
   "dependencies": {
     "graphql": "^16.0.0",
-    "gql.tada": "^1.2.1",
+    "gql.tada": "^1.6.0",
     "@graphql-typed-document-node/core": "^3.0.0",
     "@0no-co/graphqlsp": "workspace:*",
     "@urql/core": "^4.0.4"

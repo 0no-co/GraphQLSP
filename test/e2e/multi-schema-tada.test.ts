@@ -14,6 +14,7 @@ const projectPath = path.resolve(
 describe('Multiple schemas', () => {
   const outfilePokemonTest = path.join(projectPath, 'simple-pokemon.ts');
   const outfileTodoTest = path.join(projectPath, 'simple-todo.ts');
+  const outfileStarImport = path.join(projectPath, 'star-import.ts');
 
   let server: TSServer;
   beforeAll(async () => {
@@ -26,6 +27,11 @@ describe('Multiple schemas', () => {
     } satisfies ts.server.protocol.OpenRequestArgs);
     server.sendCommand('open', {
       file: outfileTodoTest,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+    server.sendCommand('open', {
+      file: outfileStarImport,
       fileContent: '// empty',
       scriptKindName: 'TS',
     } satisfies ts.server.protocol.OpenRequestArgs);
@@ -46,6 +52,13 @@ describe('Multiple schemas', () => {
             'utf-8'
           ),
         },
+        {
+          file: outfileStarImport,
+          fileContent: fs.readFileSync(
+            path.join(projectPath, 'fixtures/star-import.ts'),
+            'utf-8'
+          ),
+        },
       ],
     } satisfies ts.server.protocol.UpdateOpenRequestArgs);
 
@@ -57,6 +70,10 @@ describe('Multiple schemas', () => {
       file: outfileTodoTest,
       tmpfile: outfileTodoTest,
     } satisfies ts.server.protocol.SavetoRequestArgs);
+    server.sendCommand('saveto', {
+      file: outfileStarImport,
+      tmpfile: outfileStarImport,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
 
     // Give TS some time to figure this out...
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -66,6 +83,7 @@ describe('Multiple schemas', () => {
     try {
       fs.unlinkSync(outfilePokemonTest);
       fs.unlinkSync(outfileTodoTest);
+      fs.unlinkSync(outfileStarImport);
     } catch {}
   });
 
@@ -109,6 +127,32 @@ describe('Multiple schemas', () => {
         file: outfilePokemonTest,
         line: 8,
         offset: 8,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'quickinfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(resp => resp.type === 'response' && resp.command === 'quickinfo');
+
+    expect(res).toBeDefined();
+    expect(typeof res?.body).toEqual('object');
+    expect(res?.body.documentation).toEqual(`Pokemon.name: String!`);
+  }, 30000);
+
+  it('gives quick-info for the pokemon document namespace', async () => {
+    server.send({
+      seq: 20,
+      type: 'request',
+      command: 'quickinfo',
+      arguments: {
+        file: outfileStarImport,
+        line: 8,
+        offset: 9,
       },
     });
 

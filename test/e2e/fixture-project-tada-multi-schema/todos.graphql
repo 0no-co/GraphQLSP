@@ -1,0 +1,12 @@
+type Todo {
+  id: ID!
+  text: String!
+  completed: Boolean!
+}
+
+type Query {
+  """
+  Get a single Todo by its ID
+  """
+  todo(id: ID!): Todo
+}

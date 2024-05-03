@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.2
+
+### Patch Changes
+
+- Update `graphql` to variably support `^15.5.0` and include future support for v17. The `graphql` package is now marked as a peer dependency in addition to a regular dependency
+  Submitted by [@kitten](https://github.com/kitten) (See [#314](https://github.com/0no-co/GraphQLSP/pull/314))
+
 ## 1.12.1
 
 ### Patch Changes

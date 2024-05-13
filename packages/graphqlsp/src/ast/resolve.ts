@@ -158,7 +158,7 @@ export const resolveTadaFragmentArray = (
   if (node.elements.every(ts.isIdentifier)) return node.elements;
   const identifiers: ts.Identifier[] = [];
   for (let element of node.elements) {
-    while (ts.isPropertyAccessExpression(element)) element = element.expression;
+    while (ts.isPropertyAccessExpression(element)) element = element.name;
     if (ts.isIdentifier(element)) identifiers.push(element);
   }
   return identifiers;

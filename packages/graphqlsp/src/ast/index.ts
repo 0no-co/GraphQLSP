@@ -153,7 +153,7 @@ export function findAllCallExpressions(
     // Check whether we've got a `graphql()` or `gql()` call, by the
     // call expression's identifier
     if (!checks.isGraphQLCall(node, typeChecker)) {
-      return;
+      return ts.forEachChild(node, find);
     }
 
     const name = checks.getSchemaName(node, typeChecker);

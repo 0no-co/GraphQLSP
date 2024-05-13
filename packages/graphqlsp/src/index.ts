@@ -162,7 +162,7 @@ function create(info: ts.server.PluginCreateInfo) {
         : positionOrRange.pos,
       info
     );
-    console.log('[GraphQLSP]', JSON.stringify(codefix));
+
     if (codefix) {
       return [
         {

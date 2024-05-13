@@ -45,19 +45,17 @@
     "@0no-co/graphql.web": "^1.0.4",
     "@sindresorhus/fnv1a": "^2.0.0",
     "@types/node": "^18.15.11",
-    "@types/node-fetch": "^2.6.3",
     "graphql-language-service": "^5.2.0",
     "lru-cache": "^10.0.1",
     "typescript": "^5.3.3"
   },
   "dependencies": {
     "@gql.tada/internal": "^0.3.0",
-    "graphql": "^15.5.0 || ^16.0.0 || ^17.0.0",
-    "node-fetch": "^2.0.0"
+    "graphql": "^15.5.0 || ^16.0.0 || ^17.0.0"
   },
   "peerDependencies": {
-    "typescript": "^5.0.0",
-    "graphql": "^15.5.0 || ^16.0.0 || ^17.0.0"
+    "graphql": "^15.5.0 || ^16.0.0 || ^17.0.0",
+    "typescript": "^5.0.0"
   },
   "publishConfig": {
     "provenance": true

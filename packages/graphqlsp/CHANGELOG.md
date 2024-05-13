@@ -1,5 +1,16 @@
 # @0no-co/graphqlsp
 
+## 1.12.3
+
+### Patch Changes
+
+- Remove unused `node-fetch` dependency
+  Submitted by [@kitten](https://github.com/kitten) (See [#318](https://github.com/0no-co/GraphQLSP/pull/318))
+- Support finding `graphql()` invocations within call-expressions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#319](https://github.com/0no-co/GraphQLSP/pull/319))
+- Upgrade `@gql.tada/internal` to `^1.0.0`
+  Submitted by [@kitten](https://github.com/kitten) (See [#317](https://github.com/0no-co/GraphQLSP/pull/317))
+
 ## 1.12.2
 
 ### Patch Changes

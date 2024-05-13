@@ -2,4 +2,4 @@
 '@0no-co/graphqlsp': patch
 ---
 
-Upgrade `@gql.tada/internal` to `^0.4.0`
+Upgrade `@gql.tada/internal` to `^1.0.0`

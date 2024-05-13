@@ -175,8 +175,8 @@ importers:
   packages/graphqlsp:
     dependencies:
       '@gql.tada/internal':
-        specifier: ^0.4.0
-        version: 0.4.0(graphql@16.8.1)(typescript@5.3.3)
+        specifier: ^1.0.0
+        version: 1.0.0(graphql@16.8.1)(typescript@5.3.3)
       graphql:
         specifier: ^15.5.0 || ^16.0.0 || ^17.0.0
         version: 16.8.1
@@ -1421,8 +1421,8 @@ packages:
       typescript: 5.3.3
     dev: false
 
-  /@gql.tada/internal@0.4.0(graphql@16.8.1)(typescript@5.3.3):
-    resolution: {integrity: sha512-VPJkuGcFu6dd6WPjhDK/FKcrCWtmSfb6KIFStSJc8yENLJeDkRBXm/H41lETPACHoP9N3WDh+VWgwuUAubcAVQ==}
+  /@gql.tada/internal@1.0.0(graphql@16.8.1)(typescript@5.3.3):
+    resolution: {integrity: sha512-B55aIYyZn5ewdgMqoJciPAwF5DKYX6HBabTU+ap/dpNH3EgJrLomc8Y8w+MCxCyOx+dXL9OduT6eWnVr7J7Eyg==}
     peerDependencies:
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
       typescript: ^5.3.3
@@ -6541,7 +6541,7 @@ packages:
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
       typescript: ^5.3.3
     dependencies:
-      '@gql.tada/internal': 0.4.0(graphql@16.8.1)(typescript@5.3.3)
+      '@gql.tada/internal': 1.0.0(graphql@16.8.1)(typescript@5.3.3)
       graphql: 16.8.1
       node-fetch: 2.6.7
       typescript: 5.3.3

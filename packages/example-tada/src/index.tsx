@@ -2,41 +2,41 @@ import { useQuery } from 'urql';
 import { graphql } from './graphql';
 import { Fields, Pokemon, PokemonFields } from './Pokemon';
 
-const query = graphql(`
-query Po($id: ID!) {
-  pokemon(id: $id) {
-    id
-    fleeRate
-    ...Pok
-    ...pokemonFields
-    attacks {
-      special {
-        name
-        damage
+const PokemonQuery = graphql(`
+  query Po($id: ID!) {
+    pokemon(id: $id) {
+      id
+      fleeRate
+      ...Pok
+      ...pokemonFields
+      attacks {
+        special {
+          name
+          damage
+        }
       }
+      weight {
+        minimum
+        maximum
+      }
+      name
+      __typename
     }
-    weight {
-      minimum
-      maximum
+    pokemons {
+      name
+      maxCP
+      maxHP
+      types
+      fleeRate
     }
-    name
-    __typename
   }
-  pokemons {
-    name
-    maxCP
-    maxHP
-    types
-    fleeRate
-  }
-}
 `, [PokemonFields, Fields.Pokemon])
 
-// const persisted = graphql.persisted<typeof PokemonQuery>("sha256:7a9bbe8533362e631f92af8d7f314b1589c8272f8e092da564d9ad6cd600a4eb")
+const persisted = graphql.persisted<typeof PokemonQuery>("sha256:78c769ed6cfef67e17e579a2abfe4da27bd51e09ed832a88393148bcce4c5a7d")
 
 const Pokemons = () => {
   const [result] = useQuery({
-    query,
+    query: PokemonQuery,
     variables: { id: '' }
   });
   

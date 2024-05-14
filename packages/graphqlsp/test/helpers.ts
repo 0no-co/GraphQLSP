@@ -1,25 +1,48 @@
 import {
   createDefaultMapFromNodeModules,
-  createSystem,
   createVirtualTypeScriptEnvironment,
+  createFSBackedSystem,
 } from '@typescript/vfs';
-import ts from 'typescript';
+import ts, { ModuleResolutionKind, ScriptTarget } from 'typescript';
+import { buildSchema } from 'graphql';
+import path from 'path';
+import { readFileSync } from 'fs';
 
-export const createProgram = () => {
+import { init } from '../src/ts';
+
+init({ typescript: ts });
+
+const rawSchema = readFileSync(path.join(__dirname, 'schema.graphql'), 'utf-8');
+const schema = buildSchema(rawSchema);
+export const schemaRef = {
+  current: { schema, introspection: {} as any },
+} as any;
+
+export const createInfo = (
+  contents: string,
+  additionalFiles?: Array<{ filename: string; contents: string }>
+): ts.server.PluginCreateInfo => {
   const fsMap = createDefaultMapFromNodeModules({
     target: ts.ScriptTarget.ES2015,
   });
-  const system = createSystem(fsMap);
-  fsMap.set('index.ts', `placeholder`);
+  fsMap.set('/introspection.d.ts', iNTROSPECTION);
+  fsMap.set('/graphql.ts', GQL);
+  fsMap.set('index.ts', contents);
+  additionalFiles?.forEach(({ filename, contents }) =>
+    fsMap.set(filename, contents)
+  );
 
   const compilerOpts: ts.CompilerOptions = {
-    plugins: [
-      {
-        name: '@0no-co/graphqlsp',
-        schema: 'schema.graphql',
-      },
-    ],
+    target: ScriptTarget.ES2016,
+    esModuleInterop: true,
+    moduleResolution: ModuleResolutionKind.Bundler,
+    forceConsistentCasingInFileNames: true,
+    strict: true,
+    skipLibCheck: true,
   };
+
+  const projectRoot = path.join(__dirname, '..');
+  const system = createFSBackedSystem(fsMap, projectRoot, ts);
 
   const env = createVirtualTypeScriptEnvironment(
     system,
@@ -27,9 +50,11 @@ export const createProgram = () => {
     ts,
     compilerOpts
   );
-  env.createFile('graphql.ts', GQL);
-  env.createFile('introspection.d.ts', iNTROSPECTION);
-  return env;
+
+  return {
+    ...env,
+    config: {},
+  } as any;
 };
 
 const iNTROSPECTION = `export type introspection = {

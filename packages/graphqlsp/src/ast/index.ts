@@ -59,7 +59,7 @@ function unrollFragment(
     element.getSourceFile().fileName,
     element.getStart()
   );
-
+  console.log(definitions);
   if (!definitions || !definitions.length) return fragments;
 
   const [fragment] = definitions;

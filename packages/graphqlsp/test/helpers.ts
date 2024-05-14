@@ -27,10 +27,10 @@ export const createInfo = (
   });
   fsMap.set('/introspection.d.ts', iNTROSPECTION);
   fsMap.set('/graphql.ts', GQL);
-  fsMap.set('index.ts', contents);
   additionalFiles?.forEach(({ filename, contents }) =>
     fsMap.set(filename, contents)
   );
+  fsMap.set('index.ts', contents);
 
   const compilerOpts: ts.CompilerOptions = {
     target: ScriptTarget.ES2016,
@@ -46,13 +46,14 @@ export const createInfo = (
 
   const env = createVirtualTypeScriptEnvironment(
     system,
-    ['index.ts'],
+    ['index.ts', ...(additionalFiles?.map(({ filename }) => filename) || [])],
     ts,
     compilerOpts
   );
 
   return {
     ...env,
+    languageService: env.languageService,
     config: {},
   } as any;
 };

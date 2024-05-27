@@ -70,6 +70,8 @@ function unrollFragment(
   let found = findNode(externalSource, fragment.textSpan.start);
   if (!found) return fragments;
 
+  while (ts.isPropertyAccessExpression(found.parent)) found = found.parent;
+
   if (
     ts.isVariableDeclaration(found.parent) &&
     found.parent.initializer &&
@@ -78,6 +80,14 @@ function unrollFragment(
     found = found.parent.initializer;
   } else if (ts.isPropertyAssignment(found.parent)) {
     found = found.parent.initializer;
+  } else if (ts.isBinaryExpression(found.parent)) {
+    found = found.parent.right;
+  }
+
+  // If we found another identifier, we repeat trying to find the original
+  // fragment definition
+  if (ts.isIdentifier(found)) {
+    return unrollFragment(found, info, typeChecker);
   }
 
   // Check whether we've got a `graphql()` or `gql()` call, by the

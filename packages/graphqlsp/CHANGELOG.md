@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.5
+
+### Patch Changes
+
+- Support property-access-chain in binary-expression assignment
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#324](https://github.com/0no-co/GraphQLSP/pull/324))
+
 ## 1.12.4
 
 ### Patch Changes

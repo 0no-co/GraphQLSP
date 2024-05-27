@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.4
+
+### Patch Changes
+
+- ⚠️ Fix fragments not being resolved when they're assigned to a property on an arbitrary identifier as an identifier
+  Submitted by [@kitten](https://github.com/kitten) (See [#322](https://github.com/0no-co/GraphQLSP/pull/322))
+
 ## 1.12.3
 
 ### Patch Changes

@@ -81,7 +81,11 @@ function unrollFragment(
   } else if (ts.isPropertyAssignment(found.parent)) {
     found = found.parent.initializer;
   } else if (ts.isBinaryExpression(found.parent)) {
-    found = found.parent.right;
+    if (ts.isPropertyAccessExpression(found.parent.right)) {
+      found = found.parent.right.name as ts.Identifier;
+    } else {
+      found = found.parent.right;
+    }
   }
 
   // If we found another identifier, we repeat trying to find the original

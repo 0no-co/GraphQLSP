@@ -260,7 +260,10 @@ export function getGraphQLDiagnostics(
           const generatedHash = generateHashForDocument(
             info,
             initializer.arguments[0],
-            foundFilename
+            foundFilename,
+            ts.isArrayLiteralExpression(initializer.arguments[1])
+              ? initializer.arguments[1]
+              : undefined
           );
           if (!generatedHash) return null;
 

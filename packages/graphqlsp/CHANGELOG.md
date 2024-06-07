@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.7
+
+### Patch Changes
+
+- ⚠️ Fix nested fragment resolution during persisted traversal
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#330](https://github.com/0no-co/GraphQLSP/pull/330))
+
 ## 1.12.6
 
 ### Patch Changes

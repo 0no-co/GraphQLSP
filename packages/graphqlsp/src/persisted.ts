@@ -187,7 +187,7 @@ export const generateHashForDocument = (
     resolvedText = `${resolvedText}\n\n${print(fragmentDefinition)}`;
   });
 
-  return createHash('sha256').update(text).digest('hex');
+  return createHash('sha256').update(resolvedText).digest('hex');
 };
 
 export const getDocumentReferenceFromTypeQuery = (

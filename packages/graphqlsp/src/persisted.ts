@@ -183,7 +183,7 @@ export const generateHashForDocument = (
     fragments.forEach(fragmentDefinition => {
       text = `${text}\n\n${print(fragmentDefinition)}`;
     });
-    return createHash('sha256').update(text).digest('hex');
+    return createHash('sha256').update(print(parse(text))).digest('hex');
   } else {
     const externalSource = getSource(info, foundFilename)!;
     const { fragments } = findAllCallExpressions(externalSource, info);
@@ -229,7 +229,7 @@ export const generateHashForDocument = (
       resolvedText = `${resolvedText}\n\n${print(fragmentDefinition)}`;
     }
 
-    return createHash('sha256').update(resolvedText).digest('hex');
+    return createHash('sha256').update(print(parse(resolvedText))).digest('hex');
   }
 };
 

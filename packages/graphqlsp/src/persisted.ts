@@ -3,9 +3,19 @@ import { ts } from './ts';
 import { createHash } from 'crypto';
 
 import * as checks from './ast/checks';
-import { findAllCallExpressions, findNode, getSource } from './ast';
+import {
+  findAllCallExpressions,
+  findNode,
+  getSource,
+  unrollTadaFragments,
+} from './ast';
 import { resolveTemplate } from './ast/resolve';
-import { parse, print, visit } from '@0no-co/graphql.web';
+import {
+  FragmentDefinitionNode,
+  parse,
+  print,
+  visit,
+} from '@0no-co/graphql.web';
 
 type PersistedAction = {
   span: {
@@ -113,7 +123,10 @@ export function getPersistedCodeFixAtPosition(
   const hash = generateHashForDocument(
     info,
     initializer.arguments[0],
-    foundFilename
+    foundFilename,
+    ts.isArrayLiteralExpression(initializer.arguments[1])
+      ? initializer.arguments[1]
+      : undefined
   );
   const existingHash = callExpression.arguments[0];
   // We assume for now that this is either undefined or an existing string literal
@@ -156,38 +169,68 @@ export function getPersistedCodeFixAtPosition(
 export const generateHashForDocument = (
   info: ts.server.PluginCreateInfo,
   templateLiteral: ts.StringLiteralLike | ts.TaggedTemplateExpression,
-  foundFilename: string
+  foundFilename: string,
+  referencedFragments: ts.ArrayLiteralExpression | undefined
 ): string | undefined => {
-  const externalSource = getSource(info, foundFilename)!;
-  const { fragments } = findAllCallExpressions(externalSource, info);
+  if (referencedFragments) {
+    const fragments: Array<FragmentDefinitionNode> = [];
+    unrollTadaFragments(referencedFragments, fragments, info);
+    let text = resolveTemplate(
+      templateLiteral,
+      foundFilename,
+      info
+    ).combinedText;
+    fragments.forEach(fragmentDefinition => {
+      text = `${text}\n\n${print(fragmentDefinition)}`;
+    });
+    return createHash('sha256').update(print(parse(text))).digest('hex');
+  } else {
+    const externalSource = getSource(info, foundFilename)!;
+    const { fragments } = findAllCallExpressions(externalSource, info);
 
-  const text = resolveTemplate(
-    templateLiteral,
-    foundFilename,
-    info
-  ).combinedText;
-  const parsed = parse(text);
-  const spreads = new Set();
-  visit(parsed, {
-    FragmentSpread: node => {
-      spreads.add(node.name.value);
-    },
-  });
+    const text = resolveTemplate(
+      templateLiteral,
+      foundFilename,
+      info
+    ).combinedText;
 
-  let resolvedText = text;
-  [...spreads].forEach(spreadName => {
-    const fragmentDefinition = fragments.find(x => x.name.value === spreadName);
-    if (!fragmentDefinition) {
-      info.project.projectService.logger.info(
-        `[GraphQLSP] could not find fragment for spread ${spreadName}!`
+    const parsed = parse(text);
+    const spreads = new Set<string>();
+    visit(parsed, {
+      FragmentSpread: node => {
+        spreads.add(node.name.value);
+      },
+    });
+
+    let resolvedText = text;
+    const visited = new Set();
+    const traversedSpreads = [...spreads];
+
+    let spreadName: string | undefined;
+    while ((spreadName = traversedSpreads.shift())) {
+      visited.add(spreadName);
+      const fragmentDefinition = fragments.find(
+        x => x.name.value === spreadName
       );
-      return;
+      if (!fragmentDefinition) {
+        info.project.projectService.logger.info(
+          `[GraphQLSP] could not find fragment for spread ${spreadName}!`
+        );
+        return;
+      }
+
+      visit(fragmentDefinition, {
+        FragmentSpread: node => {
+          if (!visited.has(node.name.value))
+            traversedSpreads.push(node.name.value);
+        },
+      });
+
+      resolvedText = `${resolvedText}\n\n${print(fragmentDefinition)}`;
     }
 
-    resolvedText = `${resolvedText}\n\n${print(fragmentDefinition)}`;
-  });
-
-  return createHash('sha256').update(resolvedText).digest('hex');
+    return createHash('sha256').update(print(parse(resolvedText))).digest('hex');
+  }
 };
 
 export const getDocumentReferenceFromTypeQuery = (

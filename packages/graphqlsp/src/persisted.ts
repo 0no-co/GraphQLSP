@@ -166,8 +166,9 @@ export const generateHashForDocument = (
     foundFilename,
     info
   ).combinedText;
+
   const parsed = parse(text);
-  const spreads = new Set();
+  const spreads = new Set<string>();
   visit(parsed, {
     FragmentSpread: node => {
       spreads.add(node.name.value);
@@ -175,7 +176,12 @@ export const generateHashForDocument = (
   });
 
   let resolvedText = text;
-  [...spreads].forEach(spreadName => {
+  const visited = new Set();
+  const traversedSpreads = [...spreads];
+
+  let spreadName: string | undefined;
+  while ((spreadName = traversedSpreads.shift())) {
+    visited.add(spreadName);
     const fragmentDefinition = fragments.find(x => x.name.value === spreadName);
     if (!fragmentDefinition) {
       info.project.projectService.logger.info(
@@ -184,8 +190,15 @@ export const generateHashForDocument = (
       return;
     }
 
+    visit(fragmentDefinition, {
+      FragmentSpread: node => {
+        if (!visited.has(node.name.value))
+          traversedSpreads.push(node.name.value);
+      },
+    });
+
     resolvedText = `${resolvedText}\n\n${print(fragmentDefinition)}`;
-  });
+  }
 
   return createHash('sha256').update(resolvedText).digest('hex');
 };

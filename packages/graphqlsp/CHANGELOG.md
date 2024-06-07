@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.6
+
+### Patch Changes
+
+- Use resolved document text when generating the persisted hash
+  Submitted by [@felamaslen](https://github.com/felamaslen) (See [#327](https://github.com/0no-co/GraphQLSP/pull/327))
+
 ## 1.12.5
 
 ### Patch Changes

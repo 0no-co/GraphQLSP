@@ -215,7 +215,7 @@ export function findAllPersistedCallExpressions(
     if (!checks.isTadaPersistedCall(node, typeChecker)) {
       return;
     } else if (info) {
-      const name = checks.getSchemaName(node, typeChecker);
+      const name = checks.getSchemaName(node, typeChecker, true);
       result.push({ node, schema: name });
     } else {
       result.push(node);

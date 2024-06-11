@@ -93,10 +93,15 @@ export const isGraphQLTag = (
 /** Retrieves the `__name` branded tag from gql.tada `graphql()` or `graphql.persisted()` calls */
 export const getSchemaName = (
   node: ts.CallExpression,
-  typeChecker: ts.TypeChecker | undefined
+  typeChecker: ts.TypeChecker | undefined,
+  isTadaPersistedCall = false
 ): string | null => {
   if (!typeChecker) return null;
-  const type = typeChecker.getTypeAtLocation(node.expression);
+  const type = typeChecker.getTypeAtLocation(
+    // When calling `graphql.persisted`, we need to access the `graphql` part of
+    // the expression; `node.expression` is the `.persisted` part
+    isTadaPersistedCall ? node.getChildAt(0).getChildAt(0) : node.expression
+  );
   if (type) {
     const brandTypeSymbol = type.getProperty('__name');
     if (brandTypeSymbol) {

@@ -100,7 +100,7 @@ export const getSchemaName = (
   const type = typeChecker.getTypeAtLocation(
     // When calling `graphql.persisted`, we need to access the `graphql` part of
     // the expression; `node.expression` is the `.persisted` part
-    isTadaPersistedCall ? node.getChildAt(0).getChildAt(0) : node.expression
+    isTadaPersistedCall ? node.expression.expression : node.expression
   );
   if (type) {
     const brandTypeSymbol = type.getProperty('__name');

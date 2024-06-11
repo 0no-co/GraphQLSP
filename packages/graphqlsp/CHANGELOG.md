@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.8
+
+### Patch Changes
+
+- ⚠️ Fix schema derivation when using `graphql.persisted`, we used the wrong expression in the ast
+  Submitted by [@felamaslen](https://github.com/felamaslen) (See [#333](https://github.com/0no-co/GraphQLSP/pull/333))
+
 ## 1.12.7
 
 ### Patch Changes

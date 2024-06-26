@@ -38,9 +38,10 @@ export function resolveTemplate(
           filename,
           span.expression.getStart()
         );
-        if (!definitions || !definitions.length) return;
 
-        const def = definitions[0];
+        const def = definitions && definitions[0];
+        if (!def) return;
+
         const src = getSource(info, def.fileName);
         if (!src) return;
 

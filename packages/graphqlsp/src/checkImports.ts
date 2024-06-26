@@ -37,8 +37,8 @@ export const getColocatedFragmentNames = (
           source.fileName,
           imp.importClause.name.getStart()
         );
-        if (definitions && definitions.length) {
-          const [def] = definitions;
+        const def = definitions && definitions[0];
+        if (def) {
           if (def.fileName.includes('node_modules')) return;
 
           const externalSource = getSource(info, def.fileName);
@@ -51,22 +51,16 @@ export const getColocatedFragmentNames = (
           );
 
           const names = fragmentsForImport.map(fragment => fragment.name.value);
-          if (
-            names.length &&
-            !importSpecifierToFragments[imp.moduleSpecifier.getText()]
-          ) {
-            importSpecifierToFragments[imp.moduleSpecifier.getText()] = {
+          const key = imp.moduleSpecifier.getText();
+          let fragmentsEntry = importSpecifierToFragments[key];
+          if (names.length && fragmentsEntry) {
+            fragmentsEntry.fragments = fragmentsEntry.fragments.concat(names);
+          } else if (names.length && !fragmentsEntry) {
+            importSpecifierToFragments[key] = fragmentsEntry = {
               start: imp.moduleSpecifier.getStart(),
               length: imp.moduleSpecifier.getText().length,
               fragments: names,
             };
-          } else if (names.length) {
-            importSpecifierToFragments[
-              imp.moduleSpecifier.getText()
-            ].fragments =
-              importSpecifierToFragments[
-                imp.moduleSpecifier.getText()
-              ].fragments.concat(names);
           }
         }
       }
@@ -79,8 +73,8 @@ export const getColocatedFragmentNames = (
           source.fileName,
           imp.importClause.namedBindings.getStart()
         );
-        if (definitions && definitions.length) {
-          const [def] = definitions;
+        const def = definitions && definitions[0];
+        if (def) {
           if (def.fileName.includes('node_modules')) return;
 
           const externalSource = getSource(info, def.fileName);
@@ -92,22 +86,16 @@ export const getColocatedFragmentNames = (
             info
           );
           const names = fragmentsForImport.map(fragment => fragment.name.value);
-          if (
-            names.length &&
-            !importSpecifierToFragments[imp.moduleSpecifier.getText()]
-          ) {
-            importSpecifierToFragments[imp.moduleSpecifier.getText()] = {
+          const key = imp.moduleSpecifier.getText();
+          let fragmentsEntry = importSpecifierToFragments[key];
+          if (names.length && fragmentsEntry) {
+            fragmentsEntry.fragments = fragmentsEntry.fragments.concat(names);
+          } else if (names.length && !fragmentsEntry) {
+            importSpecifierToFragments[key] = fragmentsEntry = {
               start: imp.moduleSpecifier.getStart(),
               length: imp.moduleSpecifier.getText().length,
               fragments: names,
             };
-          } else if (names.length) {
-            importSpecifierToFragments[
-              imp.moduleSpecifier.getText()
-            ].fragments =
-              importSpecifierToFragments[
-                imp.moduleSpecifier.getText()
-              ].fragments.concat(names);
           }
         }
       } else if (
@@ -119,8 +107,8 @@ export const getColocatedFragmentNames = (
             source.fileName,
             el.getStart()
           );
-          if (definitions && definitions.length) {
-            const [def] = definitions;
+          const def = definitions && definitions[0];
+          if (def) {
             if (def.fileName.includes('node_modules')) return;
 
             const externalSource = getSource(info, def.fileName);
@@ -134,22 +122,16 @@ export const getColocatedFragmentNames = (
             const names = fragmentsForImport.map(
               fragment => fragment.name.value
             );
-            if (
-              names.length &&
-              !importSpecifierToFragments[imp.moduleSpecifier.getText()]
-            ) {
-              importSpecifierToFragments[imp.moduleSpecifier.getText()] = {
+            const key = imp.moduleSpecifier.getText();
+            let fragmentsEntry = importSpecifierToFragments[key];
+            if (names.length && fragmentsEntry) {
+              fragmentsEntry.fragments = fragmentsEntry.fragments.concat(names);
+            } else if (names.length && !fragmentsEntry) {
+              importSpecifierToFragments[key] = fragmentsEntry = {
                 start: imp.moduleSpecifier.getStart(),
                 length: imp.moduleSpecifier.getText().length,
                 fragments: names,
               };
-            } else if (names.length) {
-              importSpecifierToFragments[
-                imp.moduleSpecifier.getText()
-              ].fragments =
-                importSpecifierToFragments[
-                  imp.moduleSpecifier.getText()
-                ].fragments.concat(names);
             }
           }
         });

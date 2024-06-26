@@ -299,7 +299,7 @@ function runOnlineParser(
   let stream: CharacterStream = new CharacterStream('');
 
   for (let i = 0; i < lines.length; i++) {
-    stream = new CharacterStream(lines[i]);
+    stream = new CharacterStream(lines[i]!);
     while (!stream.eol()) {
       style = parser.token(stream, state);
       const code = callback(stream, state, style, i);

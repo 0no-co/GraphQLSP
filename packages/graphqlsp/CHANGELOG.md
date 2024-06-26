@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.9
+
+### Patch Changes
+
+- Address potential crashes on malformed TypeScript AST input (such as missing function arguments where they were previously assumed to be passed)
+  Submitted by [@kitten](https://github.com/kitten) (See [#335](https://github.com/0no-co/GraphQLSP/pull/335))
+
 ## 1.12.8
 
 ### Patch Changes

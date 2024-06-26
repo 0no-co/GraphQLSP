@@ -43,7 +43,7 @@ export const isTadaGraphQLCall = (
     return false;
   } else if (node.arguments.length < 1 || node.arguments.length > 2) {
     return false;
-  } else if (!ts.isStringLiteralLike(node.arguments[0])) {
+  } else if (!ts.isStringLiteralLike(node.arguments[0]!)) {
     return false;
   }
   return checker ? isTadaGraphQLFunction(node.expression, checker) : false;
@@ -70,11 +70,16 @@ export const isTadaPersistedCall = (
   }
 };
 
+// As per check in `isGraphQLCall()` below, enforces arguments length
+export type GraphQLCallNode = ts.CallExpression & {
+  arguments: [ts.Expression] | [ts.Expression, ts.Expression];
+};
+
 /** Checks if node is a gql.tada or regular graphql() call */
 export const isGraphQLCall = (
   node: ts.Node,
   checker: ts.TypeChecker | undefined
-): node is ts.CallExpression => {
+): node is GraphQLCallNode => {
   return (
     ts.isCallExpression(node) &&
     node.arguments.length >= 1 &&

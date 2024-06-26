@@ -223,10 +223,10 @@ const crawlScope = (
         const isSomeOrEvery =
           foundRef.name.text === 'every' || foundRef.name.text === 'some';
         const callExpression = foundRef.parent;
-        let func: ts.Expression | ts.FunctionDeclaration =
+        let func: ts.Expression | ts.FunctionDeclaration | undefined =
           callExpression.arguments[0];
 
-        if (ts.isIdentifier(func)) {
+        if (func && ts.isIdentifier(func)) {
           // TODO: Scope utilities in checkFieldUsageInFile to deduplicate
           const checker = info.languageService.getProgram()!.getTypeChecker();
 
@@ -244,36 +244,39 @@ const crawlScope = (
         }
 
         if (
-          ts.isFunctionDeclaration(func) ||
-          ts.isFunctionExpression(func) ||
-          ts.isArrowFunction(func)
+          func &&
+          (ts.isFunctionDeclaration(func) ||
+            ts.isFunctionExpression(func) ||
+            ts.isArrowFunction(func))
         ) {
           const param = func.parameters[isReduce ? 1 : 0];
-          const res = crawlScope(
-            param.name,
-            pathParts,
-            allFields,
-            source,
-            info,
-            true
-          );
-
-          if (
-            ts.isVariableDeclaration(callExpression.parent) &&
-            !isSomeOrEvery
-          ) {
-            const varRes = crawlScope(
-              callExpression.parent.name,
+          if (param) {
+            const res = crawlScope(
+              param.name,
               pathParts,
               allFields,
               source,
               info,
               true
             );
-            res.push(...varRes);
-          }
 
-          return res;
+            if (
+              ts.isVariableDeclaration(callExpression.parent) &&
+              !isSomeOrEvery
+            ) {
+              const varRes = crawlScope(
+                callExpression.parent.name,
+                pathParts,
+                allFields,
+                source,
+                info,
+                true
+              );
+              res.push(...varRes);
+            }
+
+            return res;
+          }
         }
       } else if (
         ts.isPropertyAccessExpression(foundRef) &&
@@ -505,7 +508,7 @@ export const checkFieldUsageInFile = (
         if (loc) {
           aggregatedUnusedFields.add(parentField);
           if (unusedChildren[parentField]) {
-            unusedChildren[parentField].add(unusedField);
+            unusedChildren[parentField]!.add(unusedField);
           } else {
             unusedChildren[parentField] = new Set([unusedField]);
           }

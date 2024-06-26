@@ -125,7 +125,7 @@ export function getGraphQLDiagnostics(
       : texts.join('-') + schema.version
   );
 
-  let tsDiagnostics;
+  let tsDiagnostics: ts.Diagnostic[];
   if (cache.has(cacheKey)) {
     tsDiagnostics = cache.get(cacheKey)!;
   } else {
@@ -161,8 +161,9 @@ export function getGraphQLDiagnostics(
           ref,
           start,
           length;
-        if (callExpression.typeArguments) {
-          const [typeQuery] = callExpression.typeArguments;
+        const typeQuery =
+          callExpression.typeArguments && callExpression.typeArguments[0];
+        if (typeQuery) {
           start = typeQuery.getStart();
           length = typeQuery.getEnd() - typeQuery.getStart();
 
@@ -228,6 +229,7 @@ export function getGraphQLDiagnostics(
         if (
           !initializer ||
           !ts.isCallExpression(initializer) ||
+          !initializer.arguments[0] ||
           !ts.isStringLiteralLike(initializer.arguments[0])
         ) {
           // TODO: we can make this check more stringent where we also parse and resolve
@@ -261,7 +263,8 @@ export function getGraphQLDiagnostics(
             info,
             initializer.arguments[0],
             foundFilename,
-            ts.isArrayLiteralExpression(initializer.arguments[1])
+            initializer.arguments[1] &&
+              ts.isArrayLiteralExpression(initializer.arguments[1])
               ? initializer.arguments[1]
               : undefined
           );
@@ -310,7 +313,7 @@ export function getGraphQLDiagnostics(
         fragments: fragmentNames,
         start,
         length,
-      } = moduleSpecifierToFragments[moduleSpecifier];
+      } = moduleSpecifierToFragments[moduleSpecifier]!;
       const missingFragments = Array.from(
         new Set(fragmentNames.filter(x => !usedFragments.has(x)))
       );
@@ -348,7 +351,7 @@ const runDiagnostics = (
   },
   schema: SchemaRef,
   info: ts.server.PluginCreateInfo
-) => {
+): ts.Diagnostic[] => {
   const filename = source.fileName;
   const isCallExpression = info.config.templateIsCallExpression ?? true;
 
@@ -429,10 +432,11 @@ const runDiagnostics = (
           if (!diag.message.includes('Unknown directive')) return true;
 
           const [message] = diag.message.split('(');
-          const matches = /Unknown directive "@([^)]+)"/g.exec(message);
+          const matches =
+            message && /Unknown directive "@([^)]+)"/g.exec(message);
           if (!matches) return true;
-          const directiveNmae = matches[1];
-          return !clientDirectives.has(directiveNmae);
+          const directiveName = matches[1];
+          return directiveName && !clientDirectives.has(directiveName);
         })
         .map(x => {
           const { start, end } = x.range;
@@ -440,15 +444,15 @@ const runDiagnostics = (
           // We add the start.line to account for newline characters which are
           // split out
           let startChar = startingPosition + start.line;
-          for (let i = 0; i <= start.line; i++) {
+          for (let i = 0; i <= start.line && i < lines.length; i++) {
             if (i === start.line) startChar += start.character;
-            else if (lines[i]) startChar += lines[i].length;
+            else if (lines[i]) startChar += lines[i]!.length;
           }
 
           let endChar = startingPosition + end.line;
-          for (let i = 0; i <= end.line; i++) {
+          for (let i = 0; i <= end.line && i < lines.length; i++) {
             if (i === end.line) endChar += end.character;
-            else if (lines[i]) endChar += lines[i].length;
+            else if (lines[i]) endChar += lines[i]!.length;
           }
 
           const locatedInFragment = resolvedSpans.find(x => {
@@ -516,22 +520,25 @@ const runDiagnostics = (
     .flat()
     .filter(Boolean) as Array<Diagnostic & { length: number; start: number }>;
 
-  const tsDiagnostics = diagnostics.map(diag => ({
-    file: source,
-    length: diag.length,
-    start: diag.start,
-    category:
-      diag.severity === 2
-        ? ts.DiagnosticCategory.Warning
-        : ts.DiagnosticCategory.Error,
-    code:
-      typeof diag.code === 'number'
-        ? diag.code
-        : diag.severity === 2
-        ? USING_DEPRECATED_FIELD_CODE
-        : SEMANTIC_DIAGNOSTIC_CODE,
-    messageText: diag.message.split('\n')[0],
-  }));
+  const tsDiagnostics = diagnostics.map(
+    diag =>
+      ({
+        file: source,
+        length: diag.length,
+        start: diag.start,
+        category:
+          diag.severity === 2
+            ? ts.DiagnosticCategory.Warning
+            : ts.DiagnosticCategory.Error,
+        code:
+          typeof diag.code === 'number'
+            ? diag.code
+            : diag.severity === 2
+            ? USING_DEPRECATED_FIELD_CODE
+            : SEMANTIC_DIAGNOSTIC_CODE,
+        messageText: diag.message.split('\n')[0],
+      } as ts.Diagnostic)
+  );
 
   if (isCallExpression) {
     const usageDiagnostics =

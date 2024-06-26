@@ -60,9 +60,8 @@ function unrollFragment(
     element.getStart()
   );
 
-  if (!definitions || !definitions.length) return fragments;
-
-  const [fragment] = definitions;
+  const fragment = definitions && definitions[0];
+  if (!fragment) return fragments;
 
   const externalSource = getSource(info, fragment.fileName);
   if (!externalSource) return fragments;
@@ -263,6 +262,7 @@ export function getAllFragments(
     if (
       ts.isVariableStatement(node) &&
       node.declarationList &&
+      node.declarationList.declarations[0] &&
       node.declarationList.declarations[0].name.getText() === 'documents'
     ) {
       const [declaration] = node.declarationList.declarations;

@@ -89,7 +89,7 @@ export function getPersistedCodeFixAtPosition(
     foundFilename = filename;
   if (callExpression.typeArguments) {
     const [typeQuery] = callExpression.typeArguments;
-    if (!ts.isTypeQueryNode(typeQuery)) return undefined;
+    if (!typeQuery || !ts.isTypeQueryNode(typeQuery)) return undefined;
     const { node: found, filename: fileName } =
       getDocumentReferenceFromTypeQuery(typeQuery, filename, info);
     foundNode = found;
@@ -116,15 +116,18 @@ export function getPersistedCodeFixAtPosition(
   if (
     !initializer ||
     !ts.isCallExpression(initializer) ||
+    !initializer.arguments[0] ||
     !ts.isStringLiteralLike(initializer.arguments[0])
-  )
+  ) {
     return undefined;
+  }
 
   const hash = generateHashForDocument(
     info,
     initializer.arguments[0],
     foundFilename,
-    ts.isArrayLiteralExpression(initializer.arguments[1])
+    initializer.arguments[1] &&
+      ts.isArrayLiteralExpression(initializer.arguments[1])
       ? initializer.arguments[1]
       : undefined
   );
@@ -183,7 +186,9 @@ export const generateHashForDocument = (
     fragments.forEach(fragmentDefinition => {
       text = `${text}\n\n${print(fragmentDefinition)}`;
     });
-    return createHash('sha256').update(print(parse(text))).digest('hex');
+    return createHash('sha256')
+      .update(print(parse(text)))
+      .digest('hex');
   } else {
     const externalSource = getSource(info, foundFilename)!;
     const { fragments } = findAllCallExpressions(externalSource, info);
@@ -229,7 +234,9 @@ export const generateHashForDocument = (
       resolvedText = `${resolvedText}\n\n${print(fragmentDefinition)}`;
     }
 
-    return createHash('sha256').update(print(parse(resolvedText))).digest('hex');
+    return createHash('sha256')
+      .update(print(parse(resolvedText)))
+      .digest('hex');
   }
 };
 

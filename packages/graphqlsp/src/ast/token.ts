@@ -63,7 +63,7 @@ export const getToken = (
       }
     }
 
-    cPos += input[line].length + 1;
+    cPos += input[line]!.length + 1;
   }
 
   return foundToken;

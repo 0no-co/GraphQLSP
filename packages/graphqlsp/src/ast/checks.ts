@@ -51,10 +51,12 @@ export const isTadaGraphQLCall = (
 
 /** Checks if node is a gql.tada graphql.persisted() call */
 export const isTadaPersistedCall = (
-  node: ts.Node,
+  node: ts.Node | undefined,
   checker: ts.TypeChecker | undefined
 ): node is ts.CallExpression => {
-  if (!ts.isCallExpression(node)) {
+  if (!node) {
+    return false;
+  } else if (!ts.isCallExpression(node)) {
     return false;
   } else if (!ts.isPropertyAccessExpression(node.expression)) {
     return false; // rejecting non property access calls: <expression>.<name>()

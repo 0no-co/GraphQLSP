@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.10
+
+### Patch Changes
+
+- ⚠️ Fix unexpected case of persisted calls resolving to `undefined` AST nodes
+  Submitted by [@kitten](https://github.com/kitten) (See [#337](https://github.com/0no-co/GraphQLSP/pull/337))
+
 ## 1.12.9
 
 ### Patch Changes

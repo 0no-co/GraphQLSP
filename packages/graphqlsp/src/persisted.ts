@@ -183,12 +183,15 @@ export const generateHashForDocument = (
       foundFilename,
       info
     ).combinedText;
-    fragments.forEach(fragmentDefinition => {
-      text = `${text}\n\n${print(fragmentDefinition)}`;
+    const deduplicatedFragments = fragments
+      .map(fragment => print(fragment))
+      .filter((fragment, index, array) => array.indexOf(fragment) === index);
+
+    deduplicatedFragments.forEach(fragmentDefinition => {
+      text = `${text}\n\n${fragmentDefinition}`;
     });
-    return createHash('sha256')
-      .update(print(parse(text)))
-      .digest('hex');
+    const fullText = print(parse(text));
+    return createHash('sha256').update(fullText).digest('hex');
   } else {
     const externalSource = getSource(info, foundFilename)!;
     const { fragments } = findAllCallExpressions(externalSource, info);

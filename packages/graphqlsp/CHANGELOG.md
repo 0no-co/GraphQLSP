@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.11
+
+### Patch Changes
+
+- ⚠️ Fixed duplicate fragments in persisted document hash generator
+  Submitted by [@felamaslen](https://github.com/felamaslen) (See [#342](https://github.com/0no-co/GraphQLSP/pull/342))
+
 ## 1.12.10
 
 ### Patch Changes

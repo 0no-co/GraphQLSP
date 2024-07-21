@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.12
+
+### Patch Changes
+
+- Bail on dots, when there's one or two dots we are leading up to a fragment-spread and should avoid giving suggestions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#344](https://github.com/0no-co/GraphQLSP/pull/344))
+
 ## 1.12.11
 
 ### Patch Changes

@@ -57,7 +57,13 @@ export function getGraphQLCompletions(
         : schema.current?.schema;
 
     const foundToken = getToken(node.arguments[0], cursorPosition);
-    if (!schemaToUse || !foundToken) return undefined;
+    if (
+      !schemaToUse ||
+      !foundToken ||
+      foundToken.string === '.' ||
+      foundToken.string === '..'
+    )
+      return undefined;
 
     const queryText = node.arguments[0].getText().slice(1, -1);
     const fragments = getAllFragments(filename, node, info);
@@ -66,7 +72,13 @@ export function getGraphQLCompletions(
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else if (!isCallExpression && checks.isGraphQLTag(node)) {
     const foundToken = getToken(node.template, cursorPosition);
-    if (!foundToken || !schema.current) return undefined;
+    if (
+      !foundToken ||
+      !schema.current ||
+      foundToken.string === '.' ||
+      foundToken.string === '..'
+    )
+      return undefined;
 
     const { combinedText, resolvedSpans } = resolveTemplate(
       node,

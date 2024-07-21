@@ -58,6 +58,15 @@ export const getToken = (
           state,
           tokenKind: token,
         };
+      } else if (string === '.' || string === '..') {
+        prevToken = {
+          line,
+          start: stream.getStartOfToken() + 1,
+          end: stream.getCurrentPosition(),
+          string,
+          state,
+          tokenKind: token,
+        };
       } else {
         prevToken = undefined;
       }

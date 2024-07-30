@@ -90,6 +90,13 @@ function unrollFragment(
   // If we found another identifier, we repeat trying to find the original
   // fragment definition
   if (ts.isIdentifier(found)) {
+    // NOTE: A gotcha of `getDefinitionAtPosition` is that when resolution fails, it points
+    // back at the original identifier (e.g. if its of the internal type `error`).
+    if (found === element) {
+      // TODO: Instead of bailing out here, we should be able to issue a diagnostic here
+      // that tells the user that resolution of a fragment has failed.
+      return fragments;
+    }
     return unrollFragment(found, info, typeChecker);
   }
 

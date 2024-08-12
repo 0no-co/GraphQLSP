@@ -126,7 +126,7 @@ export const loadSchema = (
     }
 
     if (ref.current) {
-      if (ref.current.tadaOutputLocation !== undefined) {
+      if (ref.current && ref.current.tadaOutputLocation !== undefined) {
         saveTadaIntrospection(
           ref.current.introspection,
           tadaOutputLocation,

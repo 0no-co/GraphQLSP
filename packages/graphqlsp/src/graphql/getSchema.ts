@@ -126,12 +126,14 @@ export const loadSchema = (
     }
 
     if (ref.current) {
-      saveTadaIntrospection(
-        ref.current.introspection,
-        tadaOutputLocation,
-        tadaDisablePreprocessing,
-        logger
-      );
+      if (ref.current && ref.current.tadaOutputLocation !== undefined) {
+        saveTadaIntrospection(
+          ref.current.introspection,
+          tadaOutputLocation,
+          tadaDisablePreprocessing,
+          logger
+        );
+      }
     } else if (ref.multi) {
       Object.values(ref.multi).forEach(value => {
         if (!value) return;

@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.13
+
+### Patch Changes
+
+- ⚠️ Fix wrong fileType diagnostic error when introspection is disabled
+  Submitted by [@FyndetNeo](https://github.com/FyndetNeo) (See [#348](https://github.com/0no-co/GraphQLSP/pull/348))
+
 ## 1.12.12
 
 ### Patch Changes

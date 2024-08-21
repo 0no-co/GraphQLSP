@@ -56,8 +56,12 @@ function unrollFragment(
 ): Array<FragmentDefinitionNode> {
   const fragments: FragmentDefinitionNode[] = [];
   const elements: ts.Identifier[] = [element];
+  const seen = new WeakSet<ts.Identifier>();
 
   const _unrollElement = (element: ts.Identifier): void => {
+    if (seen.has(element)) return;
+    seen.add(element);
+
     const definitions = info.languageService.getDefinitionAtPosition(
       element.getSourceFile().fileName,
       element.getStart()

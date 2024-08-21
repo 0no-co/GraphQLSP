@@ -49,10 +49,56 @@ export function findAllTaggedTemplateNodes(
   return result;
 }
 
+function resolveIdentifierToGraphQLCall(
+  input: ts.Identifier,
+  info: ts.server.PluginCreateInfo,
+  checker: ts.TypeChecker | undefined
+): checks.GraphQLCallNode | null {
+  let prevElement: ts.Node | undefined;
+  let element: ts.Node | undefined = input;
+  // NOTE: Under certain circumstances, resolving an identifier can loop
+  while (ts.isIdentifier(element) && element !== prevElement) {
+    prevElement = element;
+
+    const definitions = info.languageService.getDefinitionAtPosition(
+      element.getSourceFile().fileName,
+      element.getStart()
+    );
+
+    const fragment = definitions && definitions[0];
+    const externalSource = fragment && getSource(info, fragment.fileName);
+    if (!fragment || !externalSource) return null;
+
+    element = findNode(externalSource, fragment.textSpan.start);
+    if (!element) return null;
+
+    while (ts.isPropertyAccessExpression(element.parent))
+      element = element.parent;
+
+    if (
+      ts.isVariableDeclaration(element.parent) &&
+      element.parent.initializer &&
+      ts.isCallExpression(element.parent.initializer)
+    ) {
+      element = element.parent.initializer;
+    } else if (ts.isPropertyAssignment(element.parent)) {
+      element = element.parent.initializer;
+    } else if (ts.isBinaryExpression(element.parent)) {
+      element = ts.isPropertyAccessExpression(element.parent.right)
+        ? element.parent.right.name
+        : element.parent.right;
+    }
+    // If we find another Identifier, we continue resolving it
+  }
+  // Check whether we've got a `graphql()` or `gql()` call, by the
+  // call expression's identifier
+  return checks.isGraphQLCall(element, checker) ? element : null;
+}
+
 function unrollFragment(
   element: ts.Identifier,
   info: ts.server.PluginCreateInfo,
-  typeChecker: ts.TypeChecker | undefined
+  checker: ts.TypeChecker | undefined
 ): Array<FragmentDefinitionNode> {
   const fragments: FragmentDefinitionNode[] = [];
   const elements: ts.Identifier[] = [element];
@@ -62,63 +108,23 @@ function unrollFragment(
     if (seen.has(element)) return;
     seen.add(element);
 
-    const definitions = info.languageService.getDefinitionAtPosition(
-      element.getSourceFile().fileName,
-      element.getStart()
-    );
+    const node = resolveIdentifierToGraphQLCall(element, info, checker);
+    if (!node) return;
 
-    const fragment = definitions && definitions[0];
-    if (!fragment) return;
-
-    const externalSource = getSource(info, fragment.fileName);
-    if (!externalSource) return;
-
-    let found = findNode(externalSource, fragment.textSpan.start);
-    if (!found) return;
-
-    while (ts.isPropertyAccessExpression(found.parent)) found = found.parent;
-
-    if (
-      ts.isVariableDeclaration(found.parent) &&
-      found.parent.initializer &&
-      ts.isCallExpression(found.parent.initializer)
-    ) {
-      found = found.parent.initializer;
-    } else if (ts.isPropertyAssignment(found.parent)) {
-      found = found.parent.initializer;
-    } else if (ts.isBinaryExpression(found.parent)) {
-      if (ts.isPropertyAccessExpression(found.parent.right)) {
-        found = found.parent.right.name as ts.Identifier;
-      } else {
-        found = found.parent.right;
-      }
-    }
-
-    // If we found another identifier, we repeat trying to find the original
-    // fragment definition
-    if (ts.isIdentifier(found)) {
-      elements.push(found);
-      return;
-    }
-
-    // Check whether we've got a `graphql()` or `gql()` call, by the
-    // call expression's identifier
-    if (!checks.isGraphQLCall(found, typeChecker)) {
-      return;
-    }
+    const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
+    if (fragmentRefs) elements.push(...fragmentRefs);
 
     try {
-      const fragmentRefs = resolveTadaFragmentArray(found.arguments[1]);
-      if (fragmentRefs) elements.push(...fragmentRefs);
-
-      const text = found.arguments[0];
+      const text = node.arguments[0];
       const parsed = parse(text.getText().slice(1, -1), { noLocation: true });
       parsed.definitions.forEach(definition => {
         if (definition.kind === 'FragmentDefinition') {
           fragments.push(definition);
         }
       });
-    } catch (_error) {}
+    } catch (_error) {
+      // NOTE: Assume graphql.parse errors can be ignored
+    }
   };
 
   let nextElement: ts.Identifier | undefined;

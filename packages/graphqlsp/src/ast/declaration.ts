@@ -23,6 +23,19 @@ export type ValueDeclaration =
   | ts.ShorthandPropertyAssignment
   | ts.VariableDeclaration;
 
+export type ValueOfDeclaration =
+  | ts.ClassExpression
+  | ts.ClassDeclaration
+  | ts.ArrowFunction
+  | ts.ClassStaticBlockDeclaration
+  | ts.ConstructorDeclaration
+  | ts.EnumDeclaration
+  | ts.FunctionDeclaration
+  | ts.GetAccessorDeclaration
+  | ts.SetAccessorDeclaration
+  | ts.MethodDeclaration
+  | ts.Expression;
+
 /** Checks if a node is a `ts.Declaration` and a value.
  * @remarks
  * This checks if a given node is a value declaration only,
@@ -61,7 +74,7 @@ export function isValueDeclaration(node: ts.Node): node is ValueDeclaration {
 /** Evaluates to the declaration's value initializer or itself if it declares a value */
 export function getValueOfValueDeclaration(
   node: ValueDeclaration
-): ts.Node | undefined {
+): ValueOfDeclaration | undefined {
   switch (node.kind) {
     case ts.SyntaxKind.ClassExpression:
     case ts.SyntaxKind.ClassDeclaration:
@@ -154,7 +167,7 @@ function getNameFromPropertyName(name: ts.PropertyName): string | undefined {
 export function getDeclarationOfIdentifier(
   node: ts.Identifier,
   checker: ts.TypeChecker
-): ts.Declaration | undefined {
+): ValueDeclaration | undefined {
   let symbol = checker.getSymbolAtLocation(node);
   if (
     symbol?.declarations?.[0] &&
@@ -175,7 +188,7 @@ export function getDeclarationOfIdentifier(
     const shorthandSymbol = checker.getShorthandAssignmentValueSymbol(
       symbol.valueDeclaration
     );
-    return shorthandSymbol?.declarations?.[0];
+    if (shorthandSymbol) symbol = shorthandSymbol;
   } else if (
     ts.isPropertyName(node) &&
     ts.isBindingElement(node.parent) &&
@@ -220,9 +233,11 @@ export function getDeclarationOfIdentifier(
       for (const declaration of symbol.declarations) {
         if (
           ts.isFunctionLike(declaration) &&
-          !!(declaration as ts.FunctionLikeDeclaration).body
-        )
+          !!(declaration as ts.FunctionLikeDeclaration).body &&
+          isValueDeclaration(declaration)
+        ) {
           return declaration;
+        }
       }
     }
 
@@ -234,4 +249,24 @@ export function getDeclarationOfIdentifier(
   }
 
   return undefined;
+}
+
+/** Loops {@link getDeclarationOfIdentifier} until a value of the identifier is found */
+export function getValueOfIdentifier(
+  node: ts.Identifier,
+  checker: ts.TypeChecker
+): ValueOfDeclaration | undefined {
+  while (ts.isIdentifier(node)) {
+    const declaration = getDeclarationOfIdentifier(node, checker);
+    if (!declaration) {
+      return undefined;
+    } else {
+      const value = getValueOfValueDeclaration(declaration);
+      if (value && ts.isIdentifier(value) && value !== node) {
+        node = value;
+      } else {
+        return value;
+      }
+    }
+  }
 }

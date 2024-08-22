@@ -58,6 +58,38 @@ export function isValueDeclaration(node: ts.Node): node is ValueDeclaration {
   }
 }
 
+/** Evaluates to the declaration's value initializer or itself if it declares a value */
+export function getValueOfValueDeclaration(
+  node: ValueDeclaration
+): ts.Node | undefined {
+  switch (node.kind) {
+    case ts.SyntaxKind.ClassExpression:
+    case ts.SyntaxKind.ClassDeclaration:
+    case ts.SyntaxKind.ArrowFunction:
+    case ts.SyntaxKind.ClassStaticBlockDeclaration:
+    case ts.SyntaxKind.Constructor:
+    case ts.SyntaxKind.EnumDeclaration:
+    case ts.SyntaxKind.FunctionDeclaration:
+    case ts.SyntaxKind.FunctionExpression:
+    case ts.SyntaxKind.GetAccessor:
+    case ts.SyntaxKind.SetAccessor:
+    case ts.SyntaxKind.MethodDeclaration:
+      return node;
+    case ts.SyntaxKind.BindingElement:
+    case ts.SyntaxKind.EnumMember:
+    case ts.SyntaxKind.JsxAttribute:
+    case ts.SyntaxKind.Parameter:
+    case ts.SyntaxKind.PropertyAssignment:
+    case ts.SyntaxKind.PropertyDeclaration:
+    case ts.SyntaxKind.VariableDeclaration:
+      return node.initializer;
+    case ts.SyntaxKind.ShorthandPropertyAssignment:
+      return node.objectAssignmentInitializer;
+    default:
+      return undefined;
+  }
+}
+
 function climbPastPropertyOrElementAccess(node: ts.Node): ts.Node {
   if (
     node.parent &&

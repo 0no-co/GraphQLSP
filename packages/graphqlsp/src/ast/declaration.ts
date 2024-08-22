@@ -325,3 +325,29 @@ export function getValueOfIdentifier(
     }
   }
 }
+
+/** Resolves exressions that might not influence the target identifier */
+export function getIdentifierOfChainExpression(
+  node: ts.Expression
+): ts.Identifier | undefined {
+  let target: ts.Expression | undefined = node;
+  while (target) {
+    if (ts.isPropertyAccessExpression(target)) {
+      target = target.name;
+    } else if (
+      ts.isAsExpression(target) ||
+      ts.isSatisfiesExpression(target) ||
+      ts.isNonNullExpression(target) ||
+      ts.isParenthesizedExpression(target) ||
+      ts.isExpressionWithTypeArguments(target)
+    ) {
+      target = target.expression;
+    } else if (ts.isCommaListExpression(target)) {
+      target = target.elements[target.elements.length - 1];
+    } else if (ts.isIdentifier(target)) {
+      return target;
+    } else {
+      return;
+    }
+  }
+}

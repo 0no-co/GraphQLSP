@@ -192,10 +192,7 @@ export function getDeclarationOfIdentifier(
     if (aliased.declarations) symbol = aliased;
   }
 
-  if (
-    symbol &&
-    node.parent.kind === ts.SyntaxKind.ShorthandPropertyAssignment
-  ) {
+  if (symbol && ts.isShorthandPropertyAssignment(node.parent)) {
     // See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/goToDefinition.ts#L248-L257
     // Resolve shorthand property assignments
     const shorthandSymbol = checker.getShorthandAssignmentValueSymbol(
@@ -203,7 +200,6 @@ export function getDeclarationOfIdentifier(
     );
     if (shorthandSymbol) symbol = shorthandSymbol;
   } else if (
-    ts.isPropertyName(node) &&
     ts.isBindingElement(node.parent) &&
     ts.isObjectBindingPattern(node.parent.parent) &&
     node === (node.parent.propertyName || node.parent.name)

@@ -1,5 +1,63 @@
 import { ts } from '../ts';
 
+export type ValueDeclaration =
+  | ts.ArrowFunction
+  | ts.BindingElement
+  | ts.ClassDeclaration
+  | ts.ClassExpression
+  | ts.ClassStaticBlockDeclaration
+  | ts.ConstructorDeclaration
+  | ts.EnumDeclaration
+  | ts.EnumMember
+  | ts.ExportSpecifier
+  | ts.FunctionDeclaration
+  | ts.FunctionExpression
+  | ts.GetAccessorDeclaration
+  | ts.JsxAttribute
+  | ts.MethodDeclaration
+  | ts.ModuleDeclaration
+  | ts.ParameterDeclaration
+  | ts.PropertyAssignment
+  | ts.PropertyDeclaration
+  | ts.SetAccessorDeclaration
+  | ts.ShorthandPropertyAssignment
+  | ts.VariableDeclaration;
+
+/** Checks if a node is a `ts.Declaration` and a value.
+ * @remarks
+ * This checks if a given node is a value declaration only,
+ * excluding import/export specifiers, type declarations, and
+ * ambient declarations.
+ * All declarations that aren't JS(x) nodes will be discarded.
+ * This is based on `ts.isDeclarationKind`.
+ */
+export function isValueDeclaration(node: ts.Node): node is ValueDeclaration {
+  switch (node.kind) {
+    case ts.SyntaxKind.ArrowFunction:
+    case ts.SyntaxKind.BindingElement:
+    case ts.SyntaxKind.ClassDeclaration:
+    case ts.SyntaxKind.ClassExpression:
+    case ts.SyntaxKind.ClassStaticBlockDeclaration:
+    case ts.SyntaxKind.Constructor:
+    case ts.SyntaxKind.EnumDeclaration:
+    case ts.SyntaxKind.EnumMember:
+    case ts.SyntaxKind.FunctionDeclaration:
+    case ts.SyntaxKind.FunctionExpression:
+    case ts.SyntaxKind.GetAccessor:
+    case ts.SyntaxKind.JsxAttribute:
+    case ts.SyntaxKind.MethodDeclaration:
+    case ts.SyntaxKind.Parameter:
+    case ts.SyntaxKind.PropertyAssignment:
+    case ts.SyntaxKind.PropertyDeclaration:
+    case ts.SyntaxKind.SetAccessor:
+    case ts.SyntaxKind.ShorthandPropertyAssignment:
+    case ts.SyntaxKind.VariableDeclaration:
+      return true;
+    default:
+      return false;
+  }
+}
+
 function climbPastPropertyOrElementAccess(node: ts.Node): ts.Node {
   if (
     node.parent &&
@@ -136,9 +194,12 @@ export function getDeclarationOfIdentifier(
       }
     }
 
-    // Otherwise, return the first declaration of the symbol
-    return symbol.declarations[0];
-  } else {
-    return undefined;
+    // Only use value declarations if they're not type/ambient declarations or imports/exports
+    if (symbol.valueDeclaration && isValueDeclaration(symbol.valueDeclaration))
+      return symbol.valueDeclaration;
+    for (const declaration of symbol.declarations)
+      if (isValueDeclaration(declaration)) return declaration;
   }
+
+  return undefined;
 }

@@ -305,6 +305,8 @@ export function getValueOfIdentifier(
     } else {
       const value = getValueOfValueDeclaration(declaration);
       if (value && ts.isIdentifier(value) && value !== node) {
+        // If the resolved value is another identifiers, we continue searching, if the
+        // identifier isn't self-referential
         node = value;
       } else {
         return value;

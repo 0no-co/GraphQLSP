@@ -1,6 +1,7 @@
 import { ts } from '../ts';
 
 export type ValueDeclaration =
+  | ts.BinaryExpression
   | ts.ArrowFunction
   | ts.BindingElement
   | ts.ClassDeclaration
@@ -46,6 +47,7 @@ export type ValueOfDeclaration =
  */
 export function isValueDeclaration(node: ts.Node): node is ValueDeclaration {
   switch (node.kind) {
+    case ts.SyntaxKind.BinaryExpression:
     case ts.SyntaxKind.ArrowFunction:
     case ts.SyntaxKind.BindingElement:
     case ts.SyntaxKind.ClassDeclaration:
@@ -96,6 +98,10 @@ export function getValueOfValueDeclaration(
     case ts.SyntaxKind.PropertyDeclaration:
     case ts.SyntaxKind.VariableDeclaration:
       return node.initializer;
+    case ts.SyntaxKind.BinaryExpression:
+      return node.operatorToken.kind === ts.SyntaxKind.EqualsToken
+        ? node.right
+        : undefined;
     case ts.SyntaxKind.ShorthandPropertyAssignment:
       return node.objectAssignmentInitializer;
     default:
@@ -241,11 +247,33 @@ export function getDeclarationOfIdentifier(
       }
     }
 
-    // Only use value declarations if they're not type/ambient declarations or imports/exports
-    if (symbol.valueDeclaration && isValueDeclaration(symbol.valueDeclaration))
+    // Account for assignments to property access expressions
+    if (
+      symbol.valueDeclaration &&
+      ts.isPropertyAccessExpression(symbol.valueDeclaration)
+    ) {
+      const parent = symbol.valueDeclaration.parent;
+      if (
+        parent &&
+        ts.isBinaryExpression(parent) &&
+        parent.left === symbol.valueDeclaration
+      ) {
+        return parent;
+      }
+    }
+
+    if (
+      symbol.valueDeclaration &&
+      isValueDeclaration(symbol.valueDeclaration)
+    ) {
+      // Only use value declarations if they're not type/ambient declarations or imports/exports
       return symbol.valueDeclaration;
-    for (const declaration of symbol.declarations)
+    }
+
+    for (const declaration of symbol.declarations) {
+      // Only use declarations if they're not type/ambient declarations or imports/exports
       if (isValueDeclaration(declaration)) return declaration;
+    }
   }
 
   return undefined;

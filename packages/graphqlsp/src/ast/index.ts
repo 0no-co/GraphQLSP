@@ -49,72 +49,87 @@ export function findAllTaggedTemplateNodes(
   return result;
 }
 
+function resolveIdentifierToGraphQLCall(
+  input: ts.Identifier,
+  info: ts.server.PluginCreateInfo,
+  checker: ts.TypeChecker | undefined
+): checks.GraphQLCallNode | null {
+  let prevElement: ts.Node | undefined;
+  let element: ts.Node | undefined = input;
+  // NOTE: Under certain circumstances, resolving an identifier can loop
+  while (ts.isIdentifier(element) && element !== prevElement) {
+    prevElement = element;
+
+    const definitions = info.languageService.getDefinitionAtPosition(
+      element.getSourceFile().fileName,
+      element.getStart()
+    );
+
+    const fragment = definitions && definitions[0];
+    const externalSource = fragment && getSource(info, fragment.fileName);
+    if (!fragment || !externalSource) return null;
+
+    element = findNode(externalSource, fragment.textSpan.start);
+    if (!element) return null;
+
+    while (ts.isPropertyAccessExpression(element.parent))
+      element = element.parent;
+
+    if (
+      ts.isVariableDeclaration(element.parent) &&
+      element.parent.initializer &&
+      ts.isCallExpression(element.parent.initializer)
+    ) {
+      element = element.parent.initializer;
+    } else if (ts.isPropertyAssignment(element.parent)) {
+      element = element.parent.initializer;
+    } else if (ts.isBinaryExpression(element.parent)) {
+      element = ts.isPropertyAccessExpression(element.parent.right)
+        ? element.parent.right.name
+        : element.parent.right;
+    }
+    // If we find another Identifier, we continue resolving it
+  }
+  // Check whether we've got a `graphql()` or `gql()` call, by the
+  // call expression's identifier
+  return checks.isGraphQLCall(element, checker) ? element : null;
+}
+
 function unrollFragment(
   element: ts.Identifier,
   info: ts.server.PluginCreateInfo,
-  typeChecker: ts.TypeChecker | undefined
+  checker: ts.TypeChecker | undefined
 ): Array<FragmentDefinitionNode> {
-  const fragments: Array<FragmentDefinitionNode> = [];
-  const definitions = info.languageService.getDefinitionAtPosition(
-    element.getSourceFile().fileName,
-    element.getStart()
-  );
+  const fragments: FragmentDefinitionNode[] = [];
+  const elements: ts.Identifier[] = [element];
+  const seen = new WeakSet<ts.Identifier>();
 
-  const fragment = definitions && definitions[0];
-  if (!fragment) return fragments;
+  const _unrollElement = (element: ts.Identifier): void => {
+    if (seen.has(element)) return;
+    seen.add(element);
 
-  const externalSource = getSource(info, fragment.fileName);
-  if (!externalSource) return fragments;
+    const node = resolveIdentifierToGraphQLCall(element, info, checker);
+    if (!node) return;
 
-  let found = findNode(externalSource, fragment.textSpan.start);
-  if (!found) return fragments;
+    const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
+    if (fragmentRefs) elements.push(...fragmentRefs);
 
-  while (ts.isPropertyAccessExpression(found.parent)) found = found.parent;
-
-  if (
-    ts.isVariableDeclaration(found.parent) &&
-    found.parent.initializer &&
-    ts.isCallExpression(found.parent.initializer)
-  ) {
-    found = found.parent.initializer;
-  } else if (ts.isPropertyAssignment(found.parent)) {
-    found = found.parent.initializer;
-  } else if (ts.isBinaryExpression(found.parent)) {
-    if (ts.isPropertyAccessExpression(found.parent.right)) {
-      found = found.parent.right.name as ts.Identifier;
-    } else {
-      found = found.parent.right;
+    try {
+      const text = node.arguments[0];
+      const parsed = parse(text.getText().slice(1, -1), { noLocation: true });
+      parsed.definitions.forEach(definition => {
+        if (definition.kind === 'FragmentDefinition') {
+          fragments.push(definition);
+        }
+      });
+    } catch (_error) {
+      // NOTE: Assume graphql.parse errors can be ignored
     }
-  }
+  };
 
-  // If we found another identifier, we repeat trying to find the original
-  // fragment definition
-  if (ts.isIdentifier(found)) {
-    return unrollFragment(found, info, typeChecker);
-  }
-
-  // Check whether we've got a `graphql()` or `gql()` call, by the
-  // call expression's identifier
-  if (!checks.isGraphQLCall(found, typeChecker)) {
-    return fragments;
-  }
-
-  try {
-    const text = found.arguments[0];
-    const fragmentRefs = resolveTadaFragmentArray(found.arguments[1]);
-    if (fragmentRefs) {
-      for (const identifier of fragmentRefs) {
-        fragments.push(...unrollFragment(identifier, info, typeChecker));
-      }
-    }
-    const parsed = parse(text.getText().slice(1, -1), { noLocation: true });
-    parsed.definitions.forEach(definition => {
-      if (definition.kind === 'FragmentDefinition') {
-        fragments.push(definition);
-      }
-    });
-  } catch (e) {}
-
+  let nextElement: ts.Identifier | undefined;
+  while ((nextElement = elements.shift()) !== undefined)
+    _unrollElement(nextElement);
   return fragments;
 }
 

@@ -73,6 +73,19 @@ export function isValueDeclaration(node: ts.Node): node is ValueDeclaration {
   }
 }
 
+/** Returns true if operator assigns a value unchanged */
+function isAssignmentOperator(token: ts.BinaryOperatorToken): boolean {
+  switch (token.kind) {
+    case ts.SyntaxKind.EqualsToken:
+    case ts.SyntaxKind.BarBarEqualsToken:
+    case ts.SyntaxKind.AmpersandAmpersandEqualsToken:
+    case ts.SyntaxKind.QuestionQuestionEqualsToken:
+      return true;
+    default:
+      return false;
+  }
+}
+
 /** Evaluates to the declaration's value initializer or itself if it declares a value */
 export function getValueOfValueDeclaration(
   node: ValueDeclaration
@@ -99,9 +112,7 @@ export function getValueOfValueDeclaration(
     case ts.SyntaxKind.VariableDeclaration:
       return node.initializer;
     case ts.SyntaxKind.BinaryExpression:
-      return node.operatorToken.kind === ts.SyntaxKind.EqualsToken
-        ? node.right
-        : undefined;
+      return isAssignmentOperator(node.operatorToken) ? node.right : undefined;
     case ts.SyntaxKind.ShorthandPropertyAssignment:
       return node.objectAssignmentInitializer;
     default:

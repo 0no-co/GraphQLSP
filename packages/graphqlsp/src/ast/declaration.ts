@@ -109,6 +109,7 @@ export function getValueOfValueDeclaration(
   }
 }
 
+// See: https://github.com/microsoft/TypeScript/blob/a5eec2485f8798ece493c00fce1cde4d8f8a8147/src/services/utilities.ts#L652-L654
 function climbPastPropertyOrElementAccess(node: ts.Node): ts.Node {
   if (
     node.parent &&
@@ -127,11 +128,13 @@ function climbPastPropertyOrElementAccess(node: ts.Node): ts.Node {
   }
 }
 
+// See: https://github.com/microsoft/TypeScript/blob/a5eec2485f8798ece493c00fce1cde4d8f8a8147/src/services/utilities.ts#L602-L605
 function isNewExpressionTarget(node: ts.Node): node is ts.NewExpression {
   const target = climbPastPropertyOrElementAccess(node).parent;
   return ts.isNewExpression(target) && target.expression === node;
 }
 
+// See: https://github.com/microsoft/TypeScript/blob/a5eec2485f8798ece493c00fce1cde4d8f8a8147/src/services/utilities.ts#L607-L610
 function isCallOrNewExpressionTarget(
   node: ts.Node
 ): node is ts.CallExpression | ts.NewExpression {
@@ -139,6 +142,7 @@ function isCallOrNewExpressionTarget(
   return ts.isCallOrNewExpression(target) && target.expression === node;
 }
 
+// See: https://github.com/microsoft/TypeScript/blob/a5eec2485f8798ece493c00fce1cde4d8f8a8147/src/services/utilities.ts#L716-L719
 function isNameOfFunctionDeclaration(node: ts.Node): boolean {
   return (
     ts.isIdentifier(node) &&
@@ -148,6 +152,7 @@ function isNameOfFunctionDeclaration(node: ts.Node): boolean {
   );
 }
 
+// See: https://github.com/microsoft/TypeScript/blob/a5eec2485f8798ece493c00fce1cde4d8f8a8147/src/services/utilities.ts#L2441-L2447
 function getNameFromPropertyName(name: ts.PropertyName): string | undefined {
   if (ts.isComputedPropertyName(name)) {
     return ts.isStringLiteralLike(name.expression) ||

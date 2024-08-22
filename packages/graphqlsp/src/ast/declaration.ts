@@ -109,7 +109,7 @@ export function getValueOfValueDeclaration(
   }
 }
 
-// See: https://github.com/microsoft/TypeScript/blob/a5eec2485f8798ece493c00fce1cde4d8f8a8147/src/services/utilities.ts#L652-L654
+// See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/utilities.ts#L652-L654
 function climbPastPropertyOrElementAccess(node: ts.Node): ts.Node {
   if (
     node.parent &&
@@ -128,13 +128,13 @@ function climbPastPropertyOrElementAccess(node: ts.Node): ts.Node {
   }
 }
 
-// See: https://github.com/microsoft/TypeScript/blob/a5eec2485f8798ece493c00fce1cde4d8f8a8147/src/services/utilities.ts#L602-L605
+// See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/utilities.ts#L602-L605
 function isNewExpressionTarget(node: ts.Node): node is ts.NewExpression {
   const target = climbPastPropertyOrElementAccess(node).parent;
   return ts.isNewExpression(target) && target.expression === node;
 }
 
-// See: https://github.com/microsoft/TypeScript/blob/a5eec2485f8798ece493c00fce1cde4d8f8a8147/src/services/utilities.ts#L607-L610
+// See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/utilities.ts#L607-L610
 function isCallOrNewExpressionTarget(
   node: ts.Node
 ): node is ts.CallExpression | ts.NewExpression {
@@ -142,7 +142,7 @@ function isCallOrNewExpressionTarget(
   return ts.isCallOrNewExpression(target) && target.expression === node;
 }
 
-// See: https://github.com/microsoft/TypeScript/blob/a5eec2485f8798ece493c00fce1cde4d8f8a8147/src/services/utilities.ts#L716-L719
+// See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/utilities.ts#L716-L719
 function isNameOfFunctionDeclaration(node: ts.Node): boolean {
   return (
     ts.isIdentifier(node) &&
@@ -152,7 +152,7 @@ function isNameOfFunctionDeclaration(node: ts.Node): boolean {
   );
 }
 
-// See: https://github.com/microsoft/TypeScript/blob/a5eec2485f8798ece493c00fce1cde4d8f8a8147/src/services/utilities.ts#L2441-L2447
+// See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/utilities.ts#L2441-L2447
 function getNameFromPropertyName(name: ts.PropertyName): string | undefined {
   if (ts.isComputedPropertyName(name)) {
     return ts.isStringLiteralLike(name.expression) ||
@@ -179,6 +179,7 @@ export function getDeclarationOfIdentifier(
   node: ts.Identifier,
   checker: ts.TypeChecker
 ): ValueDeclaration | undefined {
+  // See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/goToDefinition.ts#L523-L540
   let symbol = checker.getSymbolAtLocation(node);
   if (
     symbol?.declarations?.[0] &&
@@ -195,6 +196,7 @@ export function getDeclarationOfIdentifier(
     symbol &&
     node.parent.kind === ts.SyntaxKind.ShorthandPropertyAssignment
   ) {
+    // See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/goToDefinition.ts#L248-L257
     // Resolve shorthand property assignments
     const shorthandSymbol = checker.getShorthandAssignmentValueSymbol(
       symbol.valueDeclaration
@@ -206,6 +208,7 @@ export function getDeclarationOfIdentifier(
     ts.isObjectBindingPattern(node.parent.parent) &&
     node === (node.parent.propertyName || node.parent.name)
   ) {
+    // See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/goToDefinition.ts#L259-L280
     // Resolve symbol of property in shorthand assignments
     const name = getNameFromPropertyName(node);
     const prop = name
@@ -218,6 +221,7 @@ export function getDeclarationOfIdentifier(
       ts.isJsxAttributes(node.parent.parent)) &&
     node.parent.name === node
   ) {
+    // See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/goToDefinition.ts#L298-L316
     // Resolve symbol of property in object literal destructre expressions
     const name = getNameFromPropertyName(node);
     const prop = name
@@ -232,6 +236,7 @@ export function getDeclarationOfIdentifier(
       !(symbol.flags & (ts.SymbolFlags.Function | ts.SymbolFlags.Variable)) &&
       isNewExpressionTarget(node)
     ) {
+      // See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/goToDefinition.ts#L603-L610
       // Resolve first class-like declaration for new expressions
       for (const declaration of symbol.declarations) {
         if (ts.isClassLike(declaration)) return declaration;
@@ -240,6 +245,7 @@ export function getDeclarationOfIdentifier(
       isCallOrNewExpressionTarget(node) ||
       isNameOfFunctionDeclaration(node)
     ) {
+      // See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/goToDefinition.ts#L612-L616
       // Resolve first function-like declaration for call expressions or named functions
       for (const declaration of symbol.declarations) {
         if (
@@ -253,6 +259,7 @@ export function getDeclarationOfIdentifier(
     }
 
     // Account for assignments to property access expressions
+    // This resolves property access expressions to binding element parents
     if (
       symbol.valueDeclaration &&
       ts.isPropertyAccessExpression(symbol.valueDeclaration)
@@ -271,10 +278,16 @@ export function getDeclarationOfIdentifier(
       symbol.valueDeclaration &&
       isValueDeclaration(symbol.valueDeclaration)
     ) {
+      // NOTE: We prefer value declarations, since the checker may have already applied conditions
+      // similar to `isValueDeclaration` and selected it beforehand
       // Only use value declarations if they're not type/ambient declarations or imports/exports
       return symbol.valueDeclaration;
     }
 
+    // Selecting the first available result, if any
+    // NOTE: We left out `!isExpandoDeclaration` as a condition, since `valueDeclaration` above
+    // should handle some of these cases, and we don't have to care about this subtlety as much for identifiers
+    // See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/goToDefinition.ts#L582-L590
     for (const declaration of symbol.declarations) {
       // Only use declarations if they're not type/ambient declarations or imports/exports
       if (isValueDeclaration(declaration)) return declaration;

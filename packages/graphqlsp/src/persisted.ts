@@ -12,6 +12,7 @@ import {
 import { resolveTemplate } from './ast/resolve';
 import {
   FragmentDefinitionNode,
+  Kind,
   parse,
   print,
   visit,
@@ -183,8 +184,22 @@ export const generateHashForDocument = (
       foundFilename,
       info
     ).combinedText;
+    const parsed = parse(text);
+    const seen = new Set<unknown>();
+    for (const definition of parsed.definitions) {
+      if (
+        definition.kind === Kind.FRAGMENT_DEFINITION &&
+        !seen.has(definition)
+      ) {
+        stripUnmaskDirectivesFromDefinition(definition);
+      }
+    }
+
     const deduplicatedFragments = fragments
-      .map(fragment => print(fragment))
+      .map(fragment => {
+        stripUnmaskDirectivesFromDefinition(fragment);
+        return print(fragment)
+      })
       .filter((fragment, index, array) => array.indexOf(fragment) === index);
 
     deduplicatedFragments.forEach(fragmentDefinition => {
@@ -203,6 +218,16 @@ export const generateHashForDocument = (
     ).combinedText;
 
     const parsed = parse(text);
+    const seen = new Set<unknown>();
+    for (const definition of parsed.definitions) {
+      if (
+        definition.kind === Kind.FRAGMENT_DEFINITION &&
+        !seen.has(definition)
+      ) {
+        stripUnmaskDirectivesFromDefinition(definition);
+      }
+    }
+
     const spreads = new Set<string>();
     visit(parsed, {
       FragmentSpread: node => {
@@ -226,6 +251,8 @@ export const generateHashForDocument = (
         );
         return;
       }
+
+      stripUnmaskDirectivesFromDefinition(fragmentDefinition);
 
       visit(fragmentDefinition, {
         FragmentSpread: node => {
@@ -321,4 +348,15 @@ export const getDocumentReferenceFromDocumentNode = (
   } else {
     return { node: documentNodeArgument, filename };
   }
+};
+
+type writable<T> = { -readonly [K in keyof T]: T[K] };
+
+const stripUnmaskDirectivesFromDefinition = (
+  definition: FragmentDefinitionNode
+) => {
+  (definition as writable<FragmentDefinitionNode>).directives =
+    definition.directives?.filter(
+      directive => directive.name.value !== '_unmask'
+    );
 };

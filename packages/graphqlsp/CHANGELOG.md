@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 1.12.14
+
+### Patch Changes
+
+- Strip our internal `@_unmask` directive from fragment-definitions when creating hashes for persisted-operations
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#354](https://github.com/0no-co/GraphQLSP/pull/354))
+- Prevent resolution loop when resolving GraphQL fragments
+  Submitted by [@kitten](https://github.com/kitten) (See [#350](https://github.com/0no-co/GraphQLSP/pull/350))
+
 ## 1.12.13
 
 ### Patch Changes

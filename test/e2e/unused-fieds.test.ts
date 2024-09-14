@@ -21,6 +21,7 @@ describe('unused fields', () => {
   );
   const outfileFragment = path.join(projectPath, 'fragment.tsx');
   const outfilePropAccess = path.join(projectPath, 'property-access.tsx');
+  const outfileChainedUsage = path.join(projectPath, 'chained-usage.ts');
 
   let server: TSServer;
   beforeAll(async () => {
@@ -53,6 +54,11 @@ describe('unused fields', () => {
     } satisfies ts.server.protocol.OpenRequestArgs);
     server.sendCommand('open', {
       file: outfileDestructuringFromStart,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+    server.sendCommand('open', {
+      file: outfileChainedUsage,
       fileContent: '// empty',
       scriptKindName: 'TS',
     } satisfies ts.server.protocol.OpenRequestArgs);
@@ -101,6 +107,13 @@ describe('unused fields', () => {
             'utf-8'
           ),
         },
+        {
+          file: outfileChainedUsage,
+          fileContent: fs.readFileSync(
+            path.join(projectPath, 'fixtures/chained-usage.ts'),
+            'utf-8'
+          ),
+        },
       ],
     } satisfies ts.server.protocol.UpdateOpenRequestArgs);
 
@@ -128,6 +141,10 @@ describe('unused fields', () => {
       file: outfileBail,
       tmpfile: outfileBail,
     } satisfies ts.server.protocol.SavetoRequestArgs);
+    server.sendCommand('saveto', {
+      file: outfileChainedUsage,
+      tmpfile: outfileChainedUsage,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
   });
 
   afterAll(() => {
@@ -138,6 +155,7 @@ describe('unused fields', () => {
       fs.unlinkSync(outfileFragmentDestructuring);
       fs.unlinkSync(outfileDestructuringFromStart);
       fs.unlinkSync(outfileBail);
+      fs.unlinkSync(outfileChainedUsage);
     } catch {}
   });
 
@@ -404,5 +422,27 @@ describe('unused fields', () => {
         },
       ]
     `);
+  }, 30000);
+
+  it('Finds field usage in chained call-expressions', async () => {
+    const res = server.responses.filter(
+      resp =>
+        resp.type === 'event' &&
+        resp.event === 'semanticDiag' &&
+        resp.body?.file === outfileChainedUsage
+    );
+    expect(res[0].body.diagnostics[0]).toEqual({
+      category: 'warning',
+      code: 52005,
+      end: {
+        line: 8,
+        offset: 15,
+      },
+      start: {
+        line: 8,
+        offset: 7,
+      },
+      text: "Field(s) 'pokemons.fleeRate' are not used.",
+    });
   }, 30000);
 });

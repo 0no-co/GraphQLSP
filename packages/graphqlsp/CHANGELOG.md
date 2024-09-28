@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.15
+
+### Patch Changes
+
+- Handle chained expressions while crawling scopes
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#356](https://github.com/0no-co/GraphQLSP/pull/356))
+
 ## 1.12.14
 
 ### Patch Changes

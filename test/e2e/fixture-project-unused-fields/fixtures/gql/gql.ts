@@ -17,6 +17,8 @@ const documents = {
     types.PokemonFieldsFragmentDoc,
   '\n  query Po($id: ID!) {\n    pokemon(id: $id) {\n      id\n      fleeRate\n      ...pokemonFields\n      attacks {\n        special {\n          name\n          damage\n        }\n      }\n      weight {\n        minimum\n        maximum\n      }\n      name\n      __typename\n    }\n  }\n':
     types.PoDocument,
+  '\n    query Pok {\n      pokemons {\n        name\n        maxCP\n        maxHP\n        fleeRate\n      }\n    }\n  ':
+    types.PokDocument,
 };
 
 /**
@@ -45,6 +47,12 @@ export function graphql(
 export function graphql(
   source: '\n  query Po($id: ID!) {\n    pokemon(id: $id) {\n      id\n      fleeRate\n      ...pokemonFields\n      attacks {\n        special {\n          name\n          damage\n        }\n      }\n      weight {\n        minimum\n        maximum\n      }\n      name\n      __typename\n    }\n  }\n'
 ): (typeof documents)['\n  query Po($id: ID!) {\n    pokemon(id: $id) {\n      id\n      fleeRate\n      ...pokemonFields\n      attacks {\n        special {\n          name\n          damage\n        }\n      }\n      weight {\n        minimum\n        maximum\n      }\n      name\n      __typename\n    }\n  }\n'];
+/**
+ * The graphql function is used to parse GraphQL queries into a document that can be used by GraphQL clients.
+ */
+export function graphql(
+  source: '\n    query Pok {\n      pokemons {\n        name\n        maxCP\n        maxHP\n        fleeRate\n      }\n    }\n  '
+): (typeof documents)['\n    query Pok {\n      pokemons {\n        name\n        maxCP\n        maxHP\n        fleeRate\n      }\n    }\n  '];
 
 export function graphql(source: string) {
   return (documents as any)[source] ?? {};

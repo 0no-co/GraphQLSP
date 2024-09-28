@@ -2,6 +2,7 @@ import { ts } from './ts';
 import { parse, visit } from 'graphql';
 
 import { findNode } from './ast';
+import { PropertyAccessExpression } from 'typescript';
 
 export const UNUSED_FIELD_CODE = 52005;
 
@@ -119,6 +120,82 @@ const arrayMethods = new Set([
   'sort',
 ]);
 
+const crawlChainedExpressions = (
+  ref: ts.CallExpression,
+  pathParts: string[],
+  allFields: string[],
+  source: ts.SourceFile,
+  info: ts.server.PluginCreateInfo
+): string[] => {
+  const isChained =
+    ts.isPropertyAccessExpression(ref.expression) &&
+    arrayMethods.has(ref.expression.name.text);
+  console.log('[GRAPHQLSP]: ', isChained, ref.getFullText());
+  if (isChained) {
+    const foundRef = ref.expression;
+    const isReduce = foundRef.name.text === 'reduce';
+    let func: ts.Expression | ts.FunctionDeclaration | undefined =
+      ref.arguments[0];
+
+    const res = [];
+    if (ts.isCallExpression(ref.parent.parent)) {
+      const nestedResult = crawlChainedExpressions(
+        ref.parent.parent,
+        pathParts,
+        allFields,
+        source,
+        info
+      );
+      if (nestedResult.length) {
+        res.push(...nestedResult);
+      }
+    }
+
+    if (func && ts.isIdentifier(func)) {
+      // TODO: Scope utilities in checkFieldUsageInFile to deduplicate
+      const checker = info.languageService.getProgram()!.getTypeChecker();
+
+      const declaration = checker.getSymbolAtLocation(func)?.valueDeclaration;
+      if (declaration && ts.isFunctionDeclaration(declaration)) {
+        func = declaration;
+      } else if (
+        declaration &&
+        ts.isVariableDeclaration(declaration) &&
+        declaration.initializer
+      ) {
+        func = declaration.initializer;
+      }
+    }
+
+    if (
+      func &&
+      (ts.isFunctionDeclaration(func) ||
+        ts.isFunctionExpression(func) ||
+        ts.isArrowFunction(func))
+    ) {
+      const param = func.parameters[isReduce ? 1 : 0];
+      if (param) {
+        const scopedResult = crawlScope(
+          param.name,
+          pathParts,
+          allFields,
+          source,
+          info,
+          true
+        );
+
+        if (scopedResult.length) {
+          res.push(...scopedResult);
+        }
+      }
+    }
+
+    return res;
+  }
+
+  return [];
+};
+
 const crawlScope = (
   node: ts.BindingName,
   originalWip: Array<string>,
@@ -173,6 +250,7 @@ const crawlScope = (
     // - const pokemon = result.data.pokemon --> this initiates a new crawl with a renewed scope
     // - const { pokemon } = result.data --> this initiates a destructuring traversal which will
     //   either end up in more destructuring traversals or a scope crawl
+    console.log('[GRAPHQLSP]: ', foundRef.getFullText());
     while (
       ts.isIdentifier(foundRef) ||
       ts.isPropertyAccessExpression(foundRef) ||
@@ -219,65 +297,36 @@ const crawlScope = (
         arrayMethods.has(foundRef.name.text) &&
         ts.isCallExpression(foundRef.parent)
       ) {
-        const isReduce = foundRef.name.text === 'reduce';
-        const isSomeOrEvery =
-          foundRef.name.text === 'every' || foundRef.name.text === 'some';
         const callExpression = foundRef.parent;
-        let func: ts.Expression | ts.FunctionDeclaration | undefined =
-          callExpression.arguments[0];
-
-        if (func && ts.isIdentifier(func)) {
-          // TODO: Scope utilities in checkFieldUsageInFile to deduplicate
-          const checker = info.languageService.getProgram()!.getTypeChecker();
-
-          const declaration =
-            checker.getSymbolAtLocation(func)?.valueDeclaration;
-          if (declaration && ts.isFunctionDeclaration(declaration)) {
-            func = declaration;
-          } else if (
-            declaration &&
-            ts.isVariableDeclaration(declaration) &&
-            declaration.initializer
-          ) {
-            func = declaration.initializer;
-          }
+        const res = [];
+        const isSomeOrEvery =
+          foundRef.name.text === 'some' || foundRef.name.text === 'every';
+        console.log('[GRAPHQLSP]: ', foundRef.name.text);
+        const chainedResults = crawlChainedExpressions(
+          callExpression,
+          pathParts,
+          allFields,
+          source,
+          info
+        );
+        console.log('[GRAPHQLSP]: ', chainedResults.length);
+        if (chainedResults.length) {
+          res.push(...chainedResults);
         }
 
-        if (
-          func &&
-          (ts.isFunctionDeclaration(func) ||
-            ts.isFunctionExpression(func) ||
-            ts.isArrowFunction(func))
-        ) {
-          const param = func.parameters[isReduce ? 1 : 0];
-          if (param) {
-            const res = crawlScope(
-              param.name,
-              pathParts,
-              allFields,
-              source,
-              info,
-              true
-            );
-
-            if (
-              ts.isVariableDeclaration(callExpression.parent) &&
-              !isSomeOrEvery
-            ) {
-              const varRes = crawlScope(
-                callExpression.parent.name,
-                pathParts,
-                allFields,
-                source,
-                info,
-                true
-              );
-              res.push(...varRes);
-            }
-
-            return res;
-          }
+        if (ts.isVariableDeclaration(callExpression.parent) && !isSomeOrEvery) {
+          const varRes = crawlScope(
+            callExpression.parent.name,
+            pathParts,
+            allFields,
+            source,
+            info,
+            true
+          );
+          res.push(...varRes);
         }
+
+        return res;
       } else if (
         ts.isPropertyAccessExpression(foundRef) &&
         !pathParts.includes(foundRef.name.text)

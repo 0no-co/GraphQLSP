@@ -162,6 +162,19 @@ export type PoQuery = {
     | null;
 };
 
+export type PokQueryVariables = Exact<{ [key: string]: never }>;
+
+export type PokQuery = {
+  __typename?: 'Query';
+  pokemons?: Array<{
+    __typename?: 'Pokemon';
+    name: string;
+    maxCP?: number | null;
+    maxHP?: number | null;
+    fleeRate?: number | null;
+  } | null> | null;
+};
+
 export const PokemonFieldsFragmentDoc = {
   kind: 'Document',
   definitions: [
@@ -338,3 +351,31 @@ export const PoDocument = {
     },
   ],
 } as unknown as DocumentNode<PoQuery, PoQueryVariables>;
+export const PokDocument = {
+  kind: 'Document',
+  definitions: [
+    {
+      kind: 'OperationDefinition',
+      operation: 'query',
+      name: { kind: 'Name', value: 'Pok' },
+      selectionSet: {
+        kind: 'SelectionSet',
+        selections: [
+          {
+            kind: 'Field',
+            name: { kind: 'Name', value: 'pokemons' },
+            selectionSet: {
+              kind: 'SelectionSet',
+              selections: [
+                { kind: 'Field', name: { kind: 'Name', value: 'name' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'maxCP' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'maxHP' } },
+                { kind: 'Field', name: { kind: 'Name', value: 'fleeRate' } },
+              ],
+            },
+          },
+        ],
+      },
+    },
+  ],
+} as unknown as DocumentNode<PokQuery, PokQueryVariables>;

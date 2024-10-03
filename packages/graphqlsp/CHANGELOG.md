@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.12.16
+
+### Patch Changes
+
+- Extract inlined fragments for the non-tada route
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#360](https://github.com/0no-co/GraphQLSP/pull/360))
+
 ## 1.12.15
 
 ### Patch Changes

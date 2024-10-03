@@ -198,7 +198,7 @@ export const generateHashForDocument = (
     const deduplicatedFragments = fragments
       .map(fragment => {
         stripUnmaskDirectivesFromDefinition(fragment);
-        return print(fragment)
+        return print(fragment);
       })
       .filter((fragment, index, array) => array.indexOf(fragment) === index);
 
@@ -230,6 +230,9 @@ export const generateHashForDocument = (
 
     const spreads = new Set<string>();
     visit(parsed, {
+      FragmentDefinition: node => {
+        fragments.push(node);
+      },
       FragmentSpread: node => {
         spreads.add(node.name.value);
       },

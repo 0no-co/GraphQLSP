@@ -51,7 +51,6 @@ const clientDirectives = new Set([
 ]);
 
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
-export const MISSING_OPERATION_NAME_CODE = 52002;
 export const USING_DEPRECATED_FIELD_CODE = 52004;
 export const MISSING_PERSISTED_TYPE_ARG = 520100;
 export const MISSING_PERSISTED_CODE_ARG = 520101;
@@ -59,7 +58,6 @@ export const MISSING_PERSISTED_DOCUMENT = 520102;
 export const MISSMATCH_HASH_TO_DOCUMENT = 520103;
 export const ALL_DIAGNOSTICS = [
   SEMANTIC_DIAGNOSTIC_CODE,
-  MISSING_OPERATION_NAME_CODE,
   USING_DEPRECATED_FIELD_CODE,
   MISSING_FRAGMENT_CODE,
   UNUSED_FIELD_CODE,
@@ -492,28 +490,6 @@ const runDiagnostics = (
           }
         })
         .filter(x => x.start + x.length <= endPosition);
-
-      try {
-        const parsed = parse(text, { noLocation: true });
-
-        if (
-          parsed.definitions.some(x => x.kind === Kind.OPERATION_DEFINITION)
-        ) {
-          const op = parsed.definitions.find(
-            x => x.kind === Kind.OPERATION_DEFINITION
-          ) as OperationDefinitionNode;
-          if (!op.name) {
-            graphQLDiagnostics.push({
-              message: 'Operation should contain a name.',
-              start: node.getStart(),
-              code: MISSING_OPERATION_NAME_CODE,
-              length: originalNode.node.getText().length,
-              range: {} as any,
-              severity: 2,
-            } as any);
-          }
-        }
-      } catch (e) {}
 
       return graphQLDiagnostics;
     })

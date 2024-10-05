@@ -76,11 +76,9 @@ async function saveTadaIntrospection(
   });
 
   let output = tadaOutputLocation;
-  console.log('OUTPUT');
   if (await statFile(output, stat => stat.isDirectory())) {
     output = path.join(output, 'introspection.d.ts');
   } else if (!(await statFile(output, p => !!p))) {
-    console.log('MAKING DIRECTORY', output);
     await fs.mkdir(path.dirname(output), { recursive: true });
     if (await statFile(output, stat => stat.isDirectory())) {
       output = path.join(output, 'introspection.d.ts');

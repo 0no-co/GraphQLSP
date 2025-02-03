@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.13.0
+
+### Minor Changes
+
+- Remove missing operation-name code, with our increased focus on not generating any code this becomes irrelevant
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#362](https://github.com/0no-co/GraphQLSP/pull/362))
+
 ## 1.12.16
 
 ### Patch Changes

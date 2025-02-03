@@ -130,7 +130,6 @@ const crawlChainedExpressions = (
   const isChained =
     ts.isPropertyAccessExpression(ref.expression) &&
     arrayMethods.has(ref.expression.name.text);
-  console.log('[GRAPHQLSP]: ', isChained, ref.getFullText());
   if (isChained) {
     const foundRef = ref.expression;
     const isReduce = foundRef.name.text === 'reduce';
@@ -250,7 +249,6 @@ const crawlScope = (
     // - const pokemon = result.data.pokemon --> this initiates a new crawl with a renewed scope
     // - const { pokemon } = result.data --> this initiates a destructuring traversal which will
     //   either end up in more destructuring traversals or a scope crawl
-    console.log('[GRAPHQLSP]: ', foundRef.getFullText());
     while (
       ts.isIdentifier(foundRef) ||
       ts.isPropertyAccessExpression(foundRef) ||
@@ -301,7 +299,6 @@ const crawlScope = (
         const res = [];
         const isSomeOrEvery =
           foundRef.name.text === 'some' || foundRef.name.text === 'every';
-        console.log('[GRAPHQLSP]: ', foundRef.name.text);
         const chainedResults = crawlChainedExpressions(
           callExpression,
           pathParts,
@@ -309,7 +306,6 @@ const crawlScope = (
           source,
           info
         );
-        console.log('[GRAPHQLSP]: ', chainedResults.length);
         if (chainedResults.length) {
           res.push(...chainedResults);
         }

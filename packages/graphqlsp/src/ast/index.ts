@@ -5,7 +5,6 @@ import { resolveTadaFragmentArray } from './resolve';
 import {
   getDeclarationOfIdentifier,
   getValueOfIdentifier,
-  getValueOfValueDeclaration,
   getIdentifierOfChainExpression,
 } from './declaration';
 

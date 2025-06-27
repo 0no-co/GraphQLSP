@@ -19,7 +19,6 @@ import {
 import {
   getDeclarationOfIdentifier,
   getValueOfIdentifier,
-  getIdentifierOfChainExpression,
 } from './ast/declaration';
 
 type PersistedAction = {

@@ -1,7 +1,5 @@
 import { print } from '@0no-co/graphql.web';
 import { ts } from '../ts';
-import { findNode } from '.';
-import { getSource } from '../ast';
 import {
   getDeclarationOfIdentifier,
   getValueOfValueDeclaration,

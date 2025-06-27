@@ -1,13 +1,8 @@
 import { ts } from './ts';
 import { FragmentDefinitionNode, Kind, parse } from 'graphql';
 
-import { findAllCallExpressions, findAllImports, getSource } from './ast';
+import { findAllCallExpressions, findAllImports } from './ast';
 import { resolveTemplate } from './ast/resolve';
-import {
-  VariableDeclaration,
-  VariableStatement,
-  isSourceFile,
-} from 'typescript';
 import { getDeclarationOfIdentifier } from './ast/declaration';
 
 export const MISSING_FRAGMENT_CODE = 52003;

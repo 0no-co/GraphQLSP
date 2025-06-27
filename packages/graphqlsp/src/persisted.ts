@@ -20,6 +20,7 @@ import {
   getDeclarationOfIdentifier,
   getValueOfIdentifier,
 } from './ast/declaration';
+import { findCallExpression } from './ast/helpers';
 
 type PersistedAction = {
   span: {
@@ -76,9 +77,8 @@ export function getPersistedCodeFixAtPosition(
   ) {
     callExpression = callExpression.initializer;
   } else {
-    while (callExpression && !ts.isCallExpression(callExpression)) {
-      callExpression = callExpression.parent;
-    }
+    const foundCallExpression = findCallExpression(callExpression);
+    callExpression = foundCallExpression || callExpression;
   }
 
   // We want to ensure that we found a call-expression and that it looks

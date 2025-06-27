@@ -6,29 +6,13 @@ import {
   getDeclarationOfIdentifier,
   getValueOfValueDeclaration,
 } from './ast/declaration';
+import { findVariableDeclaration, unwrapToObjectType } from './ast/helpers';
 
 export const UNUSED_FIELD_CODE = 52005;
 
-const unwrapAbstractType = (type: ts.Type) => {
-  return type.isUnionOrIntersection()
-    ? type.types.find(type => type.flags & ts.TypeFlags.Object) || type
-    : type;
-};
+// Moved to helpers.ts as unwrapToObjectType
 
-const getVariableDeclaration = (
-  start: ts.Node
-): ts.VariableDeclaration | undefined => {
-  let node: ts.Node = start;
-  const seen = new Set();
-  while (node.parent && !seen.has(node)) {
-    seen.add(node);
-    if (ts.isBlock(node)) {
-      return; // NOTE: We never want to traverse up into a new function/module block
-    } else if (ts.isVariableDeclaration((node = node.parent))) {
-      return node;
-    }
-  }
-};
+// Moved to helpers.ts as findVariableDeclaration
 
 const traverseArrayDestructuring = (
   node: ts.ArrayBindingPattern,
@@ -238,7 +222,10 @@ const crawlScope = (
             func = declaration;
           } else if (declaration) {
             const value = getValueOfValueDeclaration(declaration);
-            if (value) {
+            if (
+              value &&
+              (ts.isExpression(value) || ts.isFunctionDeclaration(value))
+            ) {
               func = value;
             }
           }
@@ -336,7 +323,7 @@ export const checkFieldUsageInFile = (
       if (nodeText.includes('mutation') || nodeText.includes('subscription'))
         return;
 
-      const variableDeclaration = getVariableDeclaration(node);
+      const variableDeclaration = findVariableDeclaration(node);
       if (!variableDeclaration) return;
 
       let dataType: ts.Type | undefined;
@@ -435,7 +422,7 @@ export const checkFieldUsageInFile = (
         let scopeDataSymbol: ts.Symbol | undefined;
         for (let scopeSymbol of scopeSymbols) {
           if (!scopeSymbol.valueDeclaration) continue;
-          let typeOfScopeSymbol = unwrapAbstractType(
+          let typeOfScopeSymbol = unwrapToObjectType(
             checker.getTypeOfSymbol(scopeSymbol)
           );
           if (dataType === typeOfScopeSymbol) {
@@ -458,7 +445,7 @@ export const checkFieldUsageInFile = (
 
             const dataPropertySymbol = typeOfScopeSymbol.getProperty('data');
             if (dataPropertySymbol) {
-              typeOfScopeSymbol = unwrapAbstractType(
+              typeOfScopeSymbol = unwrapToObjectType(
                 checker.getTypeOfSymbol(dataPropertySymbol)
               );
               if (dataType === typeOfScopeSymbol) {
@@ -482,7 +469,7 @@ export const checkFieldUsageInFile = (
         } else {
           // Fall back to looking at the variable declaration directly,
           // if we are on one.
-          const variableDeclaration = getVariableDeclaration(targetNode);
+          const variableDeclaration = findVariableDeclaration(targetNode);
           if (variableDeclaration) name = variableDeclaration.name;
         }
 

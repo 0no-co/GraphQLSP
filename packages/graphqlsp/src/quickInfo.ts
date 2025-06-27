@@ -6,14 +6,13 @@ import {
   bubbleUpCallExpression,
   bubbleUpTemplate,
   findNode,
-  getSchemaName,
   getSource,
 } from './ast';
 
 import * as checks from './ast/checks';
-import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
+import { resolveSchemaForNode, resolveTemplateWithCursor } from './ast/helpers';
 import { SchemaRef } from './graphql/getSchema';
 
 export function getGraphQLQuickInfo(
@@ -37,13 +36,7 @@ export function getGraphQLQuickInfo(
 
   let cursor, text, schemaToUse: GraphQLSchema | undefined;
   if (isCallExpression && checks.isGraphQLCall(node, typeChecker)) {
-    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
-    const schemaName = getSchemaName(node, typeChecker);
-
-    schemaToUse =
-      schemaName && schema.multi[schemaName]
-        ? schema.multi[schemaName]?.schema
-        : schema.current?.schema;
+    schemaToUse = resolveSchemaForNode(node, schema, typeChecker);
 
     const foundToken = getToken(node.arguments[0], cursorPosition);
     if (!schemaToUse || !foundToken) return undefined;
@@ -51,24 +44,17 @@ export function getGraphQLQuickInfo(
     text = node.arguments[0].getText();
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else if (!isCallExpression && checks.isGraphQLTag(node)) {
-    const foundToken = getToken(node.template, cursorPosition);
-    if (!foundToken || !schema.current) return undefined;
+    if (!schema.current) return undefined;
 
-    const { combinedText, resolvedSpans } = resolveTemplate(
-      node,
+    const { combinedText, foundToken } = resolveTemplateWithCursor(
+      node.template,
       filename,
+      cursorPosition,
       info
     );
 
-    const amountOfLines = resolvedSpans
-      .filter(
-        x =>
-          x.original.start < cursorPosition &&
-          x.original.start + x.original.length < cursorPosition
-      )
-      .reduce((acc, span) => acc + (span.lines - 1), 0);
+    if (!foundToken) return undefined;
 
-    foundToken.line = foundToken.line + amountOfLines;
     text = combinedText;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
     schemaToUse = schema.current.schema;

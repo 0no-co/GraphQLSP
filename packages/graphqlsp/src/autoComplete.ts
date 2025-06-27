@@ -26,6 +26,7 @@ import {
 import { Cursor } from './ast/cursor';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
+import { resolveSchemaForNode, resolveTemplateWithCursor } from './ast/helpers';
 import { getSuggestionsForFragmentSpread } from './graphql/getFragmentSpreadSuggestions';
 import { SchemaRef } from './graphql/getSchema';
 
@@ -49,12 +50,7 @@ export function getGraphQLCompletions(
 
   let text, cursor, schemaToUse: GraphQLSchema | undefined;
   if (isCallExpression && checks.isGraphQLCall(node, typeChecker)) {
-    const schemaName = checks.getSchemaName(node, typeChecker);
-
-    schemaToUse =
-      schemaName && schema.multi[schemaName]
-        ? schema.multi[schemaName]?.schema
-        : schema.current?.schema;
+    schemaToUse = resolveSchemaForNode(node, schema, typeChecker);
 
     const foundToken = getToken(node.arguments[0], cursorPosition);
     if (
@@ -71,30 +67,17 @@ export function getGraphQLCompletions(
     text = `${queryText}\n${fragments.map(x => print(x)).join('\n')}`;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else if (!isCallExpression && checks.isGraphQLTag(node)) {
-    const foundToken = getToken(node.template, cursorPosition);
-    if (
-      !foundToken ||
-      !schema.current ||
-      foundToken.string === '.' ||
-      foundToken.string === '..'
-    )
-      return undefined;
+    if (!schema.current) return undefined;
 
-    const { combinedText, resolvedSpans } = resolveTemplate(
-      node,
+    const { combinedText, foundToken } = resolveTemplateWithCursor(
+      node.template,
       filename,
+      cursorPosition,
       info
     );
 
-    const amountOfLines = resolvedSpans
-      .filter(
-        x =>
-          x.original.start < cursorPosition &&
-          x.original.start + x.original.length < cursorPosition
-      )
-      .reduce((acc, span) => acc + (span.lines - 1), 0);
-
-    foundToken.line = foundToken.line + amountOfLines;
+    if (!foundToken || foundToken.string === '.' || foundToken.string === '..')
+      return undefined;
 
     text = combinedText;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);

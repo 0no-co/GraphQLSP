@@ -8,6 +8,7 @@ import {
   VariableStatement,
   isSourceFile,
 } from 'typescript';
+import { getDeclarationOfIdentifier } from './ast/declaration';
 
 export const MISSING_FRAGMENT_CODE = 52003;
 
@@ -33,15 +34,15 @@ export const getColocatedFragmentNames = (
       if (!imp.importClause) return;
 
       if (imp.importClause.name) {
-        const definitions = info.languageService.getDefinitionAtPosition(
-          source.fileName,
-          imp.importClause.name.getStart()
+        const declaration = getDeclarationOfIdentifier(
+          imp.importClause.name,
+          typeChecker
         );
-        const def = definitions && definitions[0];
-        if (def) {
-          if (def.fileName.includes('node_modules')) return;
+        if (declaration) {
+          const sourceFile = declaration.getSourceFile();
+          if (sourceFile.fileName.includes('node_modules')) return;
 
-          const externalSource = getSource(info, def.fileName);
+          const externalSource = sourceFile;
           if (!externalSource) return;
 
           const fragmentsForImport = getFragmentsInSource(
@@ -69,15 +70,15 @@ export const getColocatedFragmentNames = (
         imp.importClause.namedBindings &&
         ts.isNamespaceImport(imp.importClause.namedBindings)
       ) {
-        const definitions = info.languageService.getDefinitionAtPosition(
-          source.fileName,
-          imp.importClause.namedBindings.getStart()
+        const declaration = getDeclarationOfIdentifier(
+          imp.importClause.namedBindings.name,
+          typeChecker
         );
-        const def = definitions && definitions[0];
-        if (def) {
-          if (def.fileName.includes('node_modules')) return;
+        if (declaration) {
+          const sourceFile = declaration.getSourceFile();
+          if (sourceFile.fileName.includes('node_modules')) return;
 
-          const externalSource = getSource(info, def.fileName);
+          const externalSource = sourceFile;
           if (!externalSource) return;
 
           const fragmentsForImport = getFragmentsInSource(
@@ -103,15 +104,18 @@ export const getColocatedFragmentNames = (
         ts.isNamedImportBindings(imp.importClause.namedBindings)
       ) {
         imp.importClause.namedBindings.elements.forEach(el => {
-          const definitions = info.languageService.getDefinitionAtPosition(
-            source.fileName,
-            el.getStart()
-          );
-          const def = definitions && definitions[0];
-          if (def) {
-            if (def.fileName.includes('node_modules')) return;
+          const identifier = el.name || el.propertyName;
+          if (!identifier) return;
 
-            const externalSource = getSource(info, def.fileName);
+          const declaration = getDeclarationOfIdentifier(
+            identifier,
+            typeChecker
+          );
+          if (declaration) {
+            const sourceFile = declaration.getSourceFile();
+            if (sourceFile.fileName.includes('node_modules')) return;
+
+            const externalSource = sourceFile;
             if (!externalSource) return;
 
             const fragmentsForImport = getFragmentsInSource(

@@ -2,6 +2,10 @@ import { ts } from './ts';
 import { parse, visit } from 'graphql';
 
 import { findNode } from './ast';
+import {
+  getDeclarationOfIdentifier,
+  getValueOfValueDeclaration,
+} from './ast/declaration';
 
 export const UNUSED_FIELD_CODE = 52005;
 
@@ -227,19 +231,16 @@ const crawlScope = (
           callExpression.arguments[0];
 
         if (func && ts.isIdentifier(func)) {
-          // TODO: Scope utilities in checkFieldUsageInFile to deduplicate
           const checker = info.languageService.getProgram()!.getTypeChecker();
+          const declaration = getDeclarationOfIdentifier(func, checker);
 
-          const declaration =
-            checker.getSymbolAtLocation(func)?.valueDeclaration;
           if (declaration && ts.isFunctionDeclaration(declaration)) {
             func = declaration;
-          } else if (
-            declaration &&
-            ts.isVariableDeclaration(declaration) &&
-            declaration.initializer
-          ) {
-            func = declaration.initializer;
+          } else if (declaration) {
+            const value = getValueOfValueDeclaration(declaration);
+            if (value) {
+              func = value;
+            }
           }
         }
 

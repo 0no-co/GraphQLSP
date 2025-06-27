@@ -2,6 +2,10 @@ import { print } from '@0no-co/graphql.web';
 import { ts } from '../ts';
 import { findNode } from '.';
 import { getSource } from '../ast';
+import {
+  getDeclarationOfIdentifier,
+  getValueOfValueDeclaration,
+} from './declaration';
 
 type TemplateResult = {
   combinedText: string;
@@ -34,23 +38,21 @@ export function resolveTemplate(
   const resolvedSpans = node.template.templateSpans
     .map(span => {
       if (ts.isIdentifier(span.expression)) {
-        const definitions = info.languageService.getDefinitionAtPosition(
-          filename,
-          span.expression.getStart()
+        const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+        if (!typeChecker) return;
+
+        const declaration = getDeclarationOfIdentifier(
+          span.expression,
+          typeChecker
         );
+        if (!declaration) return;
 
-        const def = definitions && definitions[0];
-        if (!def) return;
-
-        const src = getSource(info, def.fileName);
-        if (!src) return;
-
-        const node = findNode(src, def.textSpan.start);
-        if (!node || !node.parent) return;
-
-        const parent = node.parent;
+        const parent = declaration;
         if (ts.isVariableDeclaration(parent)) {
           const identifierName = span.expression.escapedText;
+          const value = getValueOfValueDeclaration(parent);
+          if (!value) return;
+
           // we reduce by two to account for the "${"
           const originalStart = span.expression.getStart() - 2;
           const originalRange = {
@@ -58,13 +60,11 @@ export function resolveTemplate(
             // we add 1 to account for the "}"
             length: span.expression.end - originalStart + 1,
           };
-          if (
-            parent.initializer &&
-            ts.isTaggedTemplateExpression(parent.initializer)
-          ) {
+
+          if (ts.isTaggedTemplateExpression(value)) {
             const text = resolveTemplate(
-              parent.initializer,
-              def.fileName,
+              value,
+              parent.getSourceFile().fileName,
               info
             );
             templateText = templateText.replace(
@@ -84,13 +84,12 @@ export function resolveTemplate(
             addedCharacters += text.combinedText.length - originalRange.length;
             return alteredSpan;
           } else if (
-            parent.initializer &&
-            ts.isAsExpression(parent.initializer) &&
-            ts.isTaggedTemplateExpression(parent.initializer.expression)
+            ts.isAsExpression(value) &&
+            ts.isTaggedTemplateExpression(value.expression)
           ) {
             const text = resolveTemplate(
-              parent.initializer.expression,
-              def.fileName,
+              value.expression,
+              parent.getSourceFile().fileName,
               info
             );
             templateText = templateText.replace(
@@ -109,16 +108,11 @@ export function resolveTemplate(
             addedCharacters += text.combinedText.length - originalRange.length;
             return alteredSpan;
           } else if (
-            parent.initializer &&
-            ts.isAsExpression(parent.initializer) &&
-            ts.isAsExpression(parent.initializer.expression) &&
-            ts.isObjectLiteralExpression(
-              parent.initializer.expression.expression
-            )
+            ts.isAsExpression(value) &&
+            ts.isAsExpression(value.expression) &&
+            ts.isObjectLiteralExpression(value.expression.expression)
           ) {
-            const astObject = JSON.parse(
-              parent.initializer.expression.expression.getText()
-            );
+            const astObject = JSON.parse(value.expression.expression.getText());
             const resolvedTemplate = print(astObject);
             templateText = templateText.replace(
               '${' + span.expression.escapedText + '}',

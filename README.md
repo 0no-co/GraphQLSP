@@ -70,6 +70,7 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 - `tadaOutputLocation` when using `gql.tada` this can be convenient as it automatically generates
   an `introspection.ts` file for you, just give it the directory to output to and you're done
 - `tadaDisablePreprocessing` this setting disables the optimisation of `tadaOutput` to a pre-processed TypeScript type, this is off by default.
+- `clientDirectives` this setting allows you to specify additional `clientDirectives` which won't be seen as a missing schema-directive.
 
 ## Tracking unused fields
 

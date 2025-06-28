@@ -30,6 +30,7 @@ interface Config {
   templateIsCallExpression?: boolean;
   shouldCheckForColocatedFragments?: boolean;
   template?: string;
+  clientDirectives?: string[];
   trackFieldUsage?: boolean;
   tadaOutputLocation?: string;
 }

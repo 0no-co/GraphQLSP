@@ -172,9 +172,9 @@ function getFragmentsInSource(
   });
 
   nodes.forEach(node => {
-    const text = resolveTemplate(node.node, src.fileName, info).combinedText;
+    const { combinedText } = resolveTemplate(node.node, typeChecker);
     try {
-      const parsed = parse(text, { noLocation: true });
+      const parsed = parse(combinedText, { noLocation: true });
       if (parsed.definitions.every(x => x.kind === Kind.FRAGMENT_DEFINITION)) {
         fragments = fragments.concat(parsed.definitions as any);
       }

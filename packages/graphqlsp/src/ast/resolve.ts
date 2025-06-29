@@ -17,8 +17,7 @@ type TemplateResult = {
 
 export function resolveTemplate(
   node: ts.TaggedTemplateExpression | ts.StringLiteralLike,
-  filename: string,
-  info: ts.server.PluginCreateInfo
+  checker: ts.TypeChecker
 ): TemplateResult {
   if (ts.isStringLiteralLike(node)) {
     return { combinedText: node.getText().slice(1, -1), resolvedSpans: [] };
@@ -36,12 +35,9 @@ export function resolveTemplate(
   const resolvedSpans = node.template.templateSpans
     .map(span => {
       if (ts.isIdentifier(span.expression)) {
-        const typeChecker = info.languageService.getProgram()?.getTypeChecker();
-        if (!typeChecker) return;
-
         const declaration = getDeclarationOfIdentifier(
           span.expression,
-          typeChecker
+          checker
         );
         if (!declaration) return;
 
@@ -60,11 +56,7 @@ export function resolveTemplate(
           };
 
           if (ts.isTaggedTemplateExpression(value)) {
-            const text = resolveTemplate(
-              value,
-              parent.getSourceFile().fileName,
-              info
-            );
+            const text = resolveTemplate(value, checker);
             templateText = templateText.replace(
               '${' + span.expression.escapedText + '}',
               text.combinedText
@@ -85,11 +77,7 @@ export function resolveTemplate(
             ts.isAsExpression(value) &&
             ts.isTaggedTemplateExpression(value.expression)
           ) {
-            const text = resolveTemplate(
-              value.expression,
-              parent.getSourceFile().fileName,
-              info
-            );
+            const text = resolveTemplate(value.expression, checker);
             templateText = templateText.replace(
               '${' + span.expression.escapedText + '}',
               text.combinedText

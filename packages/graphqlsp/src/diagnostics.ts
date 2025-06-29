@@ -78,10 +78,11 @@ export function getGraphQLDiagnostics(
   schema: SchemaRef,
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] | undefined {
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   const isCallExpression = info.config.templateIsCallExpression ?? true;
 
   let source = getSource(info, filename);
-  if (!source) return undefined;
+  if (!source || !typeChecker) return undefined;
 
   let fragments: Array<FragmentDefinitionNode> = [],
     nodes: {
@@ -112,7 +113,7 @@ export function getGraphQLDiagnostics(
       }
     }
 
-    return resolveTemplate(node, filename, info).combinedText;
+    return resolveTemplate(node, typeChecker).combinedText;
   });
 
   const cacheKey = fnv1a(
@@ -350,8 +351,9 @@ const runDiagnostics = (
   schema: SchemaRef,
   info: ts.server.PluginCreateInfo
 ): ts.Diagnostic[] => {
-  const filename = source.fileName;
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   const isCallExpression = info.config.templateIsCallExpression ?? true;
+  if (!typeChecker) return [];
 
   const diagnostics = nodes
     .map(originalNode => {
@@ -370,8 +372,7 @@ const runDiagnostics = (
 
       const { combinedText: text, resolvedSpans } = resolveTemplate(
         node,
-        filename,
-        info
+        typeChecker
       );
       const lines = text.split('\n');
 

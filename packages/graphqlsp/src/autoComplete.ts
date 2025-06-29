@@ -38,7 +38,7 @@ export function getGraphQLCompletions(
   const isCallExpression = info.config.templateIsCallExpression ?? true;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   const source = getSource(info, filename);
-  if (!source) return undefined;
+  if (!source || !typeChecker) return undefined;
 
   let node = findNode(source, cursorPosition);
   if (!node) return undefined;
@@ -80,11 +80,7 @@ export function getGraphQLCompletions(
     )
       return undefined;
 
-    const { combinedText, resolvedSpans } = resolveTemplate(
-      node,
-      filename,
-      info
-    );
+    const { combinedText, resolvedSpans } = resolveTemplate(node, typeChecker);
 
     const amountOfLines = resolvedSpans
       .filter(

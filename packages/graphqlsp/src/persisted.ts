@@ -180,14 +180,13 @@ export const generateHashForDocument = (
   foundFilename: string,
   referencedFragments: ts.ArrayLiteralExpression | undefined
 ): string | undefined => {
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+  if (!typeChecker) return undefined;
+
   if (referencedFragments) {
     const fragments: Array<FragmentDefinitionNode> = [];
     unrollTadaFragments(referencedFragments, fragments, info);
-    let text = resolveTemplate(
-      templateLiteral,
-      foundFilename,
-      info
-    ).combinedText;
+    let text = resolveTemplate(templateLiteral, typeChecker).combinedText;
     const parsed = parse(text);
     const seen = new Set<unknown>();
     for (const definition of parsed.definitions) {
@@ -215,13 +214,9 @@ export const generateHashForDocument = (
     const externalSource = getSource(info, foundFilename)!;
     const { fragments } = findAllCallExpressions(externalSource, info);
 
-    const text = resolveTemplate(
-      templateLiteral,
-      foundFilename,
-      info
-    ).combinedText;
+    const { combinedText } = resolveTemplate(templateLiteral, typeChecker);
 
-    const parsed = parse(text);
+    const parsed = parse(combinedText);
     const seen = new Set<unknown>();
     for (const definition of parsed.definitions) {
       if (
@@ -242,7 +237,7 @@ export const generateHashForDocument = (
       },
     });
 
-    let resolvedText = text;
+    let resolvedText = combinedText;
     const visited = new Set();
     const traversedSpreads = [...spreads];
 

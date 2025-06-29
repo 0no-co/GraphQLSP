@@ -26,7 +26,7 @@ export function getGraphQLQuickInfo(
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
 
   const source = getSource(info, filename);
-  if (!source) return undefined;
+  if (!source || !typeChecker) return undefined;
 
   let node = findNode(source, cursorPosition);
   if (!node) return undefined;
@@ -54,11 +54,7 @@ export function getGraphQLQuickInfo(
     const foundToken = getToken(node.template, cursorPosition);
     if (!foundToken || !schema.current) return undefined;
 
-    const { combinedText, resolvedSpans } = resolveTemplate(
-      node,
-      filename,
-      info
-    );
+    const { combinedText, resolvedSpans } = resolveTemplate(node, typeChecker);
 
     const amountOfLines = resolvedSpans
       .filter(

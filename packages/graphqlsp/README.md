@@ -73,6 +73,7 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
   from usage tracking, so when they are unused in the component but used in i.e. the normalised cache you
   won't get annoying warnings. (default `id`, `_id` and `__typename`, example: ['slug'])
 - `tadaDisablePreprocessing` this setting disables the optimisation of `tadaOutput` to a pre-processed TypeScript type, this is off by default.
+- `clientDirectives` this setting allows you to specify additional `clientDirectives` which won't be seen as a missing schema-directive.
 
 ## Tracking unused fields
 

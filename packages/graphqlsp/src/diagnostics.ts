@@ -31,9 +31,10 @@ import {
 } from './persisted';
 import { SchemaRef } from './graphql/getSchema';
 
-const clientDirectives = new Set([
+const BASE_CLIENT_DIRECTIVES = new Set([
   'populate',
   'client',
+  'unmask',
   '_unmask',
   '_optional',
   '_relayPagination',
@@ -418,6 +419,11 @@ const runDiagnostics = (
       if (!schemaToUse) {
         return undefined;
       }
+
+      const clientDirectives = new Set([
+        ...BASE_CLIENT_DIRECTIVES,
+        ...(info.config.clientDirectives || []),
+      ]);
 
       const graphQLDiagnostics = getDiagnostics(
         text,

@@ -1,5 +1,19 @@
 # @0no-co/graphqlsp
 
+## 1.13.0
+
+### Minor Changes
+
+- Remove missing operation-name code, with our increased focus on not generating any code this becomes irrelevant
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#362](https://github.com/0no-co/GraphQLSP/pull/362))
+- Allow supplying a custom `clientDirectives` which will be mixed in with the base client directives
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#370](https://github.com/0no-co/GraphQLSP/pull/370))
+
+### Patch Changes
+
+- Recursively create directories if the target does not exist
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#364](https://github.com/0no-co/GraphQLSP/pull/364))
+
 ## 1.12.16
 
 ### Patch Changes

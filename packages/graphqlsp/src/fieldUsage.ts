@@ -2,7 +2,7 @@ import { ts } from './ts';
 import { parse, visit } from 'graphql';
 
 import { findNode } from './ast';
-import { PropertyAccessExpression } from 'typescript';
+import { getValueOfIdentifier } from './ast/declaration';
 
 export const UNUSED_FIELD_CODE = 52005;
 
@@ -154,15 +154,14 @@ const crawlChainedExpressions = (
       // TODO: Scope utilities in checkFieldUsageInFile to deduplicate
       const checker = info.languageService.getProgram()!.getTypeChecker();
 
-      const declaration = checker.getSymbolAtLocation(func)?.valueDeclaration;
-      if (declaration && ts.isFunctionDeclaration(declaration)) {
-        func = declaration;
-      } else if (
-        declaration &&
-        ts.isVariableDeclaration(declaration) &&
-        declaration.initializer
+      const value = getValueOfIdentifier(func, checker);
+      if (
+        value &&
+        (ts.isFunctionDeclaration(value) ||
+          ts.isFunctionExpression(value) ||
+          ts.isArrowFunction(value))
       ) {
-        func = declaration.initializer;
+        func = value;
       }
     }
 

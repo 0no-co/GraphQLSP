@@ -17,6 +17,10 @@ import {
   print,
   visit,
 } from '@0no-co/graphql.web';
+import {
+  getDeclarationOfIdentifier,
+  getValueOfIdentifier,
+} from './ast/declaration';
 
 type PersistedAction = {
   span: {
@@ -278,37 +282,29 @@ export const getDocumentReferenceFromTypeQuery = (
   filename: string,
   info: ts.server.PluginCreateInfo
 ): { node: ts.CallExpression | null; filename: string } => {
-  // We look for the references of the generic so that we can use the document
-  // to generate the hash.
-  const references = info.languageService.getReferencesAtPosition(
-    filename,
-    typeQuery.exprName.getStart()
-  );
-
-  if (!references) return { node: null, filename };
-
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
-  let found: ts.CallExpression | null = null;
-  let foundFilename = filename;
-  references.forEach(ref => {
-    if (found) return;
+  if (!typeChecker) return { node: null, filename };
 
-    const source = getSource(info, ref.fileName);
-    if (!source) return;
-    const foundNode = findNode(source, ref.textSpan.start);
-    if (!foundNode) return;
+  // Handle EntityName (Identifier | QualifiedName)
+  let identifier: ts.Identifier | undefined;
+  if (ts.isIdentifier(typeQuery.exprName)) {
+    identifier = typeQuery.exprName;
+  } else if (ts.isQualifiedName(typeQuery.exprName)) {
+    // For qualified names like 'module.identifier', get the right-most identifier
+    identifier = typeQuery.exprName.right;
+  }
 
-    if (
-      ts.isVariableDeclaration(foundNode.parent) &&
-      foundNode.parent.initializer &&
-      checks.isGraphQLCall(foundNode.parent.initializer, typeChecker)
-    ) {
-      found = foundNode.parent.initializer;
-      foundFilename = ref.fileName;
-    }
-  });
+  if (!identifier) return { node: null, filename };
 
-  return { node: found, filename: foundFilename };
+  const value = getValueOfIdentifier(identifier, typeChecker);
+  if (!value || !checks.isGraphQLCall(value, typeChecker)) {
+    return { node: null, filename };
+  }
+
+  return {
+    node: value as ts.CallExpression,
+    filename: value.getSourceFile().fileName,
+  };
 };
 
 export const getDocumentReferenceFromDocumentNode = (
@@ -317,37 +313,18 @@ export const getDocumentReferenceFromDocumentNode = (
   info: ts.server.PluginCreateInfo
 ): { node: ts.CallExpression | null; filename: string } => {
   if (ts.isIdentifier(documentNodeArgument)) {
-    // We look for the references of the generic so that we can use the document
-    // to generate the hash.
-    const references = info.languageService.getReferencesAtPosition(
-      filename,
-      documentNodeArgument.getStart()
-    );
-
-    if (!references) return { node: null, filename };
-
     const typeChecker = info.languageService.getProgram()?.getTypeChecker();
-    let found: ts.CallExpression | null = null;
-    let foundFilename = filename;
-    references.forEach(ref => {
-      if (found) return;
+    if (!typeChecker) return { node: null, filename };
 
-      const source = getSource(info, ref.fileName);
-      if (!source) return;
-      const foundNode = findNode(source, ref.textSpan.start);
-      if (!foundNode) return;
+    const value = getValueOfIdentifier(documentNodeArgument, typeChecker);
+    if (!value || !checks.isGraphQLCall(value, typeChecker)) {
+      return { node: null, filename };
+    }
 
-      if (
-        ts.isVariableDeclaration(foundNode.parent) &&
-        foundNode.parent.initializer &&
-        checks.isGraphQLCall(foundNode.parent.initializer, typeChecker)
-      ) {
-        found = foundNode.parent.initializer;
-        foundFilename = ref.fileName;
-      }
-    });
-
-    return { node: found, filename: foundFilename };
+    return {
+      node: value as ts.CallExpression,
+      filename: value.getSourceFile().fileName,
+    };
   } else {
     return { node: documentNodeArgument, filename };
   }

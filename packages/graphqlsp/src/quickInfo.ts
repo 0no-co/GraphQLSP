@@ -14,7 +14,6 @@ import * as checks from './ast/checks';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
-import { templates } from './ast/templates';
 import { SchemaRef } from './graphql/getSchema';
 
 export function getGraphQLQuickInfo(

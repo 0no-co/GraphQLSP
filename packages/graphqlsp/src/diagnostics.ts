@@ -2,7 +2,6 @@ import { ts } from './ts';
 import { Diagnostic, getDiagnostics } from 'graphql-language-service';
 import {
   FragmentDefinitionNode,
-  GraphQLSchema,
   Kind,
   OperationDefinitionNode,
   parse,

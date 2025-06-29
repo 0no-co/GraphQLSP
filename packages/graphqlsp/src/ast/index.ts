@@ -2,6 +2,11 @@ import { ts } from '../ts';
 import { FragmentDefinitionNode, parse } from 'graphql';
 import * as checks from './checks';
 import { resolveTadaFragmentArray } from './resolve';
+import {
+  getDeclarationOfIdentifier,
+  getValueOfIdentifier,
+  getIdentifierOfChainExpression,
+} from './declaration';
 
 export { getSchemaName } from './checks';
 
@@ -54,45 +59,13 @@ function resolveIdentifierToGraphQLCall(
   info: ts.server.PluginCreateInfo,
   checker: ts.TypeChecker | undefined
 ): checks.GraphQLCallNode | null {
-  let prevElement: ts.Node | undefined;
-  let element: ts.Node | undefined = input;
-  // NOTE: Under certain circumstances, resolving an identifier can loop
-  while (ts.isIdentifier(element) && element !== prevElement) {
-    prevElement = element;
+  if (!checker) return null;
 
-    const definitions = info.languageService.getDefinitionAtPosition(
-      element.getSourceFile().fileName,
-      element.getStart()
-    );
+  const value = getValueOfIdentifier(input, checker);
+  if (!value) return null;
 
-    const fragment = definitions && definitions[0];
-    const externalSource = fragment && getSource(info, fragment.fileName);
-    if (!fragment || !externalSource) return null;
-
-    element = findNode(externalSource, fragment.textSpan.start);
-    if (!element) return null;
-
-    while (ts.isPropertyAccessExpression(element.parent))
-      element = element.parent;
-
-    if (
-      ts.isVariableDeclaration(element.parent) &&
-      element.parent.initializer &&
-      ts.isCallExpression(element.parent.initializer)
-    ) {
-      element = element.parent.initializer;
-    } else if (ts.isPropertyAssignment(element.parent)) {
-      element = element.parent.initializer;
-    } else if (ts.isBinaryExpression(element.parent)) {
-      element = ts.isPropertyAccessExpression(element.parent.right)
-        ? element.parent.right.name
-        : element.parent.right;
-    }
-    // If we find another Identifier, we continue resolving it
-  }
-  // Check whether we've got a `graphql()` or `gql()` call, by the
-  // call expression's identifier
-  return checks.isGraphQLCall(element, checker) ? element : null;
+  // Check whether we've got a `graphql()` or `gql()` call
+  return checks.isGraphQLCall(value, checker) ? value : null;
 }
 
 function unrollFragment(
@@ -262,10 +235,26 @@ export function getAllFragments(
     return fragments;
   }
 
-  const definitions = info.languageService.getDefinitionAtPosition(
-    fileName,
-    node.expression.getStart()
-  );
+  if (!typeChecker) return fragments;
+
+  const identifier = getIdentifierOfChainExpression(node.expression);
+  if (!identifier) return fragments;
+
+  const declaration = getDeclarationOfIdentifier(identifier, typeChecker);
+  if (!declaration) return fragments;
+
+  const sourceFile = declaration.getSourceFile();
+  if (!sourceFile) return fragments;
+
+  const definitions = [
+    {
+      fileName: sourceFile.fileName,
+      textSpan: {
+        start: declaration.getStart(),
+        length: declaration.getWidth(),
+      },
+    },
+  ];
   if (!definitions || !definitions.length) return fragments;
 
   const def = definitions[0];

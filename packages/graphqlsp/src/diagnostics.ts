@@ -29,26 +29,7 @@ import {
   getDocumentReferenceFromTypeQuery,
 } from './persisted';
 import { SchemaRef } from './graphql/getSchema';
-
-const BASE_CLIENT_DIRECTIVES = new Set([
-  'populate',
-  'client',
-  'unmask',
-  '_unmask',
-  '_optional',
-  '_relayPagination',
-  '_simplePagination',
-  '_required',
-  'optional',
-  'required',
-  'arguments',
-  'argumentDefinitions',
-  'connection',
-  'refetchable',
-  'relay',
-  'required',
-  'inline',
-]);
+import { GraphQLSPContext } from './context';
 
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const USING_DEPRECATED_FIELD_CODE = 52004;
@@ -75,22 +56,21 @@ const cache = new LRUCache<number, ts.Diagnostic[]>({
 
 export function getGraphQLDiagnostics(
   filename: string,
-  schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: ts.server.PluginCreateInfo,
+  ctx: GraphQLSPContext
 ): ts.Diagnostic[] | undefined {
-  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
-  const isCallExpression = info.config.templateIsCallExpression ?? true;
-
+  // TODO(@kitten): Replace info arg with checker
+  const checker = info.languageService.getProgram()?.getTypeChecker();
   let source = getSource(info, filename);
-  if (!source || !typeChecker) return undefined;
+  if (!source || !checker) return undefined;
 
   let fragments: Array<FragmentDefinitionNode> = [],
     nodes: {
       node: ts.StringLiteralLike | ts.TaggedTemplateExpression;
       schema: string | null;
     }[];
-  if (isCallExpression) {
-    const result = findAllCallExpressions(source, info);
+  if (ctx.templateIsCallExpression) {
+    const result = findAllCallExpressions(source, checker);
     fragments = result.fragments;
     nodes = result.nodes;
   } else {
@@ -104,7 +84,7 @@ export function getGraphQLDiagnostics(
     if (
       (ts.isNoSubstitutionTemplateLiteral(node) ||
         ts.isTemplateExpression(node)) &&
-      !isCallExpression
+      !ctx.templateIsCallExpression
     ) {
       if (ts.isTaggedTemplateExpression(node.parent)) {
         node = node.parent;
@@ -113,31 +93,29 @@ export function getGraphQLDiagnostics(
       }
     }
 
-    return resolveTemplate(node, typeChecker).combinedText;
+    return resolveTemplate(node, checker).combinedText;
   });
 
   const cacheKey = fnv1a(
-    isCallExpression
+    ctx.templateIsCallExpression
       ? source.getText() +
           fragments.map(x => print(x)).join('-') +
-          schema.version
-      : texts.join('-') + schema.version
+          ctx.schema.version
+      : texts.join('-') + ctx.schema.version
   );
 
   let tsDiagnostics: ts.Diagnostic[];
   if (cache.has(cacheKey)) {
     tsDiagnostics = cache.get(cacheKey)!;
   } else {
-    tsDiagnostics = runDiagnostics(source, { nodes, fragments }, schema, info);
+    tsDiagnostics = runDiagnostics({ source, nodes, fragments }, checker, ctx);
     cache.set(cacheKey, tsDiagnostics);
   }
 
-  const shouldCheckForColocatedFragments =
-    info.config.shouldCheckForColocatedFragments ?? true;
   let fragmentDiagnostics: ts.Diagnostic[] = [];
 
-  if (isCallExpression) {
-    const persistedCalls = findAllPersistedCallExpressions(source, info);
+  if (ctx.templateIsCallExpression) {
+    const persistedCalls = findAllPersistedCallExpressions(source, checker);
     // We need to check whether the user has correctly inserted a hash,
     // by means of providing an argument to the function and that they
     // are establishing a reference to the document by means of the generic.
@@ -290,7 +268,7 @@ export function getGraphQLDiagnostics(
     tsDiagnostics.push(...(persistedDiagnostics as ts.Diagnostic[]));
   }
 
-  if (isCallExpression && shouldCheckForColocatedFragments) {
+  if (ctx.templateIsCallExpression && ctx.shouldCheckForColocatedFragments) {
     const moduleSpecifierToFragments = getColocatedFragmentNames(source, info);
 
     const usedFragments = new Set();
@@ -337,29 +315,26 @@ export function getGraphQLDiagnostics(
 }
 
 const runDiagnostics = (
-  source: ts.SourceFile,
   {
+    source,
     nodes,
     fragments,
   }: {
+    source: ts.SourceFile;
     nodes: {
       node: ts.TaggedTemplateExpression | ts.StringLiteralLike;
       schema: string | null;
     }[];
     fragments: FragmentDefinitionNode[];
   },
-  schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  checker: ts.TypeChecker,
+  ctx: GraphQLSPContext
 ): ts.Diagnostic[] => {
-  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
-  const isCallExpression = info.config.templateIsCallExpression ?? true;
-  if (!typeChecker) return [];
-
   const diagnostics = nodes
     .map(originalNode => {
       let node = originalNode.node;
       if (
-        !isCallExpression &&
+        !ctx.templateIsCallExpression &&
         (ts.isNoSubstitutionTemplateLiteral(node) ||
           ts.isTemplateExpression(node))
       ) {
@@ -372,7 +347,7 @@ const runDiagnostics = (
 
       const { combinedText: text, resolvedSpans } = resolveTemplate(
         node,
-        typeChecker
+        checker
       );
       const lines = text.split('\n');
 
@@ -389,13 +364,13 @@ const runDiagnostics = (
 
       let startingPosition =
         node.getStart() +
-        (isCallExpression
+        (ctx.templateIsCallExpression
           ? 0
           : (node as ts.TaggedTemplateExpression).tag.getText().length +
             (isExpression ? 2 : 0));
       const endPosition = startingPosition + node.getText().length;
       let docFragments = [...fragments];
-      if (isCallExpression) {
+      if (ctx.templateIsCallExpression) {
         try {
           const documentFragments = parse(text, {
             noLocation: true,
@@ -412,18 +387,13 @@ const runDiagnostics = (
       }
 
       const schemaToUse =
-        originalNode.schema && schema.multi[originalNode.schema]
-          ? schema.multi[originalNode.schema]?.schema
-          : schema.current?.schema;
+        originalNode.schema && ctx.schema.multi[originalNode.schema]
+          ? ctx.schema.multi[originalNode.schema]?.schema
+          : ctx.schema.current?.schema;
 
       if (!schemaToUse) {
         return undefined;
       }
-
-      const clientDirectives = new Set([
-        ...BASE_CLIENT_DIRECTIVES,
-        ...(info.config.clientDirectives || []),
-      ]);
 
       const graphQLDiagnostics = getDiagnostics(
         text,
@@ -440,7 +410,7 @@ const runDiagnostics = (
             message && /Unknown directive "@([^)]+)"/g.exec(message);
           if (!matches) return true;
           const directiveName = matches[1];
-          return directiveName && !clientDirectives.has(directiveName);
+          return directiveName && !ctx.clientDirectives.has(directiveName);
         })
         .map(x => {
           const { start, end } = x.range;
@@ -522,12 +492,13 @@ const runDiagnostics = (
       } as ts.Diagnostic)
   );
 
-  if (isCallExpression) {
+  if (ctx.templateIsCallExpression) {
     const usageDiagnostics =
       checkFieldUsageInFile(
         source,
         nodes.map(x => x.node) as ts.NoSubstitutionTemplateLiteral[],
-        info
+        checker,
+        ctx
       ) || [];
 
     if (!usageDiagnostics) return tsDiagnostics;

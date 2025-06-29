@@ -168,9 +168,7 @@ export function findAllPersistedCallExpressions(
   sourceFile: ts.SourceFile,
   checker: ts.TypeChecker
 ) {
-  const result: Array<
-    ts.CallExpression | { node: ts.CallExpression; schema: string | null }
-  > = [];
+  const result: { node: ts.CallExpression; schema: string | null }[] = [];
   function find(node: ts.Node): void {
     if (!ts.isCallExpression(node) || checks.isIIFE(node)) {
       return ts.forEachChild(node, find);

@@ -7,6 +7,7 @@ import { getGraphQLQuickInfo } from './quickInfo';
 import { ALL_DIAGNOSTICS, getGraphQLDiagnostics } from './diagnostics';
 import { templates } from './ast/templates';
 import { getPersistedCodeFixAtPosition } from './persisted';
+import { initGraphQLSPContext } from './context';
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -23,49 +24,21 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
 
 export type Logger = (msg: string) => void;
 
-interface Config {
-  schema: SchemaOrigin;
-  schemas: SchemaOrigin[];
-  tadaDisablePreprocessing?: boolean;
-  templateIsCallExpression?: boolean;
-  shouldCheckForColocatedFragments?: boolean;
-  template?: string;
-  clientDirectives?: string[];
-  trackFieldUsage?: boolean;
-  tadaOutputLocation?: string;
-}
-
 function create(info: ts.server.PluginCreateInfo) {
-  const logger: Logger = (msg: string) =>
-    info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-  const config: Config = info.config;
-
-  logger('config: ' + JSON.stringify(config));
-  if (!config.schema && !config.schemas) {
-    logger('Missing "schema" option in configuration.');
-    throw new Error('Please provide a GraphQL Schema!');
-  }
-
-  logger('Setting up the GraphQL Plugin');
-
-  if (config.template) {
-    templates.add(config.template);
-  }
-
+  const ctx = initGraphQLSPContext(info);
   const proxy = createBasicDecorator(info);
 
-  const schema = loadSchema(info, config, logger);
-
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
-    const originalDiagnostics =
-      info.languageService.getSemanticDiagnostics(filename);
+    const { languageService: service } = info;
+    const checker = service.getProgram()?.getTypeChecker();
+    const originalDiagnostics = service.getSemanticDiagnostics(filename);
 
     const hasGraphQLDiagnostics = originalDiagnostics.some(x =>
       ALL_DIAGNOSTICS.includes(x.code)
     );
     if (hasGraphQLDiagnostics) return originalDiagnostics;
 
-    const graphQLDiagnostics = getGraphQLDiagnostics(filename, schema, info);
+    const graphQLDiagnostics = getGraphQLDiagnostics(filename, info, ctx);
 
     return graphQLDiagnostics
       ? [...graphQLDiagnostics, ...originalDiagnostics]

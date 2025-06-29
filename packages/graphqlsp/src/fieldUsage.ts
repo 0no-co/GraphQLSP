@@ -3,6 +3,7 @@ import { parse, visit } from 'graphql';
 
 import { findNode } from './ast';
 import { getValueOfIdentifier } from './ast/declaration';
+import { GraphQLSPContext } from './context';
 
 export const UNUSED_FIELD_CODE = 52005;
 
@@ -51,7 +52,7 @@ const traverseDestructuring = (
   originalWip: Array<string>,
   allFields: Array<string>,
   source: ts.SourceFile,
-  info: ts.server.PluginCreateInfo
+  checker: ts.TypeChecker
 ): Array<string> => {
   const results = [];
   for (const binding of node.elements) {
@@ -71,7 +72,7 @@ const traverseDestructuring = (
         wip,
         allFields,
         source,
-        info
+        checker
       );
 
       results.push(...traverseResult);
@@ -97,7 +98,7 @@ const traverseDestructuring = (
         wip,
         allFields,
         source,
-        info,
+        checker,
         false
       );
 
@@ -125,7 +126,7 @@ const crawlChainedExpressions = (
   pathParts: string[],
   allFields: string[],
   source: ts.SourceFile,
-  info: ts.server.PluginCreateInfo
+  checker: ts.TypeChecker
 ): string[] => {
   const isChained =
     ts.isPropertyAccessExpression(ref.expression) &&
@@ -143,7 +144,7 @@ const crawlChainedExpressions = (
         pathParts,
         allFields,
         source,
-        info
+        checker
       );
       if (nestedResult.length) {
         res.push(...nestedResult);
@@ -152,8 +153,6 @@ const crawlChainedExpressions = (
 
     if (func && ts.isIdentifier(func)) {
       // TODO: Scope utilities in checkFieldUsageInFile to deduplicate
-      const checker = info.languageService.getProgram()!.getTypeChecker();
-
       const value = getValueOfIdentifier(func, checker);
       if (
         value &&
@@ -178,7 +177,7 @@ const crawlChainedExpressions = (
           pathParts,
           allFields,
           source,
-          info,
+          checker,
           true
         );
 
@@ -199,11 +198,11 @@ const crawlScope = (
   originalWip: Array<string>,
   allFields: Array<string>,
   source: ts.SourceFile,
-  info: ts.server.PluginCreateInfo,
+  checker: ts.TypeChecker,
   inArrayMethod: boolean
 ): Array<string> => {
   if (ts.isObjectBindingPattern(node)) {
-    return traverseDestructuring(node, originalWip, allFields, source, info);
+    return traverseDestructuring(node, originalWip, allFields, source, checker);
   } else if (ts.isArrayBindingPattern(node)) {
     return traverseArrayDestructuring(
       node,
@@ -216,7 +215,7 @@ const crawlScope = (
 
   let results: string[] = [];
 
-  const references = info.languageService.getReferencesAtPosition(
+  const references = ctx.__info.languageService.getReferencesAtPosition(
     source.fileName,
     node.getStart()
   );
@@ -272,7 +271,7 @@ const crawlScope = (
           pathParts,
           allFields,
           source,
-          info,
+          checker,
           false
         );
       } else if (
@@ -303,7 +302,7 @@ const crawlScope = (
           pathParts,
           allFields,
           source,
-          info
+          checker
         );
         if (chainedResults.length) {
           res.push(...chainedResults);
@@ -315,7 +314,7 @@ const crawlScope = (
             pathParts,
             allFields,
             source,
-            info,
+            checker,
             true
           );
           res.push(...varRes);
@@ -359,17 +358,11 @@ const crawlScope = (
 export const checkFieldUsageInFile = (
   source: ts.SourceFile,
   nodes: ts.NoSubstitutionTemplateLiteral[],
-  info: ts.server.PluginCreateInfo
+  checker: ts.TypeChecker,
+  ctx: GraphQLSPContext
 ) => {
   const diagnostics: ts.Diagnostic[] = [];
-  const shouldTrackFieldUsage = info.config.trackFieldUsage ?? true;
-  if (!shouldTrackFieldUsage) return diagnostics;
-
-  const defaultReservedKeys = ['id', '_id', '__typename'];
-  const additionalKeys = info.config.reservedKeys ?? [];
-  const reservedKeys = new Set([...defaultReservedKeys, ...additionalKeys]);
-  const checker = info.languageService.getProgram()?.getTypeChecker();
-  if (!checker) return;
+  if (!ctx.trackFieldUsage) return diagnostics;
 
   try {
     nodes.forEach(node => {
@@ -416,7 +409,8 @@ export const checkFieldUsageInFile = (
         }
       }
 
-      const references = info.languageService.getReferencesAtPosition(
+      // TODO(@kitten): Replace with symbol scanning
+      const references = ctx.__info.languageService.getReferencesAtPosition(
         source.fileName,
         variableDeclaration.name.getStart()
       );
@@ -440,7 +434,7 @@ export const checkFieldUsageInFile = (
               ? `${inProgress.join('.')}.${alias}`
               : alias;
 
-            if (!node.selectionSet && !reservedKeys.has(node.name.value)) {
+            if (!node.selectionSet && !ctx.reservedKeys.has(node.name.value)) {
               allPaths.push(path);
               fieldToLoc.set(path, {
                 start: node.name.loc!.start,
@@ -530,7 +524,7 @@ export const checkFieldUsageInFile = (
         }
 
         if (name) {
-          const result = crawlScope(name, [], allPaths, source, info, false);
+          const result = crawlScope(name, [], allPaths, source, checker, false);
           allAccess.push(...result);
         }
       });

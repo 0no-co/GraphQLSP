@@ -2,7 +2,6 @@ import { ts } from './ts';
 import { parse, visit } from 'graphql';
 
 import { findNode } from './ast';
-import { PropertyAccessExpression } from 'typescript';
 
 export const UNUSED_FIELD_CODE = 52005;
 

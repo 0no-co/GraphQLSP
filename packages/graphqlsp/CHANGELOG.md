@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.14.0
+
+### Minor Changes
+
+- Add new value declaration helpers to replace built-in services and to traverse TypeScript type checked AST exhaustively and efficiently
+  Submitted by [@kitten](https://github.com/kitten) (See [#351](https://github.com/0no-co/GraphQLSP/pull/351))
+
 ## 1.13.0
 
 ### Minor Changes

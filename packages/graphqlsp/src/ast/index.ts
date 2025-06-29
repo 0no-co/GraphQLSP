@@ -10,6 +10,7 @@ import {
 
 export { getSchemaName } from './checks';
 
+/** @deprecated: use program.getSourceFile directly */
 export function getSource(info: ts.server.PluginCreateInfo, filename: string) {
   const program = info.languageService.getProgram();
   if (!program) return undefined;
@@ -54,24 +55,9 @@ export function findAllTaggedTemplateNodes(
   return result;
 }
 
-function resolveIdentifierToGraphQLCall(
-  input: ts.Identifier,
-  info: ts.server.PluginCreateInfo,
-  checker: ts.TypeChecker | undefined
-): checks.GraphQLCallNode | null {
-  if (!checker) return null;
-
-  const value = getValueOfIdentifier(input, checker);
-  if (!value) return null;
-
-  // Check whether we've got a `graphql()` or `gql()` call
-  return checks.isGraphQLCall(value, checker) ? value : null;
-}
-
 function unrollFragment(
   element: ts.Identifier,
-  info: ts.server.PluginCreateInfo,
-  checker: ts.TypeChecker | undefined
+  checker: ts.TypeChecker
 ): Array<FragmentDefinitionNode> {
   const fragments: FragmentDefinitionNode[] = [];
   const elements: ts.Identifier[] = [element];
@@ -81,14 +67,14 @@ function unrollFragment(
     if (seen.has(element)) return;
     seen.add(element);
 
-    const node = resolveIdentifierToGraphQLCall(element, info, checker);
-    if (!node) return;
+    const value = getValueOfIdentifier(element, checker);
+    if (!value || !checks.isGraphQLCall(value, checker)) return;
 
-    const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
+    const fragmentRefs = resolveTadaFragmentArray(value.arguments[1]);
     if (fragmentRefs) elements.push(...fragmentRefs);
 
     try {
-      const text = node.arguments[0];
+      const text = value.arguments[0];
       const parsed = parse(text.getText().slice(1, -1), { noLocation: true });
       parsed.definitions.forEach(definition => {
         if (definition.kind === 'FragmentDefinition') {
@@ -109,17 +95,17 @@ function unrollFragment(
 export function unrollTadaFragments(
   fragmentsArray: ts.ArrayLiteralExpression,
   wip: FragmentDefinitionNode[],
-  info: ts.server.PluginCreateInfo
+  checker: ts.TypeChecker
 ): FragmentDefinitionNode[] {
-  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   fragmentsArray.elements.forEach(element => {
+    // TODO(@kitten): Use getIdentifierOfChainExpression
     if (ts.isIdentifier(element)) {
-      wip.push(...unrollFragment(element, info, typeChecker));
+      wip.push(...unrollFragment(element, checker));
     } else if (ts.isPropertyAccessExpression(element)) {
       let el = element;
       while (ts.isPropertyAccessExpression(el.expression)) el = el.expression;
       if (ts.isIdentifier(el.name)) {
-        wip.push(...unrollFragment(el.name, info, typeChecker));
+        wip.push(...unrollFragment(el.name, checker));
       }
     }
   });
@@ -129,7 +115,7 @@ export function unrollTadaFragments(
 
 export function findAllCallExpressions(
   sourceFile: ts.SourceFile,
-  info: ts.server.PluginCreateInfo,
+  checker: ts.TypeChecker,
   shouldSearchFragments: boolean = true
 ): {
   nodes: Array<{
@@ -138,7 +124,7 @@ export function findAllCallExpressions(
   }>;
   fragments: Array<FragmentDefinitionNode>;
 } {
-  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+  //const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   const result: Array<{
     node: ts.StringLiteralLike;
     schema: string | null;
@@ -153,20 +139,20 @@ export function findAllCallExpressions(
 
     // Check whether we've got a `graphql()` or `gql()` call, by the
     // call expression's identifier
-    if (!checks.isGraphQLCall(node, typeChecker)) {
+    if (!checks.isGraphQLCall(node, checker)) {
       return ts.forEachChild(node, find);
     }
 
-    const name = checks.getSchemaName(node, typeChecker);
+    const name = checks.getSchemaName(node, checker);
     const text = node.arguments[0];
     const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
 
     if (!hasTriedToFindFragments && !fragmentRefs) {
       hasTriedToFindFragments = true;
-      fragments.push(...getAllFragments(sourceFile.fileName, node, info));
+      fragments.push(...getAllFragments(node, checker));
     } else if (fragmentRefs) {
       for (const identifier of fragmentRefs) {
-        fragments.push(...unrollFragment(identifier, info, typeChecker));
+        fragments.push(...unrollFragment(identifier, checker));
       }
     }
 
@@ -179,90 +165,53 @@ export function findAllCallExpressions(
 }
 
 export function findAllPersistedCallExpressions(
-  sourceFile: ts.SourceFile
-): Array<ts.CallExpression>;
-export function findAllPersistedCallExpressions(
   sourceFile: ts.SourceFile,
-  info: ts.server.PluginCreateInfo
-): Array<{ node: ts.CallExpression; schema: string | null }>;
-
-export function findAllPersistedCallExpressions(
-  sourceFile: ts.SourceFile,
-  info?: ts.server.PluginCreateInfo
+  checker: ts.TypeChecker
 ) {
   const result: Array<
     ts.CallExpression | { node: ts.CallExpression; schema: string | null }
   > = [];
-  const typeChecker = info?.languageService.getProgram()?.getTypeChecker();
   function find(node: ts.Node): void {
     if (!ts.isCallExpression(node) || checks.isIIFE(node)) {
       return ts.forEachChild(node, find);
-    }
-
-    if (!checks.isTadaPersistedCall(node, typeChecker)) {
-      return;
-    } else if (info) {
-      const name = checks.getSchemaName(node, typeChecker, true);
+    } else if (checks.isTadaPersistedCall(node, checker)) {
+      const name = checks.getSchemaName(node, checker, true);
       result.push({ node, schema: name });
-    } else {
-      result.push(node);
     }
   }
   find(sourceFile);
   return result;
 }
 
-export function getAllFragments(
-  fileName: string,
-  node: ts.Node,
-  info: ts.server.PluginCreateInfo
-) {
+export function getAllFragments(node: ts.Node, checker: ts.TypeChecker) {
   let fragments: Array<FragmentDefinitionNode> = [];
-
-  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+  // TODO(@kitten): is this redundant and could `node` be narrowed first?
   if (!ts.isCallExpression(node)) {
     return fragments;
   }
 
   const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
   if (fragmentRefs) {
-    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
     for (const identifier of fragmentRefs) {
-      fragments.push(...unrollFragment(identifier, info, typeChecker));
+      fragments.push(...unrollFragment(identifier, checker));
     }
     return fragments;
-  } else if (checks.isTadaGraphQLCall(node, typeChecker)) {
+  } else if (checks.isTadaGraphQLCall(node, checker)) {
     return fragments;
   }
-
-  if (!typeChecker) return fragments;
 
   const identifier = getIdentifierOfChainExpression(node.expression);
   if (!identifier) return fragments;
 
-  const declaration = getDeclarationOfIdentifier(identifier, typeChecker);
+  const declaration = getDeclarationOfIdentifier(identifier, checker);
   if (!declaration) return fragments;
 
   const sourceFile = declaration.getSourceFile();
   if (!sourceFile) return fragments;
 
-  const definitions = [
-    {
-      fileName: sourceFile.fileName,
-      textSpan: {
-        start: declaration.getStart(),
-        length: declaration.getWidth(),
-      },
-    },
-  ];
-  if (!definitions || !definitions.length) return fragments;
-
-  const def = definitions[0];
-  if (!def) return fragments;
-  const src = getSource(info, def.fileName);
-  if (!src) return fragments;
-
-  ts.forEachChild(src, node => {
+  // TODO(@kitten): This was previously doing `getSource(info, sourceFile.fileName)`
+  // However, `sourceFile` already exists in here... Presumably this was redundant
+  ts.forEachChild(sourceFile, node => {
     if (
       ts.isVariableStatement(node) &&
       node.declarationList &&

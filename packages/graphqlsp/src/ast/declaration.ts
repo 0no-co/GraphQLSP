@@ -10,6 +10,7 @@ export type ValueDeclaration =
   | ts.ConstructorDeclaration
   | ts.EnumDeclaration
   | ts.EnumMember
+  | ts.ExportAssignment
   | ts.ExportSpecifier
   | ts.FunctionDeclaration
   | ts.FunctionExpression
@@ -56,6 +57,7 @@ export function isValueDeclaration(node: ts.Node): node is ValueDeclaration {
     case ts.SyntaxKind.Constructor:
     case ts.SyntaxKind.EnumDeclaration:
     case ts.SyntaxKind.EnumMember:
+    case ts.SyntaxKind.ExportAssignment:
     case ts.SyntaxKind.FunctionDeclaration:
     case ts.SyntaxKind.FunctionExpression:
     case ts.SyntaxKind.GetAccessor:
@@ -111,6 +113,8 @@ export function getValueOfValueDeclaration(
     case ts.SyntaxKind.PropertyDeclaration:
     case ts.SyntaxKind.VariableDeclaration:
       return node.initializer;
+    case ts.SyntaxKind.ExportAssignment:
+      return node.expression;
     case ts.SyntaxKind.BinaryExpression:
       return isAssignmentOperator(node.operatorToken) ? node.right : undefined;
     case ts.SyntaxKind.ShorthandPropertyAssignment:

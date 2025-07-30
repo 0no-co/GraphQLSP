@@ -283,6 +283,39 @@ const crawlScope = (
         if (allFields.find(x => x.startsWith(joined + '.'))) {
           pathParts.push(foundRef.text);
         }
+
+        // When we encounter an external function where we use this identifier
+        // we'll mark all of the sub-fields as used as we consider this a bail
+        // scenario.
+        if (ts.isCallExpression(foundRef.parent)) {
+          const callExpression = foundRef.parent;
+          const args = callExpression.arguments.map(arg => {
+            let parts = [...pathParts];
+            let reference = arg;
+            while (ts.isPropertyAccessExpression(reference)) {
+              const joined = [...parts, reference.name.text].join('.');
+              if (allFields.find(x => x.startsWith(joined + '.'))) {
+                parts.push(reference.name.text);
+              }
+              reference = reference.expression;
+            }
+            if (ts.isIdentifier(reference)) {
+              const joined = [...parts, reference.getText()].join('.');
+              if (allFields.find(x => x.startsWith(joined + '.'))) {
+                parts.push(reference.getText());
+              }
+            }
+            return parts.join('.');
+          });
+
+          return args.flatMap((argPathParts, argIndex) => {
+            const joined = argPathParts;
+            const bailedFields = allFields.filter(x =>
+              x.startsWith(joined + '.')
+            );
+            return bailedFields;
+          });
+        }
       } else if (
         ts.isPropertyAccessExpression(foundRef) &&
         foundRef.name.text === 'at' &&

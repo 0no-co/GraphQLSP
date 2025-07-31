@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.15.0
+
+### Minor Changes
+
+- Improves field-usage tracking, we bail when the identifier is passed into a function, this bail is intended so we don't have to traverse the whole codebase tracing down usage
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#374](https://github.com/0no-co/GraphQLSP/pull/374))
+
 ## 1.14.0
 
 ### Minor Changes

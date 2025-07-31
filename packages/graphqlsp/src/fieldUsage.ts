@@ -289,9 +289,10 @@ const crawlScope = (
         // scenario.
         if (ts.isCallExpression(foundRef.parent)) {
           const callExpression = foundRef.parent;
-          const args = callExpression.arguments.map(arg => {
+          return callExpression.arguments.flatMap(arg => {
             let parts = [...pathParts];
             let reference = arg;
+
             while (ts.isPropertyAccessExpression(reference)) {
               const joined = [...parts, reference.name.text].join('.');
               if (allFields.find(x => x.startsWith(joined + '.'))) {
@@ -299,21 +300,16 @@ const crawlScope = (
               }
               reference = reference.expression;
             }
+
             if (ts.isIdentifier(reference)) {
               const joined = [...parts, reference.getText()].join('.');
               if (allFields.find(x => x.startsWith(joined + '.'))) {
                 parts.push(reference.getText());
               }
             }
-            return parts.join('.');
-          });
 
-          return args.flatMap((argPathParts, argIndex) => {
-            const joined = argPathParts;
-            const bailedFields = allFields.filter(x =>
-              x.startsWith(joined + '.')
-            );
-            return bailedFields;
+            const joined = parts.join('.');
+            return allFields.filter(x => x.startsWith(joined + '.'));
           });
         }
       } else if (

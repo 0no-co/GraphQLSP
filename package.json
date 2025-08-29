@@ -29,7 +29,7 @@
     "@actions/github": "^5.1.1",
     "@babel/plugin-transform-block-scoping": "^7.23.4",
     "@babel/plugin-transform-typescript": "^7.23.6",
-    "@changesets/cli": "^2.26.2",
+    "@changesets/cli": "^2.29.6",
     "@changesets/get-github-info": "^0.5.2",
     "@rollup/plugin-babel": "^6.0.4",
     "@rollup/plugin-commonjs": "^25.0.7",

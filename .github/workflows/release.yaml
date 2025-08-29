@@ -30,7 +30,7 @@ jobs:
       - name: Setup pnpm
         uses: pnpm/action-setup@v3
         with:
-          version: 8.6.1
+          version: 9
           run_install: false
 
       - name: Get pnpm store directory
@@ -51,12 +51,11 @@ jobs:
 
       - name: PR or Publish
         id: changesets
-        uses: changesets/action@v1.4.6
+        uses: changesets/action@v1.5.3
         with:
           publish: pnpm changeset publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Notify discord
         id: discord-msg
@@ -66,17 +65,14 @@ jobs:
           publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
 
       - name: Publish Prerelease
         if: steps.changesets.outputs.published != 'true'
         continue-on-error: true
         env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          npm config set "//registry.npmjs.org/:_authToken" "$NPM_TOKEN"
           git reset --hard origin/main
           pnpm changeset version --no-git-tag --snapshot canary
           pnpm changeset publish --no-git-tag --snapshot canary --tag canary

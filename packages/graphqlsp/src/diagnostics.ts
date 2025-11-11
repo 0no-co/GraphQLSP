@@ -16,6 +16,7 @@ import {
   findAllPersistedCallExpressions,
   findAllTaggedTemplateNodes,
   getSource,
+  unrollFragment,
 } from './ast';
 import { resolveTemplate } from './ast/resolve';
 import { UNUSED_FIELD_CODE, checkFieldUsageInFile } from './fieldUsage';
@@ -344,6 +345,7 @@ const runDiagnostics = (
     nodes: {
       node: ts.TaggedTemplateExpression | ts.StringLiteralLike;
       schema: string | null;
+      tadaFragmentRefs?: readonly ts.Identifier[];
     }[];
     fragments: FragmentDefinitionNode[];
   },
@@ -352,6 +354,7 @@ const runDiagnostics = (
 ): ts.Diagnostic[] => {
   const filename = source.fileName;
   const isCallExpression = info.config.templateIsCallExpression ?? true;
+  const typeChecker = info.languageService.getProgram()?.getTypeChecker();
 
   const diagnostics = nodes
     .map(originalNode => {
@@ -394,6 +397,20 @@ const runDiagnostics = (
             (isExpression ? 2 : 0));
       const endPosition = startingPosition + node.getText().length;
       let docFragments = [...fragments];
+
+      if (originalNode.tadaFragmentRefs !== undefined) {
+        const fragmentNames = new Set<string>();
+        for (const identifier of originalNode.tadaFragmentRefs) {
+          const unrolled = unrollFragment(identifier, info, typeChecker);
+          unrolled.forEach((frag: FragmentDefinitionNode) =>
+            fragmentNames.add(frag.name.value)
+          );
+        }
+        docFragments = docFragments.filter(frag =>
+          fragmentNames.has(frag.name.value)
+        );
+      }
+
       if (isCallExpression) {
         try {
           const documentFragments = parse(text, {

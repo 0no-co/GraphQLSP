@@ -32,7 +32,16 @@ const PokemonQuery = graphql(`
   }
 `, [PokemonFields, Fields.Pokemon])
 
-const persisted = graphql.persisted<typeof PokemonQuery>("sha256:78c769ed6cfef67e17e579a2abfe4da27bd51e09ed832a88393148bcce4c5a7d")
+const Test = graphql(`
+  query Po($id: ID!) {
+    pokemon(id: $id) {
+      id
+      fleeRate
+      ...Pok
+      ...pokemonFields
+    }
+  }
+`, [])
 
 const Pokemons = () => {
   const [result] = useQuery({

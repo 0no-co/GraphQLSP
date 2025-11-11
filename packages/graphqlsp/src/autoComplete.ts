@@ -66,7 +66,7 @@ export function getGraphQLCompletions(
       return undefined;
 
     const queryText = node.arguments[0].getText().slice(1, -1);
-    const fragments = getAllFragments(filename, node, info);
+    const fragments = getAllFragments(node, info);
 
     text = `${queryText}\n${fragments.map(x => print(x)).join('\n')}`;
     cursor = new Cursor(foundToken.line, foundToken.start - 1);

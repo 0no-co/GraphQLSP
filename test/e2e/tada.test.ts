@@ -619,3 +619,74 @@ List out all Pokémon, optionally in pages`
     `);
   }, 30000);
 });
+
+describe('Fragment dependencies - Issue #494', () => {
+  const projectPath = path.resolve(__dirname, 'fixture-project-tada');
+  const outfileMissingFragmentDep = path.join(
+    projectPath,
+    'missing-fragment-dep.ts'
+  );
+
+  let server: TSServer;
+  beforeAll(async () => {
+    server = new TSServer(projectPath, { debugLog: false });
+
+    server.sendCommand('open', {
+      file: outfileMissingFragmentDep,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+
+    server.sendCommand('updateOpen', {
+      openFiles: [
+        {
+          file: outfileMissingFragmentDep,
+          fileContent: fs.readFileSync(
+            path.join(projectPath, 'fixtures/missing-fragment-dep.ts'),
+            'utf-8'
+          ),
+        },
+      ],
+    } satisfies ts.server.protocol.UpdateOpenRequestArgs);
+
+    server.sendCommand('saveto', {
+      file: outfileMissingFragmentDep,
+      tmpfile: outfileMissingFragmentDep,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+  });
+
+  afterAll(() => {
+    try {
+      fs.unlinkSync(outfileMissingFragmentDep);
+    } catch {}
+  });
+
+  it('warns about missing fragment dep even when fragment is used in another query in same file', async () => {
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfileMissingFragmentDep
+    );
+
+    const res = server.responses.filter(
+      resp =>
+        resp.type === 'event' &&
+        resp.event === 'semanticDiag' &&
+        resp.body?.file === outfileMissingFragmentDep
+    );
+
+    // Should have a diagnostic about the unknown fragment in SecondQuery
+    expect(res.length).toBeGreaterThan(0);
+    expect(res[0].body.diagnostics.length).toBeGreaterThan(0);
+
+    const fragmentError = res[0].body.diagnostics.find((diag: any) =>
+      diag.text.includes('PokemonBasicInfo')
+    );
+
+    expect(fragmentError).toBeDefined();
+    expect(fragmentError.text).toBe('Unknown fragment "PokemonBasicInfo".');
+    expect(fragmentError.code).toBe(52001);
+    expect(fragmentError.category).toBe('error');
+  }, 30000);
+});

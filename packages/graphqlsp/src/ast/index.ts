@@ -68,7 +68,7 @@ function resolveIdentifierToGraphQLCall(
   return checks.isGraphQLCall(value, checker) ? value : null;
 }
 
-function unrollFragment(
+export function unrollFragment(
   element: ts.Identifier,
   info: ts.server.PluginCreateInfo,
   checker: ts.TypeChecker | undefined
@@ -135,6 +135,8 @@ export function findAllCallExpressions(
   nodes: Array<{
     node: ts.StringLiteralLike;
     schema: string | null;
+    // For gql.tada call-expressions, this contains the identifiers of explicitly declared fragments
+    tadaFragmentRefs?: readonly ts.Identifier[] | null;
   }>;
   fragments: Array<FragmentDefinitionNode>;
 } {
@@ -142,6 +144,7 @@ export function findAllCallExpressions(
   const result: Array<{
     node: ts.StringLiteralLike;
     schema: string | null;
+    tadaFragmentRefs?: readonly ts.Identifier[];
   }> = [];
   let fragments: Array<FragmentDefinitionNode> = [];
   let hasTriedToFindFragments = shouldSearchFragments ? false : true;
@@ -160,10 +163,14 @@ export function findAllCallExpressions(
     const name = checks.getSchemaName(node, typeChecker);
     const text = node.arguments[0];
     const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
+    const isTadaCall = checks.isTadaGraphQLCall(node, typeChecker);
 
     if (!hasTriedToFindFragments && !fragmentRefs) {
-      hasTriedToFindFragments = true;
-      fragments.push(...getAllFragments(sourceFile.fileName, node, info));
+      // Only collect global fragments if this is NOT a gql.tada call
+      if (!isTadaCall) {
+        hasTriedToFindFragments = true;
+        fragments.push(...getAllFragments(node, info));
+      }
     } else if (fragmentRefs) {
       for (const identifier of fragmentRefs) {
         fragments.push(...unrollFragment(identifier, info, typeChecker));
@@ -171,7 +178,15 @@ export function findAllCallExpressions(
     }
 
     if (text && ts.isStringLiteralLike(text)) {
-      result.push({ node: text, schema: name });
+      result.push({
+        node: text,
+        schema: name,
+        tadaFragmentRefs: isTadaCall
+          ? fragmentRefs === undefined
+            ? []
+            : fragmentRefs
+          : undefined,
+      });
     }
   }
   find(sourceFile);
@@ -213,7 +228,6 @@ export function findAllPersistedCallExpressions(
 }
 
 export function getAllFragments(
-  fileName: string,
   node: ts.Node,
   info: ts.server.PluginCreateInfo
 ) {

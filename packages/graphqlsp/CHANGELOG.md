@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.15.1
+
+### Patch Changes
+
+- Correctly identify missing fragments for gql.tada graphql call-expressions
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#376](https://github.com/0no-co/GraphQLSP/pull/376))
+
 ## 1.15.0
 
 ### Minor Changes

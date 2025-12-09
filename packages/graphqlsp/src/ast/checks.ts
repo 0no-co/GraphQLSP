@@ -123,3 +123,13 @@ export const getSchemaName = (
   }
   return null;
 };
+
+/** Checks if node is a maskFragments() call */
+export const isMaskFragmentsCall = (
+  node: ts.Node
+): node is ts.CallExpression => {
+  if (!ts.isCallExpression(node)) return false;
+  if (!ts.isIdentifier(node.expression)) return false;
+  // Only checks function name, not whether it's from gql.tada
+  return node.expression.escapedText === 'maskFragments';
+};

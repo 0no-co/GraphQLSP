@@ -15,6 +15,7 @@ import {
   findAllCallExpressions,
   findAllPersistedCallExpressions,
   findAllTaggedTemplateNodes,
+  findAllMaskFragmentsCalls,
   getSource,
   unrollFragment,
 } from './ast';
@@ -292,6 +293,7 @@ export function getGraphQLDiagnostics(
 
   if (isCallExpression && shouldCheckForColocatedFragments) {
     const moduleSpecifierToFragments = getColocatedFragmentNames(source, info);
+    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
 
     const usedFragments = new Set();
     nodes.forEach(({ node }) => {
@@ -305,6 +307,23 @@ export function getGraphQLDiagnostics(
           },
         });
       } catch (e) {}
+    });
+
+    // check for maskFragments() calls
+    const maskFragmentsCalls = findAllMaskFragmentsCalls(source);
+    maskFragmentsCalls.forEach(call => {
+      const firstArg = call.arguments[0];
+      if (!firstArg) return;
+
+      // Handle array of fragments: maskFragments([Fragment1, Fragment2], data)
+      if (ts.isArrayLiteralExpression(firstArg)) {
+        firstArg.elements.forEach(element => {
+          if (ts.isIdentifier(element)) {
+            const fragmentDefs = unrollFragment(element, info, typeChecker);
+            fragmentDefs.forEach(def => usedFragments.add(def.name.value));
+          }
+        });
+      }
     });
 
     Object.keys(moduleSpecifierToFragments).forEach(moduleSpecifier => {

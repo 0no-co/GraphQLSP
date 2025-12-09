@@ -12,6 +12,10 @@ describe('Fragment + operations', () => {
   const outfileCombo = path.join(projectPath, 'simple.ts');
   const outfileTypeCondition = path.join(projectPath, 'type-condition.ts');
   const outfileUnusedFragment = path.join(projectPath, 'unused-fragment.ts');
+  const outfileUsedFragmentMask = path.join(
+    projectPath,
+    'used-fragment-mask.ts'
+  );
   const outfileCombinations = path.join(projectPath, 'fragment.ts');
 
   let server: TSServer;
@@ -35,6 +39,11 @@ describe('Fragment + operations', () => {
     } satisfies ts.server.protocol.OpenRequestArgs);
     server.sendCommand('open', {
       file: outfileUnusedFragment,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+    server.sendCommand('open', {
+      file: outfileUsedFragmentMask,
       fileContent: '// empty',
       scriptKindName: 'TS',
     } satisfies ts.server.protocol.OpenRequestArgs);
@@ -69,6 +78,13 @@ describe('Fragment + operations', () => {
             'utf-8'
           ),
         },
+        {
+          file: outfileUsedFragmentMask,
+          fileContent: fs.readFileSync(
+            path.join(projectPath, 'fixtures/used-fragment-mask.ts'),
+            'utf-8'
+          ),
+        },
       ],
     } satisfies ts.server.protocol.UpdateOpenRequestArgs);
 
@@ -88,11 +104,16 @@ describe('Fragment + operations', () => {
       file: outfileUnusedFragment,
       tmpfile: outfileUnusedFragment,
     } satisfies ts.server.protocol.SavetoRequestArgs);
+    server.sendCommand('saveto', {
+      file: outfileUsedFragmentMask,
+      tmpfile: outfileUsedFragmentMask,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
   });
 
   afterAll(() => {
     try {
       fs.unlinkSync(outfileUnusedFragment);
+      fs.unlinkSync(outfileUsedFragmentMask);
       fs.unlinkSync(outfileCombinations);
       fs.unlinkSync(outfileCombo);
       fs.unlinkSync(outfileTypeCondition);
@@ -384,6 +405,29 @@ List out all Pokémon, optionally in pages`
         },
       ]
     `);
+  }, 30000);
+
+  it('should not warn about unused fragments when using maskFragments', async () => {
+    server.sendCommand('saveto', {
+      file: outfileUsedFragmentMask,
+      tmpfile: outfileUsedFragmentMask,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
+
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfileUsedFragmentMask
+    );
+
+    const res = server.responses.filter(
+      resp =>
+        resp.type === 'event' &&
+        resp.event === 'semanticDiag' &&
+        resp.body?.file === outfileUsedFragmentMask
+    );
+    // Should have no diagnostics about unused fragments since maskFragments uses them
+    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`[]`);
   }, 30000);
 
   it('gives quick-info at start of word (#15)', async () => {

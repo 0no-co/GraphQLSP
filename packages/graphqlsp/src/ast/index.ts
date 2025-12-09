@@ -327,6 +327,21 @@ export function findAllImports(
   return sourceFile.statements.filter(ts.isImportDeclaration);
 }
 
+export function findAllMaskFragmentsCalls(
+  sourceFile: ts.SourceFile
+): Array<ts.CallExpression> {
+  const result: Array<ts.CallExpression> = [];
+
+  function find(node: ts.Node): void {
+    if (checks.isMaskFragmentsCall(node)) {
+      result.push(node);
+    }
+    ts.forEachChild(node, find);
+  }
+  find(sourceFile);
+  return result;
+}
+
 export function bubbleUpTemplate(node: ts.Node): ts.Node {
   while (
     ts.isNoSubstitutionTemplateLiteral(node) ||

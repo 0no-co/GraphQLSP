@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.15.2
+
+### Patch Changes
+
+- Detect fragment usage in `maskFragments` calls to prevent false positive unused fragment warnings
+  Submitted by [@takumiyoshikawa](https://github.com/takumiyoshikawa) (See [#379](https://github.com/0no-co/GraphQLSP/pull/379))
+
 ## 1.15.1
 
 ### Patch Changes

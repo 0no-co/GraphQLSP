@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.15.3
+
+### Patch Changes
+
+- Update TypeScript peer dependency range to allow for TS v6
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#382](https://github.com/0no-co/GraphQLSP/pull/382))
+
 ## 1.15.2
 
 ### Patch Changes

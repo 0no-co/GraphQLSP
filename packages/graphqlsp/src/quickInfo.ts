@@ -15,12 +15,14 @@ import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
 import { SchemaRef } from './graphql/getSchema';
+import { getExpansion } from './expandHover';
 
 export function getGraphQLQuickInfo(
   filename: string,
   cursorPosition: number,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: ts.server.PluginCreateInfo,
+  verbosityLevel?: number
 ): ts.QuickInfo | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
@@ -77,6 +79,19 @@ export function getGraphQLQuickInfo(
   }
 
   const hoverInfo = getHoverInformation(schemaToUse, text, cursor);
+  const documentationParts: ts.SymbolDisplayPart[] = Array.isArray(hoverInfo)
+    ? hoverInfo.map(item => ({ kind: 'text', text: item as string }))
+    : [{ kind: 'text', text: hoverInfo as string }];
+
+  const level = verbosityLevel ?? 0;
+  const expansion = getExpansion(schemaToUse, text, cursor, level);
+
+  if (level > 0 && expansion.expanded) {
+    documentationParts.push({
+      kind: 'text',
+      text: '\n\n' + expansion.expanded,
+    });
+  }
 
   return {
     kind: ts.ScriptElementKind.label,
@@ -85,8 +100,7 @@ export function getGraphQLQuickInfo(
       length: 1,
     },
     kindModifiers: 'text',
-    documentation: Array.isArray(hoverInfo)
-      ? hoverInfo.map(item => ({ kind: 'text', text: item as string }))
-      : [{ kind: 'text', text: hoverInfo as string }],
+    documentation: documentationParts,
+    canIncreaseVerbosityLevel: expansion.canIncreaseVerbosityLevel,
   } as ts.QuickInfo;
 }

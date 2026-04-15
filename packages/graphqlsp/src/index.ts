@@ -189,11 +189,18 @@ function create(info: ts.server.PluginCreateInfo) {
     ...args: Parameters<ts.LanguageService['getQuickInfoAtPosition']>
   ) => {
     const [filename, cursorPosition] = args;
+    // TS 5.9+ passes `verbosityLevel` as the 4th argument at runtime for
+    // expandable hovers, even though it isn't in the public
+    // `LanguageService` type yet. Read it off positionally.
+    const verbosityLevel = (args as unknown as unknown[])[3] as
+      | number
+      | undefined;
     const quickInfo = getGraphQLQuickInfo(
       filename,
       cursorPosition,
       schema,
-      info
+      info,
+      verbosityLevel
     );
 
     if (quickInfo) return quickInfo;

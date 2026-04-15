@@ -185,7 +185,10 @@ function create(info: ts.server.PluginCreateInfo) {
     }
   };
 
-  proxy.getQuickInfoAtPosition = (filename: string, cursorPosition: number) => {
+  proxy.getQuickInfoAtPosition = (
+    ...args: Parameters<ts.LanguageService['getQuickInfoAtPosition']>
+  ) => {
+    const [filename, cursorPosition] = args;
     const quickInfo = getGraphQLQuickInfo(
       filename,
       cursorPosition,
@@ -195,10 +198,9 @@ function create(info: ts.server.PluginCreateInfo) {
 
     if (quickInfo) return quickInfo;
 
-    return info.languageService.getQuickInfoAtPosition(
-      filename,
-      cursorPosition
-    );
+    // Forward all arguments (including `verbosityLevel` for expandable
+    // hovers, added in TS 5.9) so we don't break the underlying feature.
+    return info.languageService.getQuickInfoAtPosition(...args);
   };
 
   logger('proxy: ' + JSON.stringify(proxy));

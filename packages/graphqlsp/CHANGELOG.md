@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.15.4
+
+### Patch Changes
+
+- Forward all arguments from the `getQuickInfoAtPosition` proxy to the underlying TypeScript language service, so that the `verbosityLevel` argument (added in TypeScript 5.9 for expandable hovers) is no longer stripped when GraphQLSP delegates back to TypeScript
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#384](https://github.com/0no-co/GraphQLSP/pull/384))
+
 ## 1.15.3
 
 ### Patch Changes

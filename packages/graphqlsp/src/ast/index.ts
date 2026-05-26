@@ -116,10 +116,12 @@ export function unrollTadaFragments(
     if (ts.isIdentifier(element)) {
       wip.push(...unrollFragment(element, info, typeChecker));
     } else if (ts.isPropertyAccessExpression(element)) {
-      let el = element;
-      while (ts.isPropertyAccessExpression(el.expression)) el = el.expression;
-      if (ts.isIdentifier(el.name)) {
-        wip.push(...unrollFragment(el.name, info, typeChecker));
+      // PropertyAccessExpression is left-recursive in the AST (`a.b.c`
+      // parses as `PropertyAccess(PropertyAccess(a, b), c)`), so
+      // `element.name` is always the leaf identifier — the property we
+      // actually want to resolve — regardless of chain depth.
+      if (ts.isIdentifier(element.name)) {
+        wip.push(...unrollFragment(element.name, info, typeChecker));
       }
     }
   });

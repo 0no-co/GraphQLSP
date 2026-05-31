@@ -24,6 +24,7 @@
       "pre-commit": "lint-staged"
     }
   },
+  "packageManager": "pnpm@11.3.0",
   "devDependencies": {
     "@actions/core": "^1.10.0",
     "@actions/github": "^5.1.1",
@@ -46,17 +47,5 @@
     "rollup-plugin-dts": "^6.1.0",
     "typescript": "^5.3.3",
     "vitest": "^0.34.6"
-  },
-  "pnpm": {
-    "overrides": {
-      "typescript": "^5.3.3",
-      "ua-parser-js@<0.7.33": ">=0.7.33",
-      "postcss@<8.4.31": ">=8.4.31",
-      "semver@<5.7.2": ">=5.7.2",
-      "semver@>=6.0.0 <6.3.1": ">=6.3.1",
-      "vite@>=4.2.0 <4.2.3": ">=4.2.3",
-      "json5@>=2.0.0 <2.2.2": ">=2.2.2",
-      "@babel/traverse@<7.23.2": ">=7.23.2"
-    }
   }
 }

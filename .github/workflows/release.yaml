@@ -8,55 +8,91 @@ jobs:
     name: Release
     runs-on: ubuntu-24.04
     timeout-minutes: 20
+    outputs:
+      has_changesets: ${{ steps.changesets.outputs.hasChangesets }}
+      has_unpublished_packages: ${{ steps.unpublished.outputs.has_unpublished }}
     permissions:
       contents: write
-      id-token: write
       issues: write
-      repository-projects: write
-      deployments: write
-      packages: write
       pull-requests: write
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
         with:
-          node-version: 20
+          package-manager-cache: false
+          node-version: 22
 
       - name: Setup pnpm
-        uses: pnpm/action-setup@v3
+        uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3
         with:
-          version: 8.6.1
+          version: 11.3.0
           run_install: false
 
-      - name: Get pnpm store directory
-        id: pnpm-store
-        run: echo "pnpm_cache_dir=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - name: Use pnpm store
-        uses: actions/cache@v4
-        id: pnpm-cache
-        with:
-          path: ${{ steps.pnpm-store.outputs.pnpm_cache_dir }}
-          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-
+      - name: Check for unpublished package versions
+        id: unpublished
+        run: node .github/scripts/has-unpublished-packages.mjs
 
       - name: Install Dependencies
-        run: pnpm install --frozen-lockfile --prefer-offline
+        run: pnpm install --frozen-lockfile
 
       - name: Update npm
-        run: npm install -g npm@11.6.2
+        run: npm install -g npm@11.15.0
 
-      - name: PR or Publish
+      - name: Create Release Pull Request
         id: changesets
-        uses: changesets/action@v1.5.3
+        uses: changesets/action@e0145edc7d9d8679003495b11f87bd8ef63c0cba # v1.5.3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  publish:
+    name: Publish
+    needs: release
+    if: needs.release.outputs.has_changesets == 'false' && needs.release.outputs.has_unpublished_packages == 'true'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment:
+      name: npm
+      url: https://www.npmjs.com/package/@0no-co/graphqlsp
+    permissions:
+      contents: write
+      id-token: write
+      issues: write
+      pull-requests: write
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
         with:
-          publish: pnpm changeset publish
+          fetch-depth: 0
+
+      - name: Setup Node
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          package-manager-cache: false
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@a3252b78c470c02df07e9d59298aecedc3ccdd6d # v3
+        with:
+          version: 11.3.0
+          run_install: false
+
+      - name: Install Dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Update npm
+        run: npm install -g npm@11.15.0
+
+      - name: Publish packages
+        id: changesets
+        uses: changesets/action@e0145edc7d9d8679003495b11f87bd8ef63c0cba # v1.5.3
+        with:
+          publish: node .github/scripts/stage-packages.mjs
+          createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -69,13 +105,3 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-
-      - name: Publish Prerelease
-        if: steps.changesets.outputs.published != 'true'
-        continue-on-error: true
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          git reset --hard origin/main
-          pnpm changeset version --no-git-tag --snapshot canary
-          pnpm changeset publish --no-git-tag --snapshot canary --tag canary

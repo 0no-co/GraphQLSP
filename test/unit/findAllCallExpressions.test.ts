@@ -1,6 +1,10 @@
 import { describe, it, expect } from 'vitest';
 
-import { createTestEnvironment, TADA_GRAPHQL_MODULE } from './language-service';
+import {
+  createTestEnvironment,
+  countTypeProbes,
+  TADA_GRAPHQL_MODULE,
+} from './language-service';
 import { findAllCallExpressions } from '../../packages/graphqlsp/src/ast';
 
 const FRAGMENT_FIXTURE = `
@@ -75,6 +79,50 @@ describe('findAllCallExpressions', () => {
 
     expect(result.nodes).toEqual(expected.nodes);
     expect(result.fragments).toEqual([]);
+  });
+
+  it('discovers documents with leading ignored tokens', () => {
+    const { info, getSourceFile } = createTestEnvironment({
+      '/test-project/graphql.ts': TADA_GRAPHQL_MODULE,
+      '/test-project/index.ts': `
+        import { graphql } from './graphql';
+        const g = graphql;
+
+        const CommentFirst = g(\`
+          # A leading comment
+          query One { pokemon { id } }
+        \`);
+        const Shorthand = g('{ pokemon { id } }');
+        const Mutation = g(\`mutation Two { evolve }\`);
+        const Subscription = g(\`subscription Three { evolved }\`);
+      `,
+    });
+    const source = getSourceFile('/test-project/index.ts');
+
+    const { nodes } = findAllCallExpressions(source, info);
+    expect(nodes).toHaveLength(4);
+  });
+
+  it('rejects non-document strings without probing the callee type', () => {
+    const { info, getSourceFile } = createTestEnvironment({
+      '/test-project/graphql.ts': TADA_GRAPHQL_MODULE,
+      '/test-project/index.ts': `
+        declare const t: (key: string, fallback?: string) => string;
+        declare function describeCase(name: string, fn: () => void): void;
+
+        t('page.title');
+        t('query.results.empty', 'No results');
+        describeCase('queries the API', () => {});
+      `,
+    });
+    const source = getSourceFile('/test-project/index.ts');
+    const getProbeCount = countTypeProbes(info);
+
+    const { nodes } = findAllCallExpressions(source, info);
+    expect(nodes).toHaveLength(0);
+    // None of the string arguments can start a GraphQL document, so the
+    // callees' types are never resolved
+    expect(getProbeCount()).toBe(0);
   });
 
   it('keeps boolean third argument behavior (searchExternal only)', () => {

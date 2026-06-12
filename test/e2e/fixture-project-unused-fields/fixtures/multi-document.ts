@@ -144,3 +144,37 @@ export function useFragment<Type>(
 ): Type {
   return data;
 }
+
+const OrFallbackQuery = graphql(`
+  query OrFallback {
+    pokemons {
+      maxCP
+      maxHP
+      fleeRate
+    }
+  }
+`);
+
+export const OrFallback = () => {
+  const [result] = useQuery({ query: OrFallbackQuery });
+  // ||/?? pass the value through, so the chain still escapes into the call
+  formatPokemons(result.data?.pokemons || []);
+  return null;
+};
+
+const GuardQuery = graphql(`
+  query Guard {
+    pokemons {
+      maxCP
+      maxHP
+    }
+  }
+`);
+
+export const Guard = (flag: boolean) => {
+  const [result] = useQuery({ query: GuardQuery });
+  // && folds the value into a test, so this is not an escape of the chain
+  formatPokemons(flag && result.data?.pokemons);
+  console.log(result.data?.pokemons?.[0]?.maxCP ?? 0);
+  return null;
+};

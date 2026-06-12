@@ -565,6 +565,19 @@ describe('unused fields', () => {
           },
           "text": "Field(s) 'pokemons.fleeRate' are not used.",
         },
+        {
+          "category": "warning",
+          "code": 52005,
+          "end": {
+            "line": 167,
+            "offset": 13,
+          },
+          "start": {
+            "line": 167,
+            "offset": 5,
+          },
+          "text": "Field(s) 'pokemons.maxHP' are not used.",
+        },
       ]
     `);
   }, 30000);

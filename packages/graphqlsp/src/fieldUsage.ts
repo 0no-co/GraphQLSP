@@ -507,7 +507,16 @@ export const checkFieldUsageInFile = (
             }
             break;
           }
-          pureChain = false;
+          // `||`/`??` pass the operand's value through to the result
+          // (`fn(a.b || fallback)` still escapes `a.b`), so they keep the
+          // chain pure. `&&` and the rest fold the value into a test or a
+          // derived value: `a?.b && a?.b.c` keeps its leaf precision.
+          if (
+            parent.operatorToken.kind !== ts.SyntaxKind.BarBarToken &&
+            parent.operatorToken.kind !== ts.SyntaxKind.QuestionQuestionToken
+          ) {
+            pureChain = false;
+          }
           cursor = parent;
           continue;
         }

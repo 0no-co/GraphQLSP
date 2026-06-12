@@ -1,5 +1,20 @@
 # @0no-co/graphqlsp
 
+## 1.16.0
+
+### Minor Changes
+
+- Reduce type-checker work in `findAllCallExpressions`. The gql.tada function detection and schema-name lookups are now memoized per callee, so ordinary calls with a string-literal first argument (e.g. `t('key')`, `it('name', fn)`) no longer trigger a type probe per call site. Fragment unrolling is deduplicated for repeated references to the same fragment, and the third argument of `findAllCallExpressions` now also accepts an options object (`{ searchExternal?: boolean; collectFragments?: boolean }`), where `collectFragments: false` skips fragment collection entirely for callers that only consume `nodes`
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#392](https://github.com/0no-co/GraphQLSP/pull/392))
+- Rewrite unused field detection as a single-pass, symbol-driven analysis. Instead of issuing a find-all-references request per binding and enumerating the lexical scope per reference, the file's AST is walked once to index identifier occurrences, and query-result bindings are resolved through `getSymbolAtLocation` against a selection-set trie. This removes the quadratic language-service calls from `getSemanticDiagnostics`, scales to files with many documents and consumers, and makes the analysis work without resolved document types.
+  The analysis also tracks more usage patterns, reducing false positives: values passed as function arguments (including property chains like `format(data.pokemon.weight)`), spreads and object-literal assignments now mark the affected sub-selections as used, `for...of` loop bindings are followed like array-method callbacks, and assignments (`existing = result.data.pokemon`) and conditional expressions now alias like variable declarations
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#393](https://github.com/0no-co/GraphQLSP/pull/393))
+
+### Patch Changes
+
+- ⚠️ Fix multi-level property accessor when resolving fragments in gql.tada generate-persisted
+  Submitted by [@felamaslen](https://github.com/felamaslen) (See [#389](https://github.com/0no-co/GraphQLSP/pull/389))
+
 ## 1.15.4
 
 ### Patch Changes

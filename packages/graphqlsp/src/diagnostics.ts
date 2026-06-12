@@ -54,6 +54,7 @@ const BASE_CLIENT_DIRECTIVES = new Set([
 
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const USING_DEPRECATED_FIELD_CODE = 52004;
+export const MISCONFIGURATION_CODE = 52006;
 export const MISSING_PERSISTED_TYPE_ARG = 520100;
 export const MISSING_PERSISTED_CODE_ARG = 520101;
 export const MISSING_PERSISTED_DOCUMENT = 520102;
@@ -63,11 +64,43 @@ export const ALL_DIAGNOSTICS = [
   USING_DEPRECATED_FIELD_CODE,
   MISSING_FRAGMENT_CODE,
   UNUSED_FIELD_CODE,
+  MISCONFIGURATION_CODE,
   MISSING_PERSISTED_TYPE_ARG,
   MISSING_PERSISTED_CODE_ARG,
   MISSING_PERSISTED_DOCUMENT,
   MISSMATCH_HASH_TO_DOCUMENT,
 ];
+
+/** Reports configuration and schema-loading failures on a file's first
+ * GraphQL document, so misconfiguration is visible in the editor rather
+ * than only in the tsserver log. */
+const getMisconfigurationDiagnostics = (
+  source: ts.SourceFile,
+  nodes: {
+    node: ts.StringLiteralLike | ts.TaggedTemplateExpression;
+    schema: string | null;
+  }[],
+  schema: SchemaRef
+): ts.Diagnostic[] => {
+  if (!schema.errors || !nodes.length) return [];
+
+  const messages = [
+    schema.errors.config,
+    schema.errors.load,
+    ...schema.errors.write.values(),
+  ].filter(Boolean) as string[];
+  if (!messages.length) return [];
+
+  const node = nodes[0]!.node;
+  return messages.map(messageText => ({
+    category: ts.DiagnosticCategory.Error,
+    code: MISCONFIGURATION_CODE,
+    file: source,
+    messageText,
+    start: node.getStart(),
+    length: node.getEnd() - node.getStart(),
+  }));
+};
 
 const cache = new LRUCache<number, ts.Diagnostic[]>({
   // how long to live in ms
@@ -132,6 +165,13 @@ export function getGraphQLDiagnostics(
     tsDiagnostics = runDiagnostics(source, { nodes, fragments }, schema, info);
     cache.set(cacheKey, tsDiagnostics);
   }
+
+  // These are computed on every call, outside of the cached diagnostics,
+  // since the error-state can change without `schema.version` changing
+  tsDiagnostics = [
+    ...getMisconfigurationDiagnostics(source, nodes, schema),
+    ...tsDiagnostics,
+  ];
 
   const shouldCheckForColocatedFragments =
     info.config.shouldCheckForColocatedFragments ?? true;

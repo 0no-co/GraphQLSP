@@ -235,6 +235,32 @@ importers:
         specifier: ^5.3.3
         version: 5.3.3
 
+  test/e2e/fixture-project-misconfiguration:
+    dependencies:
+      '@0no-co/graphqlsp':
+        specifier: workspace:*
+        version: link:../../../packages/graphqlsp
+      '@urql/core':
+        specifier: ^4.0.4
+        version: 4.3.0(graphql@16.8.1)
+    devDependencies:
+      typescript:
+        specifier: ^5.3.3
+        version: 5.3.3
+
+  test/e2e/fixture-project-missing-schema:
+    dependencies:
+      '@0no-co/graphqlsp':
+        specifier: workspace:*
+        version: link:../../../packages/graphqlsp
+      '@urql/core':
+        specifier: ^4.0.4
+        version: 4.3.0(graphql@16.8.1)
+    devDependencies:
+      typescript:
+        specifier: ^5.3.3
+        version: 5.3.3
+
   test/e2e/fixture-project-tada:
     dependencies:
       '@0no-co/graphqlsp':

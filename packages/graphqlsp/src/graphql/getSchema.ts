@@ -67,41 +67,81 @@ async function saveTadaIntrospection(
   introspection: IntrospectionQuery,
   tadaOutputLocation: string,
   disablePreprocessing: boolean,
+  errors: SchemaErrors,
   logger: Logger
 ) {
-  const minified = minifyIntrospection(introspection);
-  const contents = outputIntrospectionFile(minified, {
-    fileType: tadaOutputLocation,
-    shouldPreprocess: !disablePreprocessing,
-  });
+  try {
+    const minified = minifyIntrospection(introspection);
+    const contents = outputIntrospectionFile(minified, {
+      fileType: tadaOutputLocation,
+      shouldPreprocess: !disablePreprocessing,
+    });
 
-  let output = tadaOutputLocation;
-  if (await statFile(output, stat => stat.isDirectory())) {
-    output = path.join(output, 'introspection.d.ts');
-  } else if (!(await statFile(output, p => !!p))) {
-    await fs.mkdir(path.dirname(output), { recursive: true });
+    let output = tadaOutputLocation;
     if (await statFile(output, stat => stat.isDirectory())) {
       output = path.join(output, 'introspection.d.ts');
+    } else if (!(await statFile(output, p => !!p))) {
+      await fs.mkdir(path.dirname(output), { recursive: true });
+      if (await statFile(output, stat => stat.isDirectory())) {
+        output = path.join(output, 'introspection.d.ts');
+      }
     }
-  }
 
-  try {
     await swapWrite(output, contents);
+    errors.write.delete(tadaOutputLocation);
     logger(`Introspection saved to path @ ${output}`);
   } catch (error) {
+    errors.write.set(
+      tadaOutputLocation,
+      `Failed to write the typings file to "${tadaOutputLocation}": ${
+        error instanceof Error ? error.message : error
+      }`
+    );
     logger(`Failed to write introspection @ ${error}`);
   }
 }
 
-export type SchemaRef = _SchemaRef<SchemaLoaderResult | null>;
+/** Mutable record of configuration and loading failures.
+ *
+ * These are surfaced as editor diagnostics on files containing GraphQL
+ * documents, so a misconfigured plugin doesn't fail silently with its
+ * errors only visible in the tsserver log. */
+export interface SchemaErrors {
+  /** The plugin configuration itself is invalid, e.g. the "schema" option is missing. */
+  config: string | null;
+  /** Loading the schema failed, e.g. a missing file, invalid SDL, or an unreachable URL. */
+  load: string | null;
+  /** Writing a tada output (typings) file failed, keyed by configured output location. */
+  write: Map<string, string>;
+}
+
+export type SchemaRef = _SchemaRef<SchemaLoaderResult | null> & {
+  errors: SchemaErrors;
+};
+
+/** Creates an inert ref for when the plugin configuration is too broken to load a schema at all. */
+export const createErrorRef = (configError: string): SchemaRef => {
+  const ref: SchemaRef = {
+    version: 0,
+    current: null,
+    multi: {},
+    autoupdate: () => () => {
+      /*noop*/
+    },
+    load: () => Promise.resolve(ref as any),
+    errors: { config: configError, load: null, write: new Map() },
+  };
+  return ref;
+};
 
 export const loadSchema = (
   // TODO: abstract info away
   info: ts.server.PluginCreateInfo,
   origin: GraphQLSPConfig,
   logger: Logger
-): _SchemaRef<SchemaLoaderResult | null> => {
-  const ref = loadRef(origin);
+): SchemaRef => {
+  const errors: SchemaErrors = { config: null, load: null, write: new Map() };
+  const ref = Object.assign(loadRef(origin), { errors });
 
   (async () => {
     const rootPath =
@@ -120,7 +160,11 @@ export const loadSchema = (
     try {
       logger(`Loading schema...`);
       await ref.load({ rootPath });
+      errors.load = null;
     } catch (error) {
+      errors.load = `Failed to load the GraphQL schema: ${
+        error instanceof Error ? error.message : error
+      }`;
       logger(`Failed to load schema: ${error}`);
     }
 
@@ -130,6 +174,7 @@ export const loadSchema = (
           ref.current.introspection,
           tadaOutputLocation,
           tadaDisablePreprocessing,
+          errors,
           logger
         );
       }
@@ -142,6 +187,7 @@ export const loadSchema = (
             value.introspection,
             path.resolve(rootPath, value.tadaOutputLocation),
             tadaDisablePreprocessing,
+            errors,
             logger
           );
         }
@@ -149,6 +195,10 @@ export const loadSchema = (
     }
 
     ref.autoupdate({ rootPath }, (schemaRef, value) => {
+      // The autoupdate callback only fires for successful (re)loads, so a
+      // previously failing schema has recovered, e.g. after fixing a broken
+      // schema file
+      errors.load = null;
       if (!value) return;
 
       if (value.tadaOutputLocation) {
@@ -160,11 +210,12 @@ export const loadSchema = (
           found.introspection,
           path.resolve(rootPath, value.tadaOutputLocation),
           tadaDisablePreprocessing,
+          errors,
           logger
         );
       }
     });
   })();
 
-  return ref as any;
+  return ref;
 };

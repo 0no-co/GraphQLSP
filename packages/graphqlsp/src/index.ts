@@ -1,7 +1,11 @@
 import type { SchemaOrigin } from '@gql.tada/internal';
 
 import { ts, init as initTypeScript } from './ts';
-import { loadSchema } from './graphql/getSchema';
+import {
+  type SchemaRef,
+  createErrorRef,
+  loadSchema,
+} from './graphql/getSchema';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
 import { ALL_DIAGNOSTICS, getGraphQLDiagnostics } from './diagnostics';
@@ -41,10 +45,6 @@ function create(info: ts.server.PluginCreateInfo) {
   const config: Config = info.config;
 
   logger('config: ' + JSON.stringify(config));
-  if (!config.schema && !config.schemas) {
-    logger('Missing "schema" option in configuration.');
-    throw new Error('Please provide a GraphQL Schema!');
-  }
 
   logger('Setting up the GraphQL Plugin');
 
@@ -54,7 +54,19 @@ function create(info: ts.server.PluginCreateInfo) {
 
   const proxy = createBasicDecorator(info);
 
-  const schema = loadSchema(info, config, logger);
+  // Rather than throwing (which would silently disable the plugin, with the
+  // error only visible in the tsserver log), set up an inert schema ref whose
+  // configuration error is surfaced as a diagnostic on GraphQL documents.
+  let schema: SchemaRef;
+  if (!config.schema && (!config.schemas || !config.schemas.length)) {
+    logger('Missing "schema" option in configuration.');
+    schema = createErrorRef(
+      'GraphQLSP is missing the "schema" option in its plugin configuration. ' +
+        'Add a "schema" (or "schemas") property to the plugin\'s entry in "compilerOptions.plugins" in your tsconfig.json.'
+    );
+  } else {
+    schema = loadSchema(info, config, logger);
+  }
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics =

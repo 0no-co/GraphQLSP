@@ -16,20 +16,52 @@ export const isGraphQLFunctionIdentifier = (
 ): node is ts.Identifier =>
   ts.isIdentifier(node) && templates.has(node.escapedText as string);
 
+// The verdicts of the type probes below never change for a given function
+// within one program, but are requested once per call site. Caching them per
+// symbol turns the type checker work from one probe per call site into one
+// per distinct callee. Keying by checker makes invalidation automatic, since
+// a new program comes with a new checker.
+const tadaFunctionCache = new WeakMap<
+  ts.TypeChecker,
+  WeakMap<ts.Symbol, boolean>
+>();
+
+const schemaNameCache = new WeakMap<
+  ts.TypeChecker,
+  WeakMap<ts.Symbol, string | null>
+>();
+
+const getCached = <T>(
+  caches: WeakMap<ts.TypeChecker, WeakMap<ts.Symbol, T>>,
+  checker: ts.TypeChecker,
+  node: ts.Node,
+  compute: () => T
+): T => {
+  const symbol = checker.getSymbolAtLocation(node);
+  if (!symbol) return compute();
+  let cache = caches.get(checker);
+  if (!cache) caches.set(checker, (cache = new WeakMap()));
+  let result = cache.get(symbol);
+  if (result === undefined) cache.set(symbol, (result = compute()));
+  return result;
+};
+
 /** If `checker` is passed, checks if node (as identifier/expression) is a gql.tada graphql() function */
 export const isTadaGraphQLFunction = (
   node: ts.Node,
   checker: ts.TypeChecker | undefined
 ): node is ts.LeftHandSideExpression => {
-  if (!ts.isLeftHandSideExpression(node)) return false;
-  const type = checker?.getTypeAtLocation(node);
-  // Any function that has both a `scalar` and `persisted` property
-  // is automatically considered a gql.tada graphql() function.
-  return (
-    type != null &&
-    type.getProperty('scalar') != null &&
-    type.getProperty('persisted') != null
-  );
+  if (!ts.isLeftHandSideExpression(node) || !checker) return false;
+  return getCached(tadaFunctionCache, checker, node, () => {
+    const type = checker.getTypeAtLocation(node);
+    // Any function that has both a `scalar` and `persisted` property
+    // is automatically considered a gql.tada graphql() function.
+    return (
+      type != null &&
+      type.getProperty('scalar') != null &&
+      type.getProperty('persisted') != null
+    );
+  });
 };
 
 /** If `checker` is passed, checks if node is a gql.tada graphql() call */
@@ -104,24 +136,27 @@ export const getSchemaName = (
   isTadaPersistedCall = false
 ): string | null => {
   if (!typeChecker) return null;
-  const type = typeChecker.getTypeAtLocation(
-    // When calling `graphql.persisted`, we need to access the `graphql` part of
-    // the expression; `node.expression` is the `.persisted` part
-    isTadaPersistedCall ? node.getChildAt(0).getChildAt(0) : node.expression
-  );
-  if (type) {
-    const brandTypeSymbol = type.getProperty('__name');
-    if (brandTypeSymbol) {
-      const brand = typeChecker.getTypeOfSymbol(brandTypeSymbol);
-      if (brand.isUnionOrIntersection()) {
-        const found = brand.types.find(x => x.isStringLiteral());
-        return found && found.isStringLiteral() ? found.value : null;
-      } else if (brand.isStringLiteral()) {
-        return brand.value;
+  // When calling `graphql.persisted`, we need to access the `graphql` part of
+  // the expression; `node.expression` is the `.persisted` part
+  const expression = isTadaPersistedCall
+    ? node.getChildAt(0).getChildAt(0)
+    : node.expression;
+  return getCached(schemaNameCache, typeChecker, expression, () => {
+    const type = typeChecker.getTypeAtLocation(expression);
+    if (type) {
+      const brandTypeSymbol = type.getProperty('__name');
+      if (brandTypeSymbol) {
+        const brand = typeChecker.getTypeOfSymbol(brandTypeSymbol);
+        if (brand.isUnionOrIntersection()) {
+          const found = brand.types.find(x => x.isStringLiteral());
+          return found && found.isStringLiteral() ? found.value : null;
+        } else if (brand.isStringLiteral()) {
+          return brand.value;
+        }
       }
     }
-  }
-  return null;
+    return null;
+  });
 };
 
 /** Checks if node is a maskFragments() call */

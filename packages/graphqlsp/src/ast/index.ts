@@ -127,10 +127,19 @@ export function unrollTadaFragments(
   return wip;
 }
 
+export type FindAllCallExpressionsOptions = {
+  /** Search for externally defined fragment documents.
+   * @defaultValue `true` */
+  searchExternal?: boolean;
+  /** Collect and unroll fragment definitions into the `fragments` result.
+   * @defaultValue `true` */
+  collectFragments?: boolean;
+};
+
 export function findAllCallExpressions(
   sourceFile: ts.SourceFile,
   info: ts.server.PluginCreateInfo,
-  shouldSearchFragments: boolean = true
+  options: boolean | FindAllCallExpressionsOptions = true
 ): {
   nodes: Array<{
     node: ts.StringLiteralLike;
@@ -140,6 +149,8 @@ export function findAllCallExpressions(
   }>;
   fragments: Array<FragmentDefinitionNode>;
 } {
+  const { searchExternal = true, collectFragments = true } =
+    typeof options === 'boolean' ? { searchExternal: options } : options;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   const result: Array<{
     node: ts.StringLiteralLike;
@@ -147,7 +158,25 @@ export function findAllCallExpressions(
     tadaFragmentRefs?: readonly ts.Identifier[];
   }> = [];
   let fragments: Array<FragmentDefinitionNode> = [];
-  let hasTriedToFindFragments = shouldSearchFragments ? false : true;
+  let hasTriedToFindFragments = searchExternal ? false : true;
+
+  // Several references typically resolve to the same fragment definition,
+  // so each identifier's unrolled fragments are shared per resolved symbol
+  const unrolledFragments = new Map<ts.Symbol, FragmentDefinitionNode[]>();
+  const unrollFragmentMemoized = (
+    identifier: ts.Identifier
+  ): FragmentDefinitionNode[] => {
+    const symbol = typeChecker && typeChecker.getSymbolAtLocation(identifier);
+    if (!symbol) return unrollFragment(identifier, info, typeChecker);
+    let unrolled = unrolledFragments.get(symbol);
+    if (!unrolled) {
+      unrolledFragments.set(
+        symbol,
+        (unrolled = unrollFragment(identifier, info, typeChecker))
+      );
+    }
+    return unrolled;
+  };
 
   function find(node: ts.Node): void {
     if (!ts.isCallExpression(node) || checks.isIIFE(node)) {
@@ -165,7 +194,9 @@ export function findAllCallExpressions(
     const fragmentRefs = resolveTadaFragmentArray(node.arguments[1]);
     const isTadaCall = checks.isTadaGraphQLCall(node, typeChecker);
 
-    if (!hasTriedToFindFragments && !fragmentRefs) {
+    if (!collectFragments) {
+      // Skip all fragment collection work when the caller only consumes `nodes`
+    } else if (!hasTriedToFindFragments && !fragmentRefs) {
       // Only collect global fragments if this is NOT a gql.tada call
       if (!isTadaCall) {
         hasTriedToFindFragments = true;
@@ -173,7 +204,7 @@ export function findAllCallExpressions(
       }
     } else if (fragmentRefs) {
       for (const identifier of fragmentRefs) {
-        fragments.push(...unrollFragment(identifier, info, typeChecker));
+        fragments.push(...unrollFragmentMemoized(identifier));
       }
     }
 

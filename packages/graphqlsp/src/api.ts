@@ -7,6 +7,8 @@ export {
   unrollTadaFragments,
 } from './ast';
 
+export type { FindAllCallExpressionsOptions } from './ast';
+
 export {
   getDocumentReferenceFromTypeQuery,
   getDocumentReferenceFromDocumentNode,

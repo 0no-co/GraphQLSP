@@ -64,6 +64,17 @@ export const isTadaGraphQLFunction = (
   });
 };
 
+// A GraphQL document may only start with `{` or a definition keyword, after
+// ignored tokens (whitespace, commas, comments, BOM \u2014 all covered by `\s` and
+// `,`). The keyword must be followed by a token break rather than name or
+// punctuator characters, so that strings like 'query.results' or 'fragments-2'
+// don't match. Strings that don't match are rejected before the type probes
+// above ever run, since any call with a string-ish first argument
+// (translations, test titles, event names) would otherwise resolve its
+// callee's type.
+const graphqlDocumentPrefix =
+  /^(?:[\s,]+|#[^\n\r]*)*(?:\{|(?:query|mutation|subscription|fragment)(?=[\s,{(@#]|$))/;
+
 /** If `checker` is passed, checks if node is a gql.tada graphql() call */
 export const isTadaGraphQLCall = (
   node: ts.CallExpression,
@@ -76,6 +87,8 @@ export const isTadaGraphQLCall = (
   } else if (node.arguments.length < 1 || node.arguments.length > 2) {
     return false;
   } else if (!ts.isStringLiteralLike(node.arguments[0]!)) {
+    return false;
+  } else if (!graphqlDocumentPrefix.test(node.arguments[0]!.text)) {
     return false;
   }
   return checker ? isTadaGraphQLFunction(node.expression, checker) : false;

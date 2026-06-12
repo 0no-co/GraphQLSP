@@ -77,9 +77,10 @@ describe('findAllCallExpressions perf', () => {
         `${probes} type probes, ${duration.toFixed(1)}ms`
     );
 
-    // 7 distinct callees (t, describeCase, itCase, logger.info, logger.warn,
-    // graphql, g); a generous bound that is far below one probe per call site
-    expect(probes).toBeLessThan(NOISE_CALLS / 10);
+    // The noise calls' arguments can't start a GraphQL document, so they are
+    // rejected without any type probes; only the graphql/g callees and their
+    // schema names are probed, once per distinct callee
+    expect(probes).toBeLessThan(10);
   });
 
   it('skips fragment unrolling entirely with collectFragments: false', () => {

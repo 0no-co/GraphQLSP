@@ -18,6 +18,9 @@ importers:
 
   .:
     devDependencies:
+      '@0no-co/graphql.web':
+        specifier: ^1.0.4
+        version: 1.2.0(graphql@16.8.1)
       '@actions/core':
         specifier: ^1.10.0
         version: 1.10.0
@@ -4533,14 +4536,14 @@ snapshots:
 
   '@urql/core@4.0.4(graphql@16.8.1)':
     dependencies:
-      '@0no-co/graphql.web': 1.0.4(graphql@16.8.1)
+      '@0no-co/graphql.web': 1.2.0(graphql@16.8.1)
       wonka: 6.3.5
     transitivePeerDependencies:
       - graphql
 
   '@urql/core@4.3.0(graphql@16.8.1)':
     dependencies:
-      '@0no-co/graphql.web': 1.0.4(graphql@16.8.1)
+      '@0no-co/graphql.web': 1.2.0(graphql@16.8.1)
       wonka: 6.3.5
     transitivePeerDependencies:
       - graphql

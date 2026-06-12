@@ -116,10 +116,8 @@ export function unrollTadaFragments(
     if (ts.isIdentifier(element)) {
       wip.push(...unrollFragment(element, info, typeChecker));
     } else if (ts.isPropertyAccessExpression(element)) {
-      let el = element;
-      while (ts.isPropertyAccessExpression(el.expression)) el = el.expression;
-      if (ts.isIdentifier(el.name)) {
-        wip.push(...unrollFragment(el.name, info, typeChecker));
+      if (ts.isIdentifier(element.name)) {
+        wip.push(...unrollFragment(element.name, info, typeChecker));
       }
     }
   });

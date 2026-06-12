@@ -20,6 +20,7 @@ import {
   unrollFragment,
 } from './ast';
 import { resolveTemplate } from './ast/resolve';
+import { templates } from './ast/templates';
 import { UNUSED_FIELD_CODE, checkFieldUsageInFile } from './fieldUsage';
 import {
   MISSING_FRAGMENT_CODE,
@@ -54,6 +55,9 @@ const BASE_CLIENT_DIRECTIVES = new Set([
 
 export const SEMANTIC_DIAGNOSTIC_CODE = 52001;
 export const USING_DEPRECATED_FIELD_CODE = 52004;
+export const MISCONFIGURATION_CODE = 52006;
+export const MODE_MISMATCH_CODE = 52007;
+export const UNKNOWN_SCHEMA_NAME_CODE = 52008;
 export const MISSING_PERSISTED_TYPE_ARG = 520100;
 export const MISSING_PERSISTED_CODE_ARG = 520101;
 export const MISSING_PERSISTED_DOCUMENT = 520102;
@@ -63,11 +67,143 @@ export const ALL_DIAGNOSTICS = [
   USING_DEPRECATED_FIELD_CODE,
   MISSING_FRAGMENT_CODE,
   UNUSED_FIELD_CODE,
+  MISCONFIGURATION_CODE,
+  MODE_MISMATCH_CODE,
+  UNKNOWN_SCHEMA_NAME_CODE,
   MISSING_PERSISTED_TYPE_ARG,
   MISSING_PERSISTED_CODE_ARG,
   MISSING_PERSISTED_DOCUMENT,
   MISSMATCH_HASH_TO_DOCUMENT,
 ];
+
+/** How long after writing a typings file we trust the TS project to have
+ * picked it up; newly created files take a moment to appear in the program. */
+const OUTPUT_PICKUP_GRACE_PERIOD = 30_000;
+
+/** Reports configuration, schema-loading, and typings-output failures on a
+ * file's first GraphQL document, so misconfiguration is visible in the
+ * editor rather than only in the tsserver log. */
+const getMisconfigurationDiagnostics = (
+  source: ts.SourceFile,
+  nodes: {
+    node: ts.StringLiteralLike | ts.TaggedTemplateExpression;
+    schema: string | null;
+  }[],
+  schema: SchemaRef,
+  info: ts.server.PluginCreateInfo
+): ts.Diagnostic[] => {
+  if (!schema.errors || !nodes.length) return [];
+  const diagnostics: ts.Diagnostic[] = [];
+  const firstNode = nodes[0]!.node;
+
+  const messages = [
+    schema.errors.config,
+    ...schema.errors.load.values(),
+    ...schema.errors.write.values(),
+  ].filter(Boolean) as string[];
+
+  // A successfully written typings file that the TS project doesn't include
+  // presents as "my types never update" even though generation works
+  const program = info.languageService.getProgram();
+  if (program) {
+    for (const [output, writtenAt] of schema.outputLocations) {
+      if (
+        Date.now() - writtenAt > OUTPUT_PICKUP_GRACE_PERIOD &&
+        !program.getSourceFile(output)
+      ) {
+        messages.push(
+          `The generated typings file "${output}" is not part of the TypeScript project. ` +
+            'Check that it is matched by the "include" patterns of your tsconfig.json.'
+        );
+      }
+    }
+  }
+
+  for (const messageText of messages) {
+    diagnostics.push({
+      category: ts.DiagnosticCategory.Error,
+      code: MISCONFIGURATION_CODE,
+      file: source,
+      messageText,
+      start: firstNode.getStart(),
+      length: firstNode.getEnd() - firstNode.getStart(),
+    });
+  }
+
+  // A document that names a schema which isn't configured is silently
+  // skipped by all other features; only check once a schema has loaded so
+  // names aren't reported while loading is still in flight
+  const schemaLoaded =
+    !!schema.current || Object.values(schema.multi).some(Boolean);
+  if (schemaLoaded) {
+    const knownNames = Object.keys(schema.multi);
+    for (const { node, schema: name } of nodes) {
+      if (name && !knownNames.includes(name)) {
+        diagnostics.push({
+          category: ts.DiagnosticCategory.Error,
+          code: UNKNOWN_SCHEMA_NAME_CODE,
+          file: source,
+          messageText:
+            `This document refers to the schema named "${name}", which isn't configured. ` +
+            (knownNames.length
+              ? `Configured schemas are: ${knownNames.join(', ')}.`
+              : 'No named schemas are configured in the "schemas" option.'),
+          start: node.getStart(),
+          length: node.getEnd() - node.getStart(),
+        });
+      }
+    }
+  }
+
+  return diagnostics;
+};
+
+/** Reports GraphQL documents written in the mode the plugin is not
+ * configured for, which would otherwise be silently ignored. */
+const getModeMismatchDiagnostic = (
+  source: ts.SourceFile,
+  isCallExpression: boolean,
+  info: ts.server.PluginCreateInfo
+): ts.Diagnostic | null => {
+  // Cheap text probe before walking the AST of files without any documents
+  const probe = new RegExp(
+    `\\b(?:${Array.from(templates).join('|')})\\s*${
+      isCallExpression ? '`' : '\\('
+    }`
+  );
+  if (!probe.test(source.getText())) return null;
+
+  let node: ts.Node | undefined;
+  let messageText: string;
+  if (isCallExpression) {
+    node = findAllTaggedTemplateNodes(source)[0];
+    messageText =
+      'Found GraphQL documents in tagged templates, but GraphQLSP is configured to search for graphql()/gql() calls. ' +
+      'If you use tagged templates, set "templateIsCallExpression": false in the plugin configuration in your tsconfig.json.';
+  } else {
+    // Restricted to string arguments that look like GraphQL documents, since
+    // any gql()/graphql() call with a string argument is found by name
+    node = findAllCallExpressions(source, info, {
+      searchExternal: false,
+      collectFragments: false,
+    }).nodes.find(x =>
+      /^[\s,]*(?:query|mutation|subscription|fragment|\{)/.test(x.node.text)
+    )?.node;
+    messageText =
+      'Found GraphQL documents in graphql()/gql() calls, but GraphQLSP is configured to search for tagged templates. ' +
+      'If you use call expressions, remove "templateIsCallExpression": false from the plugin configuration in your tsconfig.json.';
+  }
+
+  if (!node) return null;
+  return {
+    category: ts.DiagnosticCategory.Warning,
+    code: MODE_MISMATCH_CODE,
+    file: source,
+    messageText,
+    start: node.getStart(),
+    length: node.getEnd() - node.getStart(),
+  };
+};
 
 const cache = new LRUCache<number, ts.Diagnostic[]>({
   // how long to live in ms
@@ -131,6 +267,22 @@ export function getGraphQLDiagnostics(
   } else {
     tsDiagnostics = runDiagnostics(source, { nodes, fragments }, schema, info);
     cache.set(cacheKey, tsDiagnostics);
+  }
+
+  // These are computed on every call, outside of the cached diagnostics,
+  // since the error-state can change without `schema.version` changing
+  tsDiagnostics = [
+    ...getMisconfigurationDiagnostics(source, nodes, schema, info),
+    ...tsDiagnostics,
+  ];
+
+  if (!nodes.length) {
+    const modeMismatch = getModeMismatchDiagnostic(
+      source,
+      isCallExpression,
+      info
+    );
+    if (modeMismatch) tsDiagnostics.unshift(modeMismatch);
   }
 
   const shouldCheckForColocatedFragments =

@@ -41,10 +41,6 @@ function create(info: ts.server.PluginCreateInfo) {
   const config: Config = info.config;
 
   logger('config: ' + JSON.stringify(config));
-  if (!config.schema && !config.schemas) {
-    logger('Missing "schema" option in configuration.');
-    throw new Error('Please provide a GraphQL Schema!');
-  }
 
   logger('Setting up the GraphQL Plugin');
 
@@ -54,22 +50,41 @@ function create(info: ts.server.PluginCreateInfo) {
 
   const proxy = createBasicDecorator(info);
 
-  const schema = loadSchema(info, config, logger);
+  const schema = loadSchema(info, logger);
+
+  // An exception thrown by any of the plugin's own logic fails the whole
+  // tsserver request, which presents as a dead plugin (or worse, a dead
+  // editor feature) for the file; each proxied method logs and falls back
+  // to the underlying language service instead
+  const guard = <T>(operation: string, fallback: T, run: () => T): T => {
+    try {
+      return run();
+    } catch (error) {
+      logger(`Unexpected error in ${operation}: ${error}`);
+      return fallback;
+    }
+  };
 
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics =
       info.languageService.getSemanticDiagnostics(filename);
 
-    const hasGraphQLDiagnostics = originalDiagnostics.some(x =>
-      ALL_DIAGNOSTICS.includes(x.code)
-    );
-    if (hasGraphQLDiagnostics) return originalDiagnostics;
+    return guard('getSemanticDiagnostics', originalDiagnostics, () => {
+      // Diagnostics requests are a steady editor-driven heartbeat, which
+      // makes them a good time to detect missed schema watcher events
+      schema.checkStale();
 
-    const graphQLDiagnostics = getGraphQLDiagnostics(filename, schema, info);
+      const hasGraphQLDiagnostics = originalDiagnostics.some(x =>
+        ALL_DIAGNOSTICS.includes(x.code)
+      );
+      if (hasGraphQLDiagnostics) return originalDiagnostics;
 
-    return graphQLDiagnostics
-      ? [...graphQLDiagnostics, ...originalDiagnostics]
-      : originalDiagnostics;
+      const graphQLDiagnostics = getGraphQLDiagnostics(filename, schema, info);
+
+      return graphQLDiagnostics
+        ? [...graphQLDiagnostics, ...originalDiagnostics]
+        : originalDiagnostics;
+    });
   };
 
   proxy.getCompletionsAtPosition = (
@@ -77,11 +92,8 @@ function create(info: ts.server.PluginCreateInfo) {
     cursorPosition: number,
     options: any
   ): ts.WithMetadata<ts.CompletionInfo> | undefined => {
-    const completions = getGraphQLCompletions(
-      filename,
-      cursorPosition,
-      schema,
-      info
+    const completions = guard('getCompletionsAtPosition', undefined, () =>
+      getGraphQLCompletions(filename, cursorPosition, schema, info)
     );
 
     if (completions && completions.entries.length) {
@@ -121,12 +133,14 @@ function create(info: ts.server.PluginCreateInfo) {
       interactive
     );
 
-    const codefix = getPersistedCodeFixAtPosition(
-      filename,
-      typeof positionOrRange === 'number'
-        ? positionOrRange
-        : positionOrRange.pos,
-      info
+    const codefix = guard('getEditsForRefactor', undefined, () =>
+      getPersistedCodeFixAtPosition(
+        filename,
+        typeof positionOrRange === 'number'
+          ? positionOrRange
+          : positionOrRange.pos,
+        info
+      )
     );
     if (!codefix) return original;
     return {
@@ -156,12 +170,14 @@ function create(info: ts.server.PluginCreateInfo) {
       includeInteractive
     );
 
-    const codefix = getPersistedCodeFixAtPosition(
-      filename,
-      typeof positionOrRange === 'number'
-        ? positionOrRange
-        : positionOrRange.pos,
-      info
+    const codefix = guard('getApplicableRefactors', undefined, () =>
+      getPersistedCodeFixAtPosition(
+        filename,
+        typeof positionOrRange === 'number'
+          ? positionOrRange
+          : positionOrRange.pos,
+        info
+      )
     );
 
     if (codefix) {
@@ -189,11 +205,8 @@ function create(info: ts.server.PluginCreateInfo) {
     ...args: Parameters<ts.LanguageService['getQuickInfoAtPosition']>
   ) => {
     const [filename, cursorPosition] = args;
-    const quickInfo = getGraphQLQuickInfo(
-      filename,
-      cursorPosition,
-      schema,
-      info
+    const quickInfo = guard('getQuickInfoAtPosition', undefined, () =>
+      getGraphQLQuickInfo(filename, cursorPosition, schema, info)
     );
 
     if (quickInfo) return quickInfo;

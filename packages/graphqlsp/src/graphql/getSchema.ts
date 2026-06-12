@@ -195,10 +195,21 @@ export const loadSchema = (
     }
 
     ref.autoupdate({ rootPath }, (schemaRef, value) => {
-      // The autoupdate callback only fires for successful (re)loads, so a
-      // previously failing schema has recovered, e.g. after fixing a broken
-      // schema file
-      errors.load = null;
+      // The autoupdate callback only fires for successful (re)loads, e.g.
+      // after a broken schema file has been fixed. Re-check all loaders
+      // before clearing the error; this is cached for healthy loaders and
+      // only retries failed ones, so in a multi-schema setup one schema
+      // updating doesn't clear another schema's load error.
+      ref
+        .load({ rootPath })
+        .then(() => {
+          errors.load = null;
+        })
+        .catch(error => {
+          errors.load = `Failed to load the GraphQL schema: ${
+            error instanceof Error ? error.message : error
+          }`;
+        });
       if (!value) return;
 
       if (value.tadaOutputLocation) {
@@ -215,7 +226,15 @@ export const loadSchema = (
         );
       }
     });
-  })();
+  })().catch(error => {
+    // Failures ahead of schema loading itself, e.g. tsconfig root resolution
+    // or invalid schema origins re-throwing during watcher setup, would
+    // otherwise escape as an unhandled rejection with the error state unset
+    errors.load = `Failed to load the GraphQL schema: ${
+      error instanceof Error ? error.message : error
+    }`;
+    logger(`Unexpected error while loading schema: ${error}`);
+  });
 
   return ref;
 };

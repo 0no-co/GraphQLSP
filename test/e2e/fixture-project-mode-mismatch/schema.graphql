@@ -1,0 +1,13 @@
+type Query {
+  post(id: ID!): Post
+  """
+  List out all posts
+  """
+  posts: [Post]
+}
+
+type Post {
+  id: ID!
+  title: String!
+  content: String!
+}

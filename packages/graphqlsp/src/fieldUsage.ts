@@ -1,7 +1,6 @@
 import { ts } from './ts';
 import { parse, visit } from 'graphql';
 
-import { findNode } from './ast';
 import { getValueOfIdentifier } from './ast/declaration';
 
 export const UNUSED_FIELD_CODE = 52005;
@@ -27,87 +26,6 @@ const getVariableDeclaration = (
   }
 };
 
-const traverseArrayDestructuring = (
-  node: ts.ArrayBindingPattern,
-  originalWip: Array<string>,
-  allFields: Array<string>,
-  source: ts.SourceFile,
-  info: ts.server.PluginCreateInfo
-): Array<string> => {
-  return node.elements.flatMap(element => {
-    if (ts.isOmittedExpression(element)) return [];
-
-    const wip = [...originalWip];
-    return ts.isIdentifier(element.name)
-      ? crawlScope(element.name, wip, allFields, source, info, false)
-      : ts.isObjectBindingPattern(element.name)
-      ? traverseDestructuring(element.name, wip, allFields, source, info)
-      : traverseArrayDestructuring(element.name, wip, allFields, source, info);
-  });
-};
-
-const traverseDestructuring = (
-  node: ts.ObjectBindingPattern,
-  originalWip: Array<string>,
-  allFields: Array<string>,
-  source: ts.SourceFile,
-  info: ts.server.PluginCreateInfo
-): Array<string> => {
-  const results = [];
-  for (const binding of node.elements) {
-    if (ts.isObjectBindingPattern(binding.name)) {
-      const wip = [...originalWip];
-      if (
-        binding.propertyName &&
-        !originalWip.includes(binding.propertyName.getText())
-      ) {
-        const joined = [...wip, binding.propertyName.getText()].join('.');
-        if (allFields.find(x => x.startsWith(joined))) {
-          wip.push(binding.propertyName.getText());
-        }
-      }
-      const traverseResult = traverseDestructuring(
-        binding.name,
-        wip,
-        allFields,
-        source,
-        info
-      );
-
-      results.push(...traverseResult);
-    } else if (ts.isIdentifier(binding.name)) {
-      const wip = [...originalWip];
-      if (
-        binding.propertyName &&
-        !originalWip.includes(binding.propertyName.getText())
-      ) {
-        const joined = [...wip, binding.propertyName.getText()].join('.');
-        if (allFields.find(x => x.startsWith(joined))) {
-          wip.push(binding.propertyName.getText());
-        }
-      } else {
-        const joined = [...wip, binding.name.getText()].join('.');
-        if (allFields.find(x => x.startsWith(joined))) {
-          wip.push(binding.name.getText());
-        }
-      }
-
-      const crawlResult = crawlScope(
-        binding.name,
-        wip,
-        allFields,
-        source,
-        info,
-        false
-      );
-
-      results.push(...crawlResult);
-    }
-  }
-
-  return results;
-};
-
 const arrayMethods = new Set([
   'map',
   'filter',
@@ -120,269 +38,76 @@ const arrayMethods = new Set([
   'sort',
 ]);
 
-const crawlChainedExpressions = (
-  ref: ts.CallExpression,
-  pathParts: string[],
-  allFields: string[],
-  source: ts.SourceFile,
-  info: ts.server.PluginCreateInfo
-): string[] => {
-  const isChained =
-    ts.isPropertyAccessExpression(ref.expression) &&
-    arrayMethods.has(ref.expression.name.text);
-  if (isChained) {
-    const foundRef = ref.expression;
-    const isReduce = foundRef.name.text === 'reduce';
-    let func: ts.Expression | ts.FunctionDeclaration | undefined =
-      ref.arguments[0];
+/** A node in the selection-set trie of a single GraphQL document.
+ * Keys are the response-shape keys, i.e. the alias when one is present. */
+interface TrieNode {
+  id: number;
+  children: Map<string, TrieNode>;
+  isLeaf: boolean;
+  used: boolean;
+}
 
-    const res = [];
-    if (ts.isCallExpression(ref.parent.parent)) {
-      const nestedResult = crawlChainedExpressions(
-        ref.parent.parent,
-        pathParts,
-        allFields,
-        source,
-        info
-      );
-      if (nestedResult.length) {
-        res.push(...nestedResult);
-      }
-    }
+interface DocumentState {
+  root: TrieNode;
+  /** Leaf-paths in document order, used to keep diagnostic ordering stable. */
+  allPaths: string[];
+  leafByPath: Map<string, TrieNode>;
+  fieldToLoc: Map<string, { start: number; length: number }>;
+  templateNode: ts.NoSubstitutionTemplateLiteral;
+  /** Number of terminal accesses we saw; no access means the result is
+   * consumed elsewhere (other files) and we stay silent. */
+  accessCount: number;
+}
 
-    if (func && ts.isIdentifier(func)) {
-      // TODO: Scope utilities in checkFieldUsageInFile to deduplicate
-      const checker = info.languageService.getProgram()!.getTypeChecker();
+/** A tracked binding: occurrences of `symbol` represent the data at trie
+ * position `node` of document `doc`. */
+interface Entry {
+  symbol: ts.Symbol;
+  node: TrieNode;
+  doc: DocumentState;
+  /** Set for array-method callback params; returning from those callbacks
+   * is not an escape of the data (`list.map(x => x.field)`). */
+  suppressReturnBail: boolean;
+}
 
-      const value = getValueOfIdentifier(func, checker);
-      if (
-        value &&
-        (ts.isFunctionDeclaration(value) ||
-          ts.isFunctionExpression(value) ||
-          ts.isArrowFunction(value))
-      ) {
-        func = value;
-      }
-    }
+/** Resolves the data-type of a document, either from internally resolved
+ * type-arguments or through the `__apiType` call-signature. */
+const resolveDataType = (
+  node: ts.Node,
+  checker: ts.TypeChecker
+): ts.Type | undefined => {
+  let dataType: ts.Type | undefined;
 
-    if (
-      func &&
-      (ts.isFunctionDeclaration(func) ||
-        ts.isFunctionExpression(func) ||
-        ts.isArrowFunction(func))
-    ) {
-      const param = func.parameters[isReduce ? 1 : 0];
-      if (param) {
-        const scopedResult = crawlScope(
-          param.name,
-          pathParts,
-          allFields,
-          source,
-          info,
-          true
-        );
-
-        if (scopedResult.length) {
-          res.push(...scopedResult);
+  const type = checker.getTypeAtLocation(node.parent) as
+    | ts.TypeReference
+    | ts.Type;
+  // Attempt to retrieve type from internally resolve type arguments
+  if ('target' in type) {
+    const typeArguments = (type as any)
+      .resolvedTypeArguments as readonly ts.Type[];
+    dataType =
+      typeArguments && typeArguments.length > 1 ? typeArguments[0] : undefined;
+  }
+  // Fallback to resolving the type from scratch
+  if (!dataType) {
+    const apiTypeSymbol = type.getProperty('__apiType');
+    if (apiTypeSymbol) {
+      let apiType = checker.getTypeOfSymbol(apiTypeSymbol);
+      let callSignature: ts.Signature | undefined = type.getCallSignatures()[0];
+      if (apiType.isUnionOrIntersection()) {
+        for (const type of apiType.types) {
+          callSignature = type.getCallSignatures()[0];
+          if (callSignature) {
+            dataType = callSignature.getReturnType();
+            break;
+          }
         }
       }
+      dataType = callSignature && callSignature.getReturnType();
     }
-
-    return res;
   }
 
-  return [];
-};
-
-const crawlScope = (
-  node: ts.BindingName,
-  originalWip: Array<string>,
-  allFields: Array<string>,
-  source: ts.SourceFile,
-  info: ts.server.PluginCreateInfo,
-  inArrayMethod: boolean
-): Array<string> => {
-  if (ts.isObjectBindingPattern(node)) {
-    return traverseDestructuring(node, originalWip, allFields, source, info);
-  } else if (ts.isArrayBindingPattern(node)) {
-    return traverseArrayDestructuring(
-      node,
-      originalWip,
-      allFields,
-      source,
-      info
-    );
-  }
-
-  let results: string[] = [];
-
-  const references = info.languageService.getReferencesAtPosition(
-    source.fileName,
-    node.getStart()
-  );
-
-  if (!references) return results;
-
-  // Go over all the references tied to the result of
-  // accessing our equery and collect them as fully
-  // qualified paths (ideally ending in a leaf-node)
-  results = references.flatMap(ref => {
-    // If we get a reference to a different file we can bail
-    if (ref.fileName !== source.fileName) return [];
-    // We don't want to end back at our document so we narrow
-    // the scope.
-    if (
-      node.getStart() <= ref.textSpan.start &&
-      node.getEnd() >= ref.textSpan.start + ref.textSpan.length
-    )
-      return [];
-
-    let foundRef = findNode(source, ref.textSpan.start);
-    if (!foundRef) return [];
-
-    const pathParts = [...originalWip];
-    // In here we'll start crawling all the accessors of result
-    // and try to determine the total path
-    // - result.data.pokemon.name --> pokemon.name this is the easy route and never accesses
-    //   any of the recursive functions
-    // - const pokemon = result.data.pokemon --> this initiates a new crawl with a renewed scope
-    // - const { pokemon } = result.data --> this initiates a destructuring traversal which will
-    //   either end up in more destructuring traversals or a scope crawl
-    while (
-      ts.isIdentifier(foundRef) ||
-      ts.isPropertyAccessExpression(foundRef) ||
-      ts.isElementAccessExpression(foundRef) ||
-      ts.isVariableDeclaration(foundRef) ||
-      ts.isBinaryExpression(foundRef) ||
-      ts.isReturnStatement(foundRef) ||
-      ts.isArrowFunction(foundRef)
-    ) {
-      if (
-        !inArrayMethod &&
-        (ts.isReturnStatement(foundRef) || ts.isArrowFunction(foundRef))
-      ) {
-        // When we are returning the ref or we are dealing with an implicit return
-        // we mark all its children as used (bail scenario)
-        const joined = pathParts.join('.');
-        const bailedFields = allFields.filter(x => x.startsWith(joined + '.'));
-        return bailedFields;
-      } else if (ts.isVariableDeclaration(foundRef)) {
-        return crawlScope(
-          foundRef.name,
-          pathParts,
-          allFields,
-          source,
-          info,
-          false
-        );
-      } else if (
-        ts.isIdentifier(foundRef) &&
-        !pathParts.includes(foundRef.text)
-      ) {
-        const joined = [...pathParts, foundRef.text].join('.');
-        if (allFields.find(x => x.startsWith(joined + '.'))) {
-          pathParts.push(foundRef.text);
-        }
-
-        // When we encounter an external function where we use this identifier
-        // we'll mark all of the sub-fields as used as we consider this a bail
-        // scenario.
-        if (ts.isCallExpression(foundRef.parent)) {
-          const callExpression = foundRef.parent;
-          return callExpression.arguments.flatMap(arg => {
-            let parts = [...pathParts];
-            let reference = arg;
-
-            while (ts.isPropertyAccessExpression(reference)) {
-              const joined = [...parts, reference.name.text].join('.');
-              if (allFields.find(x => x.startsWith(joined + '.'))) {
-                parts.push(reference.name.text);
-              }
-              reference = reference.expression;
-            }
-
-            if (ts.isIdentifier(reference)) {
-              const joined = [...parts, reference.getText()].join('.');
-              if (allFields.find(x => x.startsWith(joined + '.'))) {
-                parts.push(reference.getText());
-              }
-            }
-
-            const joined = parts.join('.');
-            return allFields.filter(x => x.startsWith(joined + '.'));
-          });
-        }
-      } else if (
-        ts.isPropertyAccessExpression(foundRef) &&
-        foundRef.name.text === 'at' &&
-        ts.isCallExpression(foundRef.parent)
-      ) {
-        foundRef = foundRef.parent;
-      } else if (
-        ts.isPropertyAccessExpression(foundRef) &&
-        arrayMethods.has(foundRef.name.text) &&
-        ts.isCallExpression(foundRef.parent)
-      ) {
-        const callExpression = foundRef.parent;
-        const res = [];
-        const isSomeOrEvery =
-          foundRef.name.text === 'some' || foundRef.name.text === 'every';
-        const chainedResults = crawlChainedExpressions(
-          callExpression,
-          pathParts,
-          allFields,
-          source,
-          info
-        );
-        if (chainedResults.length) {
-          res.push(...chainedResults);
-        }
-
-        if (ts.isVariableDeclaration(callExpression.parent) && !isSomeOrEvery) {
-          const varRes = crawlScope(
-            callExpression.parent.name,
-            pathParts,
-            allFields,
-            source,
-            info,
-            true
-          );
-          res.push(...varRes);
-        }
-
-        return res;
-      } else if (
-        ts.isPropertyAccessExpression(foundRef) &&
-        !pathParts.includes(foundRef.name.text)
-      ) {
-        const joined = [...pathParts, foundRef.name.text].join('.');
-        if (allFields.find(x => x.startsWith(joined))) {
-          pathParts.push(foundRef.name.text);
-        }
-      } else if (
-        ts.isElementAccessExpression(foundRef) &&
-        ts.isStringLiteral(foundRef.argumentExpression) &&
-        !pathParts.includes(foundRef.argumentExpression.text)
-      ) {
-        const joined = [...pathParts, foundRef.argumentExpression.text].join(
-          '.'
-        );
-        if (allFields.find(x => x.startsWith(joined))) {
-          pathParts.push(foundRef.argumentExpression.text);
-        }
-      }
-
-      if (ts.isNonNullExpression(foundRef.parent)) {
-        foundRef = foundRef.parent.parent;
-      } else {
-        foundRef = foundRef.parent;
-      }
-    }
-
-    return pathParts.join('.');
-  });
-
-  return results;
+  return dataType;
 };
 
 export const checkFieldUsageInFile = (
@@ -401,174 +126,584 @@ export const checkFieldUsageInFile = (
   if (!checker) return;
 
   try {
-    nodes.forEach(node => {
+    let trieId = 0;
+    const makeTrieNode = (isLeaf: boolean): TrieNode => ({
+      id: trieId++,
+      children: new Map(),
+      isLeaf,
+      used: false,
+    });
+
+    // Phase A: collect the selection-set trie for every document in the file
+    const docStates: DocumentState[] = [];
+    for (const node of nodes) {
       const nodeText = node.getText();
       // Bailing for mutations/subscriptions as these could have small details
       // for normalised cache interactions
       if (nodeText.includes('mutation') || nodeText.includes('subscription'))
-        return;
+        continue;
 
-      const variableDeclaration = getVariableDeclaration(node);
-      if (!variableDeclaration) return;
-
-      let dataType: ts.Type | undefined;
-
-      const type = checker.getTypeAtLocation(node.parent) as
-        | ts.TypeReference
-        | ts.Type;
-      // Attempt to retrieve type from internally resolve type arguments
-      if ('target' in type) {
-        const typeArguments = (type as any)
-          .resolvedTypeArguments as readonly ts.Type[];
-        dataType =
-          typeArguments && typeArguments.length > 1
-            ? typeArguments[0]
-            : undefined;
-      }
-      // Fallback to resolving the type from scratch
-      if (!dataType) {
-        const apiTypeSymbol = type.getProperty('__apiType');
-        if (apiTypeSymbol) {
-          let apiType = checker.getTypeOfSymbol(apiTypeSymbol);
-          let callSignature: ts.Signature | undefined =
-            type.getCallSignatures()[0];
-          if (apiType.isUnionOrIntersection()) {
-            for (const type of apiType.types) {
-              callSignature = type.getCallSignatures()[0];
-              if (callSignature) {
-                dataType = callSignature.getReturnType();
-                break;
-              }
-            }
-          }
-          dataType = callSignature && callSignature.getReturnType();
-        }
+      let document;
+      try {
+        document = parse(nodeText.slice(1, -1));
+      } catch (_e) {
+        continue;
       }
 
-      const references = info.languageService.getReferencesAtPosition(
-        source.fileName,
-        variableDeclaration.name.getStart()
-      );
-
-      if (!references) return;
-
-      const allAccess: string[] = [];
-      const inProgress: string[] = [];
+      const root = makeTrieNode(false);
       const allPaths: string[] = [];
+      const leafByPath = new Map<string, TrieNode>();
       const fieldToLoc = new Map<string, { start: number; length: number }>();
+      const inProgress: string[] = [];
+      const trieStack: TrieNode[] = [root];
       // This visitor gets all the leaf-paths in the document
-      // as well as all fields that are part of the document
-      // We need the leaf-paths to check usage and we need the
-      // fields to validate whether an access on a given reference
-      // is valid given the current document...
-      visit(parse(node.getText().slice(1, -1)), {
+      // as well as all fields that are part of the document.
+      // We need the leaf-paths to check usage and the trie to
+      // resolve whether an access on a given reference is valid
+      // for the current document...
+      visit(document, {
         Field: {
-          enter(node) {
-            const alias = node.alias ? node.alias.value : node.name.value;
+          enter(fieldNode) {
+            const alias = fieldNode.alias
+              ? fieldNode.alias.value
+              : fieldNode.name.value;
             const path = inProgress.length
               ? `${inProgress.join('.')}.${alias}`
               : alias;
+            const parent = trieStack[trieStack.length - 1];
 
-            if (!node.selectionSet && !reservedKeys.has(node.name.value)) {
+            if (
+              !fieldNode.selectionSet &&
+              !reservedKeys.has(fieldNode.name.value)
+            ) {
               allPaths.push(path);
               fieldToLoc.set(path, {
-                start: node.name.loc!.start,
-                length: node.name.loc!.end - node.name.loc!.start,
+                start: fieldNode.name.loc!.start,
+                length: fieldNode.name.loc!.end - fieldNode.name.loc!.start,
               });
-            } else if (node.selectionSet) {
+              let trieNode = parent.children.get(alias);
+              if (!trieNode) {
+                parent.children.set(alias, (trieNode = makeTrieNode(true)));
+              } else {
+                trieNode.isLeaf = true;
+              }
+              leafByPath.set(path, trieNode);
+            } else if (fieldNode.selectionSet) {
               inProgress.push(alias);
               fieldToLoc.set(path, {
-                start: node.name.loc!.start,
-                length: node.name.loc!.end - node.name.loc!.start,
+                start: fieldNode.name.loc!.start,
+                length: fieldNode.name.loc!.end - fieldNode.name.loc!.start,
               });
+              let trieNode = parent.children.get(alias);
+              if (!trieNode) {
+                parent.children.set(alias, (trieNode = makeTrieNode(false)));
+              }
+              trieStack.push(trieNode);
             }
           },
-          leave(node) {
-            if (node.selectionSet) {
+          leave(fieldNode) {
+            if (fieldNode.selectionSet) {
               inProgress.pop();
+              trieStack.pop();
             }
           },
         },
       });
 
-      references.forEach(ref => {
-        if (ref.fileName !== source.fileName) return;
-
-        const targetNode = findNode(source, ref.textSpan.start);
-        if (!targetNode) return;
-        // Skip declaration as reference of itself
-        if (targetNode.parent === variableDeclaration) return;
-
-        const scopeSymbols = checker.getSymbolsInScope(
-          targetNode,
-          ts.SymbolFlags.BlockScopedVariable
-        );
-
-        let scopeDataSymbol: ts.Symbol | undefined;
-        for (let scopeSymbol of scopeSymbols) {
-          if (!scopeSymbol.valueDeclaration) continue;
-          let typeOfScopeSymbol = unwrapAbstractType(
-            checker.getTypeOfSymbol(scopeSymbol)
-          );
-          if (dataType === typeOfScopeSymbol) {
-            scopeDataSymbol = scopeSymbol;
-            break;
-          }
-
-          // NOTE: This is an aggressive fallback for hooks where the return value isn't destructured
-          // This is a last resort solution for patterns like react-query, where the fallback that
-          // would otherwise happen below isn't sufficient
-          if (typeOfScopeSymbol.flags & ts.TypeFlags.Object) {
-            const tuplePropertySymbol = typeOfScopeSymbol.getProperty('0');
-            if (tuplePropertySymbol) {
-              typeOfScopeSymbol = checker.getTypeOfSymbol(tuplePropertySymbol);
-              if (dataType === typeOfScopeSymbol) {
-                scopeDataSymbol = scopeSymbol;
-                break;
-              }
-            }
-
-            const dataPropertySymbol = typeOfScopeSymbol.getProperty('data');
-            if (dataPropertySymbol) {
-              typeOfScopeSymbol = unwrapAbstractType(
-                checker.getTypeOfSymbol(dataPropertySymbol)
-              );
-              if (dataType === typeOfScopeSymbol) {
-                scopeDataSymbol = scopeSymbol;
-                break;
-              }
-            }
-          }
-        }
-
-        const valueDeclaration = scopeDataSymbol?.valueDeclaration;
-        let name: ts.BindingName | undefined;
-        if (
-          valueDeclaration &&
-          'name' in valueDeclaration &&
-          !!valueDeclaration.name &&
-          (ts.isIdentifier(valueDeclaration.name as any) ||
-            ts.isBindingName(valueDeclaration.name as any))
-        ) {
-          name = valueDeclaration.name as ts.BindingName;
-        } else {
-          // Fall back to looking at the variable declaration directly,
-          // if we are on one.
-          const variableDeclaration = getVariableDeclaration(targetNode);
-          if (variableDeclaration) name = variableDeclaration.name;
-        }
-
-        if (name) {
-          const result = crawlScope(name, [], allPaths, source, info, false);
-          allAccess.push(...result);
-        }
+      docStates.push({
+        root,
+        allPaths,
+        leafByPath,
+        fieldToLoc,
+        templateNode: node,
+        accessCount: 0,
       });
+    }
 
-      if (!allAccess.length) {
+    if (!docStates.length) return diagnostics;
+
+    // Phase B1: one pass over the file collecting identifier occurrences by
+    // name (value positions only) and call-initialized declarations. This
+    // replaces per-binding find-all-references searches.
+    const identifiersByName = new Map<string, ts.Identifier[]>();
+    const callInitializedDecls: ts.VariableDeclaration[] = [];
+    const indexWalk = (node: ts.Node) => {
+      if (ts.isTypeNode(node)) return;
+
+      if (ts.isIdentifier(node)) {
+        const parent = node.parent;
+        // Skip declaration names (a declaration is not a use of itself)
+        // and property-name positions (they resolve to unrelated symbols).
+        const isDeclarationName =
+          parent &&
+          (ts.isVariableDeclaration(parent) ||
+            ts.isBindingElement(parent) ||
+            ts.isParameter(parent) ||
+            ts.isFunctionDeclaration(parent) ||
+            ts.isFunctionExpression(parent) ||
+            ts.isClassDeclaration(parent) ||
+            ts.isImportSpecifier(parent) ||
+            ts.isImportClause(parent) ||
+            ts.isNamespaceImport(parent) ||
+            ts.isExportSpecifier(parent)) &&
+          parent.name === node;
+        const isPropertyName =
+          parent &&
+          ((ts.isPropertyAccessExpression(parent) && parent.name === node) ||
+            (ts.isQualifiedName(parent) && parent.right === node) ||
+            (ts.isPropertyAssignment(parent) && parent.name === node) ||
+            (ts.isBindingElement(parent) && parent.propertyName === node) ||
+            (ts.isJsxAttribute(parent) && parent.name === node) ||
+            (ts.isPropertyDeclaration(parent) && parent.name === node) ||
+            (ts.isMethodDeclaration(parent) && parent.name === node) ||
+            (ts.isPropertySignature(parent) && parent.name === node) ||
+            (ts.isMethodSignature(parent) && parent.name === node) ||
+            (ts.isEnumMember(parent) && parent.name === node));
+        if (!isDeclarationName && !isPropertyName) {
+          let list = identifiersByName.get(node.text);
+          if (!list) identifiersByName.set(node.text, (list = []));
+          list.push(node);
+        }
         return;
       }
 
-      const unused = allPaths.filter(x => !allAccess.includes(x));
+      if (ts.isVariableDeclaration(node) && node.initializer) {
+        let init: ts.Expression = node.initializer;
+        while (
+          ts.isParenthesizedExpression(init) ||
+          ts.isAwaitExpression(init) ||
+          ts.isNonNullExpression(init) ||
+          ts.isAsExpression(init)
+        ) {
+          init = init.expression;
+        }
+        if (ts.isCallExpression(init)) callInitializedDecls.push(node);
+      }
+
+      ts.forEachChild(node, indexWalk);
+    };
+    indexWalk(source);
+
+    const symbolCache = new Map<ts.Identifier, ts.Symbol | undefined>();
+    const getRefSymbol = (id: ts.Identifier): ts.Symbol | undefined => {
+      if (symbolCache.has(id)) return symbolCache.get(id);
+      const sym =
+        ts.isShorthandPropertyAssignment(id.parent) && id.parent.name === id
+          ? checker.getShorthandAssignmentValueSymbol(id.parent)
+          : checker.getSymbolAtLocation(id);
+      symbolCache.set(id, sym);
+      return sym;
+    };
+
+    // Phase B2: the tracker holds bindings whose occurrences we still have to
+    // visit. The seen-set makes the worklist converge on alias cycles.
+    const queue: Entry[] = [];
+    const seenEntries = new Map<ts.Symbol, Set<string>>();
+    const addEntry = (
+      symbol: ts.Symbol | undefined,
+      node: TrieNode,
+      doc: DocumentState,
+      suppressReturnBail: boolean
+    ) => {
+      if (!symbol) return;
+      let keys = seenEntries.get(symbol);
+      if (!keys) seenEntries.set(symbol, (keys = new Set()));
+      const key = `${node.id}${suppressReturnBail ? 's' : ''}`;
+      if (keys.has(key)) return;
+      keys.add(key);
+      queue.push({ symbol, node, doc, suppressReturnBail });
+    };
+
+    /** Registers a binding-name at a trie position: identifiers become
+     * tracked entries, destructuring patterns descend through the trie.
+     * Keys that aren't part of the document (`data`, tuple wrappers) are
+     * passed through without descending. */
+    const trackBinding = (
+      name: ts.BindingName,
+      trieNode: TrieNode,
+      doc: DocumentState,
+      suppressReturnBail: boolean
+    ) => {
+      if (ts.isIdentifier(name)) {
+        addEntry(
+          checker.getSymbolAtLocation(name),
+          trieNode,
+          doc,
+          suppressReturnBail
+        );
+      } else if (ts.isObjectBindingPattern(name)) {
+        for (const element of name.elements) {
+          let key: string | undefined;
+          if (element.propertyName) {
+            if (
+              ts.isIdentifier(element.propertyName) ||
+              ts.isStringLiteral(element.propertyName)
+            ) {
+              key = element.propertyName.text;
+            }
+          } else if (ts.isIdentifier(element.name)) {
+            key = element.name.text;
+          }
+          const next = (key && trieNode.children.get(key)) || trieNode;
+          trackBinding(element.name, next, doc, suppressReturnBail);
+        }
+      } else {
+        for (const element of name.elements) {
+          if (ts.isOmittedExpression(element)) continue;
+          // Array/tuple wrappers don't influence the field path
+          trackBinding(element.name, trieNode, doc, suppressReturnBail);
+        }
+      }
+    };
+
+    const markSubtreeUsed = (trieNode: TrieNode) => {
+      for (const child of trieNode.children.values()) {
+        child.used = true;
+        markSubtreeUsed(child);
+      }
+    };
+
+    /** Seeds the callbacks of an array-method chain
+     * (`x.filter(a => ...).map(b => ...)`) and, when the chain result is
+     * assigned, tracks that binding at the same trie position. */
+    const handleArrayChain = (
+      firstCall: ts.CallExpression,
+      firstMethod: string,
+      trieNode: TrieNode,
+      doc: DocumentState
+    ) => {
+      let call = firstCall;
+      while (true) {
+        const method = (call.expression as ts.PropertyAccessExpression).name
+          .text;
+        let func: ts.Node | undefined = call.arguments[0];
+        if (func && ts.isIdentifier(func)) {
+          const value = getValueOfIdentifier(func, checker);
+          if (
+            value &&
+            (ts.isFunctionDeclaration(value) ||
+              ts.isFunctionExpression(value) ||
+              ts.isArrowFunction(value))
+          ) {
+            func = value;
+          }
+        }
+        if (
+          func &&
+          (ts.isFunctionDeclaration(func) ||
+            ts.isFunctionExpression(func) ||
+            ts.isArrowFunction(func))
+        ) {
+          const param = func.parameters[method === 'reduce' ? 1 : 0];
+          if (param) trackBinding(param.name, trieNode, doc, true);
+        }
+
+        const access = call.parent;
+        if (
+          ts.isPropertyAccessExpression(access) &&
+          access.expression === call &&
+          arrayMethods.has(access.name.text) &&
+          ts.isCallExpression(access.parent) &&
+          access.parent.expression === access
+        ) {
+          call = access.parent;
+          continue;
+        }
+        break;
+      }
+
+      if (
+        ts.isVariableDeclaration(firstCall.parent) &&
+        firstMethod !== 'some' &&
+        firstMethod !== 'every'
+      ) {
+        trackBinding(firstCall.parent.name, trieNode, doc, true);
+      }
+    };
+
+    /** Walks up the parent chain from one identifier occurrence, descending
+     * through the trie for each property access, until the use terminates:
+     * - leaf access: mark the leaf used
+     * - aliased into a new binding or assignment: track that binding
+     * - escapes (returned, passed to a call, spread): mark the subtree used
+     */
+    const walkUseChain = (start: ts.Identifier, entry: Entry) => {
+      const doc = entry.doc;
+      let cursor: ts.Node = start;
+      let trieNode = entry.node;
+      // True while the cursor still IS the tracked value (only accesses and
+      // value-preserving wrappers in between). Once the value is folded into
+      // a larger expression (`a.b && ...`, `cond ? a.b : ...`) it no longer
+      // escapes through calls/spreads as-is.
+      let pureChain = true;
+
+      while (true) {
+        const parent: ts.Node | undefined = cursor.parent;
+        if (!parent) break;
+
+        if (ts.isPropertyAccessExpression(parent)) {
+          if (parent.expression !== cursor) break;
+          const name = parent.name.text;
+          const grand = parent.parent;
+          if (ts.isCallExpression(grand) && grand.expression === parent) {
+            if (name === 'at') {
+              // `.at(...)` is an array element pass-through
+              cursor = grand;
+              continue;
+            } else if (arrayMethods.has(name)) {
+              handleArrayChain(grand, name, trieNode, doc);
+              doc.accessCount++;
+              return;
+            }
+          }
+          trieNode = trieNode.children.get(name) || trieNode;
+          cursor = parent;
+          continue;
+        }
+
+        if (ts.isElementAccessExpression(parent)) {
+          if (parent.expression !== cursor) break;
+          if (ts.isStringLiteral(parent.argumentExpression)) {
+            trieNode =
+              trieNode.children.get(parent.argumentExpression.text) || trieNode;
+          }
+          // Numeric/computed element access is an array pass-through
+          cursor = parent;
+          continue;
+        }
+
+        if (
+          ts.isNonNullExpression(parent) ||
+          ts.isParenthesizedExpression(parent) ||
+          ts.isAsExpression(parent) ||
+          ts.isAwaitExpression(parent) ||
+          (ts.isSatisfiesExpression && ts.isSatisfiesExpression(parent))
+        ) {
+          cursor = parent;
+          continue;
+        }
+
+        if (ts.isBinaryExpression(parent)) {
+          if (parent.operatorToken.kind === ts.SyntaxKind.EqualsToken) {
+            // Write target of an assignment, not a use
+            if (parent.left === cursor) return;
+            if (ts.isIdentifier(parent.left)) {
+              // `existing = result.data.pokemon` aliases like a declaration
+              addEntry(
+                checker.getSymbolAtLocation(parent.left),
+                trieNode,
+                doc,
+                false
+              );
+              doc.accessCount++;
+              return;
+            }
+            if (pureChain) {
+              // The value escapes into a property/element write
+              if (trieNode.isLeaf) trieNode.used = true;
+              markSubtreeUsed(trieNode);
+              doc.accessCount++;
+              return;
+            }
+            break;
+          }
+          pureChain = false;
+          cursor = parent;
+          continue;
+        }
+
+        if (ts.isConditionalExpression(parent)) {
+          // The branches carry the value onward, the condition is only a test
+          if (parent.condition === cursor) break;
+          pureChain = false;
+          cursor = parent;
+          continue;
+        }
+
+        if (ts.isVariableDeclaration(parent)) {
+          trackBinding(parent.name, trieNode, doc, false);
+          return;
+        }
+
+        if (ts.isForOfStatement(parent) && parent.expression === cursor) {
+          // `for (const p of result.data.pokemons)`: the loop binding holds
+          // an element of the iterated value
+          if (ts.isVariableDeclarationList(parent.initializer)) {
+            for (const declaration of parent.initializer.declarations) {
+              trackBinding(declaration.name, trieNode, doc, false);
+            }
+          } else if (ts.isIdentifier(parent.initializer)) {
+            addEntry(
+              checker.getSymbolAtLocation(parent.initializer),
+              trieNode,
+              doc,
+              false
+            );
+          }
+          doc.accessCount++;
+          return;
+        }
+
+        if (
+          ts.isReturnStatement(parent) ||
+          (ts.isArrowFunction(parent) && parent.body === cursor)
+        ) {
+          // The data escapes through a return; everything below the current
+          // position has to be considered used — unless we're returning from
+          // an array-method callback, which stays within the chain.
+          if (trieNode.isLeaf) trieNode.used = true;
+          if (!entry.suppressReturnBail) markSubtreeUsed(trieNode);
+          doc.accessCount++;
+          return;
+        }
+
+        if (ts.isCallExpression(parent) && parent.expression !== cursor) {
+          // Passed as an argument to an external function: when the tracked
+          // value itself escapes we consider its whole subtree used.
+          if (trieNode.isLeaf) trieNode.used = true;
+          if (pureChain) markSubtreeUsed(trieNode);
+          doc.accessCount++;
+          return;
+        }
+
+        if (
+          pureChain &&
+          (ts.isSpreadElement(parent) ||
+            ts.isSpreadAssignment(parent) ||
+            ts.isJsxSpreadAttribute(parent) ||
+            ts.isShorthandPropertyAssignment(parent) ||
+            (ts.isPropertyAssignment(parent) && parent.initializer === cursor))
+        ) {
+          // The tracked value escapes into an object/array/JSX spread
+          if (trieNode.isLeaf) trieNode.used = true;
+          markSubtreeUsed(trieNode);
+          doc.accessCount++;
+          return;
+        }
+
+        break;
+      }
+
+      // Terminal use without escape: a leaf read counts as usage, an
+      // intermediate read (e.g. passing `data.pokemon` to JSX) does not
+      // mark any fields but proves the result is consumed in this file.
+      if (trieNode.isLeaf) trieNode.used = true;
+      doc.accessCount++;
+    };
+
+    // Phase B3: seed the tracker for every document.
+    const declTypeCache = new Map<
+      ts.VariableDeclaration,
+      { type: ts.Type; tupleType?: ts.Type; dataType?: ts.Type }
+    >();
+    for (const state of docStates) {
+      const template = state.templateNode;
+      const graphqlCallNode = template.parent;
+
+      let docDeclaration: ts.VariableDeclaration | undefined;
+      let wrapper: ts.Node = graphqlCallNode.parent;
+      while (
+        ts.isParenthesizedExpression(wrapper) ||
+        ts.isAsExpression(wrapper) ||
+        ts.isNonNullExpression(wrapper) ||
+        (ts.isSatisfiesExpression && ts.isSatisfiesExpression(wrapper))
+      ) {
+        wrapper = wrapper.parent;
+      }
+      if (ts.isVariableDeclaration(wrapper)) docDeclaration = wrapper;
+
+      if (docDeclaration && ts.isIdentifier(docDeclaration.name)) {
+        // `const Doc = graphql(...)`: every value-occurrence of `Doc` that
+        // sits inside a variable declaration (`const [result] = useQuery(...)`)
+        // identifies the result binding of that query.
+        const docSymbol = checker.getSymbolAtLocation(docDeclaration.name);
+        if (docSymbol) {
+          const occurrences =
+            identifiersByName.get(docDeclaration.name.text) || [];
+          for (const occurrence of occurrences) {
+            if (getRefSymbol(occurrence) !== docSymbol) continue;
+            const declaration = getVariableDeclaration(occurrence);
+            if (!declaration || declaration === docDeclaration) continue;
+            trackBinding(declaration.name, state.root, state, false);
+          }
+        }
+      } else if (!docDeclaration) {
+        // Inline document (`useQuery({ query: graphql(...) })`): the
+        // enclosing declaration holds the query result directly.
+        const declaration = getVariableDeclaration(template);
+        if (declaration && ts.isIdentifier(declaration.name)) {
+          addEntry(
+            checker.getSymbolAtLocation(declaration.name),
+            state.root,
+            state,
+            false
+          );
+        }
+      }
+
+      // Type-driven fallback: find result bindings whose type derives from
+      // the document's data type (covers wrappers we can't see lexically,
+      // e.g. react-query's `useQuery({ queryFn })` patterns).
+      const dataType = resolveDataType(template, checker);
+      if (dataType) {
+        for (const declaration of callInitializedDecls) {
+          if (declaration === docDeclaration) continue;
+          let cached = declTypeCache.get(declaration);
+          if (!cached) {
+            const type = unwrapAbstractType(
+              checker.getTypeAtLocation(declaration.initializer!)
+            );
+            cached = { type };
+            if (type.flags & ts.TypeFlags.Object) {
+              const tupleProperty = type.getProperty('0');
+              if (tupleProperty) {
+                cached.tupleType = checker.getTypeOfSymbol(tupleProperty);
+              }
+              const dataProperty = (cached.tupleType || type).getProperty(
+                'data'
+              );
+              if (dataProperty) {
+                cached.dataType = unwrapAbstractType(
+                  checker.getTypeOfSymbol(dataProperty)
+                );
+              }
+            }
+            declTypeCache.set(declaration, cached);
+          }
+          if (
+            cached.type === dataType ||
+            cached.tupleType === dataType ||
+            cached.dataType === dataType
+          ) {
+            trackBinding(declaration.name, state.root, state, false);
+          }
+        }
+      }
+    }
+
+    // Phase B4: drain the worklist; entries enqueued while walking
+    // (aliases, destructured bindings, callback params) are picked up here.
+    for (let i = 0; i < queue.length; i++) {
+      const entry = queue[i];
+      const occurrences = identifiersByName.get(entry.symbol.name);
+      if (!occurrences) continue;
+      for (const occurrence of occurrences) {
+        if (getRefSymbol(occurrence) !== entry.symbol) continue;
+        walkUseChain(occurrence, entry);
+      }
+    }
+
+    // Phase C: report fields whose leaf was never read, aggregated on the
+    // parent field.
+    for (const state of docStates) {
+      if (!state.accessCount) continue;
+
+      const node = state.templateNode;
+      const fieldToLoc = state.fieldToLoc;
+      const unused = state.allPaths.filter(
+        path => !state.leafByPath.get(path)!.used
+      );
+
       const aggregatedUnusedFields = new Set<string>();
       const unusedChildren: { [key: string]: Set<string> } = {};
       const unusedFragmentLeaf = new Set<string>();
@@ -616,7 +751,7 @@ export const checkFieldUsageInFile = (
           messageText: `Field ${field} is not used.`,
         });
       });
-    });
+    }
   } catch (e: any) {
     console.error('[GraphQLSP]: ', e.message, e.stack);
   }

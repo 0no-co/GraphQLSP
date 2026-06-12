@@ -22,6 +22,7 @@ describe('unused fields', () => {
   const outfileFragment = path.join(projectPath, 'fragment.tsx');
   const outfilePropAccess = path.join(projectPath, 'property-access.tsx');
   const outfileChainedUsage = path.join(projectPath, 'chained-usage.ts');
+  const outfileMultiDocument = path.join(projectPath, 'multi-document.ts');
 
   let server: TSServer;
   beforeAll(async () => {
@@ -59,6 +60,11 @@ describe('unused fields', () => {
     } satisfies ts.server.protocol.OpenRequestArgs);
     server.sendCommand('open', {
       file: outfileChainedUsage,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+    server.sendCommand('open', {
+      file: outfileMultiDocument,
       fileContent: '// empty',
       scriptKindName: 'TS',
     } satisfies ts.server.protocol.OpenRequestArgs);
@@ -114,6 +120,13 @@ describe('unused fields', () => {
             'utf-8'
           ),
         },
+        {
+          file: outfileMultiDocument,
+          fileContent: fs.readFileSync(
+            path.join(projectPath, 'fixtures/multi-document.ts'),
+            'utf-8'
+          ),
+        },
       ],
     } satisfies ts.server.protocol.UpdateOpenRequestArgs);
 
@@ -145,6 +158,10 @@ describe('unused fields', () => {
       file: outfileChainedUsage,
       tmpfile: outfileChainedUsage,
     } satisfies ts.server.protocol.SavetoRequestArgs);
+    server.sendCommand('saveto', {
+      file: outfileMultiDocument,
+      tmpfile: outfileMultiDocument,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
   });
 
   afterAll(() => {
@@ -156,6 +173,7 @@ describe('unused fields', () => {
       fs.unlinkSync(outfileDestructuringFromStart);
       fs.unlinkSync(outfileBail);
       fs.unlinkSync(outfileChainedUsage);
+      fs.unlinkSync(outfileMultiDocument);
     } catch {}
   });
 
@@ -164,7 +182,8 @@ describe('unused fields', () => {
       e =>
         e.type === 'event' &&
         e.event === 'semanticDiag' &&
-        e.body?.file === outfileFragment
+        e.body?.file === outfileFragment,
+      true
     );
     const res = server.responses.filter(
       resp =>
@@ -196,7 +215,8 @@ describe('unused fields', () => {
       e =>
         e.type === 'event' &&
         e.event === 'semanticDiag' &&
-        e.body?.file === outfileFragmentDestructuring
+        e.body?.file === outfileFragmentDestructuring,
+      true
     );
     const res = server.responses.filter(
       resp =>
@@ -228,7 +248,8 @@ describe('unused fields', () => {
       e =>
         e.type === 'event' &&
         e.event === 'semanticDiag' &&
-        e.body?.file === outfilePropAccess
+        e.body?.file === outfilePropAccess,
+      true
     );
     const res = server.responses.filter(
       resp =>
@@ -295,6 +316,13 @@ describe('unused fields', () => {
   }, 30000);
 
   it('gives unused fields with destructuring', async () => {
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfileDestructuring,
+      true
+    );
     const res = server.responses.filter(
       resp =>
         resp.type === 'event' &&
@@ -347,6 +375,13 @@ describe('unused fields', () => {
   }, 30000);
 
   it('gives unused fields with immedaite destructuring', async () => {
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfileDestructuringFromStart,
+      true
+    );
     const res = server.responses.filter(
       resp =>
         resp.type === 'event' &&
@@ -399,6 +434,13 @@ describe('unused fields', () => {
   }, 30000);
 
   it('Bails unused fields when memo func is used', async () => {
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfileBail,
+      true
+    );
     const res = server.responses.filter(
       resp =>
         resp.type === 'event' &&
@@ -424,7 +466,117 @@ describe('unused fields', () => {
     `);
   }, 30000);
 
+  it('Tracks multiple documents, alias chains and named callbacks in one file', async () => {
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfileMultiDocument,
+      true
+    );
+    const res = server.responses.filter(
+      resp =>
+        resp.type === 'event' &&
+        resp.event === 'semanticDiag' &&
+        resp.body?.file === outfileMultiDocument
+    );
+    // The Pok document has no generated type (same as chained-usage.ts), so
+    // we only assert the unused-field diagnostics here.
+    const unusedFieldDiagnostics = res[0].body.diagnostics.filter(
+      (diagnostic: any) => diagnostic.code === 52005
+    );
+    expect(unusedFieldDiagnostics).toMatchInlineSnapshot(`
+      [
+        {
+          "category": "warning",
+          "code": 52005,
+          "end": {
+            "line": 7,
+            "offset": 12,
+          },
+          "start": {
+            "line": 7,
+            "offset": 5,
+          },
+          "text": "Field(s) 'pokemon.fleeRate', 'pokemon.name' are not used.",
+        },
+        {
+          "category": "warning",
+          "code": 52005,
+          "end": {
+            "line": 12,
+            "offset": 16,
+          },
+          "start": {
+            "line": 12,
+            "offset": 9,
+          },
+          "text": "Field(s) 'pokemon.attacks.special.name', 'pokemon.attacks.special.damage' are not used.",
+        },
+        {
+          "category": "warning",
+          "code": 52005,
+          "end": {
+            "line": 17,
+            "offset": 13,
+          },
+          "start": {
+            "line": 17,
+            "offset": 7,
+          },
+          "text": "Field(s) 'pokemon.weight.maximum' are not used.",
+        },
+        {
+          "category": "warning",
+          "code": 52005,
+          "end": {
+            "line": 30,
+            "offset": 15,
+          },
+          "start": {
+            "line": 30,
+            "offset": 7,
+          },
+          "text": "Field(s) 'pokemons.maxHP', 'pokemons.fleeRate' are not used.",
+        },
+        {
+          "category": "warning",
+          "code": 52005,
+          "end": {
+            "line": 102,
+            "offset": 13,
+          },
+          "start": {
+            "line": 102,
+            "offset": 5,
+          },
+          "text": "Field(s) 'pokemons.maxHP', 'pokemons.fleeRate' are not used.",
+        },
+        {
+          "category": "warning",
+          "code": 52005,
+          "end": {
+            "line": 120,
+            "offset": 13,
+          },
+          "start": {
+            "line": 120,
+            "offset": 5,
+          },
+          "text": "Field(s) 'pokemons.fleeRate' are not used.",
+        },
+      ]
+    `);
+  }, 30000);
+
   it('Finds field usage in chained call-expressions', async () => {
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfileChainedUsage,
+      true
+    );
     const res = server.responses.filter(
       resp =>
         resp.type === 'event' &&

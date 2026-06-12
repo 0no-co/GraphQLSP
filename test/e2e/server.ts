@@ -1,5 +1,6 @@
 import { ChildProcess, fork } from 'node:child_process';
 import readline from 'node:readline';
+import path from 'node:path';
 import ts from 'typescript/lib/tsserverlibrary';
 
 type Command = `${ts.server.protocol.CommandTypes}`;
@@ -42,6 +43,12 @@ export class TSServer {
       try {
         const data = JSON.parse(line);
 
+        // tsserver emits normalized (forward-slash) paths; convert them to
+        // platform-native paths so tests can compare against path.join output
+        if (typeof data?.body?.file === 'string') {
+          data.body.file = path.normalize(data.body.file);
+        }
+
         this.responses.push(data);
 
         if (this.#resolvePromise && this.#waitFor?.(data)) {
@@ -78,8 +85,13 @@ export class TSServer {
   waitForResponse = (
     cb: (
       response: ts.server.protocol.Response | ts.server.protocol.Event
-    ) => boolean
+    ) => boolean,
+    checkExisting = false
   ) => {
+    if (checkExisting && this.responses.some(cb)) {
+      return Promise.resolve();
+    }
+
     this.#waitFor = cb;
     return new Promise<void>(resolve => {
       this.#resolvePromise = resolve;

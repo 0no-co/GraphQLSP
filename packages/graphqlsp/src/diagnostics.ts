@@ -13,12 +13,13 @@ import { print } from '@0no-co/graphql.web';
 
 import {
   findAllCallExpressions,
+  findAllImports,
   findAllPersistedCallExpressions,
   findAllTaggedTemplateNodes,
-  findAllMaskFragmentsCalls,
   getSource,
   unrollFragment,
 } from './ast';
+import { getValueOfIdentifier } from './ast/declaration';
 import { resolveTemplate } from './ast/resolve';
 import { templates } from './ast/templates';
 import { UNUSED_FIELD_CODE, checkFieldUsageInFile } from './fieldUsage';
@@ -225,6 +226,7 @@ export function getGraphQLDiagnostics(
     nodes: {
       node: ts.StringLiteralLike | ts.TaggedTemplateExpression;
       schema: string | null;
+      tadaFragmentRefs?: readonly ts.Identifier[] | null;
     }[];
   if (isCallExpression) {
     const result = findAllCallExpressions(source, info);
@@ -461,22 +463,14 @@ export function getGraphQLDiagnostics(
       } catch (e) {}
     });
 
-    // check for maskFragments() calls
-    const maskFragmentsCalls = findAllMaskFragmentsCalls(source);
-    maskFragmentsCalls.forEach(call => {
-      const firstArg = call.arguments[0];
-      if (!firstArg) return;
-
-      // Handle array of fragments: maskFragments([Fragment1, Fragment2], data)
-      if (ts.isArrayLiteralExpression(firstArg)) {
-        firstArg.elements.forEach(element => {
-          if (ts.isIdentifier(element)) {
-            const fragmentDefs = unrollFragment(element, info, typeChecker);
-            fragmentDefs.forEach(def => usedFragments.add(def.name.value));
-          }
-        });
-      }
-    });
+    // A fragment referenced directly (as a type/value, or via maskFragments())
+    // rather than declared in a fragment-reference array isn't meant to be
+    // spread here, so don't flag it.
+    const directlyUsedFragments = getDirectlyUsedFragments(
+      source,
+      nodes,
+      typeChecker
+    );
 
     Object.keys(moduleSpecifierToFragments).forEach(moduleSpecifier => {
       const {
@@ -485,7 +479,11 @@ export function getGraphQLDiagnostics(
         length,
       } = moduleSpecifierToFragments[moduleSpecifier]!;
       const missingFragments = Array.from(
-        new Set(fragmentNames.filter(x => !usedFragments.has(x)))
+        new Set(
+          fragmentNames.filter(
+            x => !usedFragments.has(x) && !directlyUsedFragments.has(x)
+          )
+        )
       );
       if (missingFragments.length) {
         fragmentDiagnostics.push({
@@ -507,6 +505,100 @@ export function getGraphQLDiagnostics(
   }
 }
 
+/** Resolves the fragment name(s) defined directly by an identifier's `graphql()`
+ * document, excluding fragments it only composes via its reference array. */
+function getFragmentNamesForIdentifier(
+  identifier: ts.Identifier,
+  checker: ts.TypeChecker
+): string[] {
+  const value = getValueOfIdentifier(identifier, checker);
+  if (!value || !ts.isCallExpression(value)) return [];
+  const documentArg = value.arguments[0];
+  if (!documentArg || !ts.isStringLiteralLike(documentArg)) return [];
+  try {
+    const parsed = parse(documentArg.getText().slice(1, -1), {
+      noLocation: true,
+    });
+    return parsed.definitions
+      .filter(
+        (definition): definition is FragmentDefinitionNode =>
+          definition.kind === Kind.FRAGMENT_DEFINITION
+      )
+      .map(definition => definition.name.value);
+  } catch (e) {
+    return [];
+  }
+}
+
+/** Collects fragment names whose imported binding is referenced outside both its
+ * import and any `graphql()` fragment-reference array — i.e. used directly (as a
+ * type, an unmasking-call argument, or a re-export) and so not meant to be
+ * spread here. Bindings only in a reference array, or never referenced, are left
+ * to warn. */
+function getDirectlyUsedFragments(
+  source: ts.SourceFile,
+  nodes: Array<{ tadaFragmentRefs?: readonly ts.Identifier[] | null }>,
+  typeChecker: ts.TypeChecker | undefined
+): Set<string> {
+  const directlyUsedFragments = new Set<string>();
+  if (!typeChecker) return directlyUsedFragments;
+
+  // A reference here is an explicit co-location declaration, not a direct use.
+  const fragmentRefIdentifiers = new Set<ts.Node>();
+  nodes.forEach(({ tadaFragmentRefs }) => {
+    if (tadaFragmentRefs)
+      tadaFragmentRefs.forEach(identifier =>
+        fragmentRefIdentifiers.add(identifier)
+      );
+  });
+
+  // Index occurrences by symbol once, rather than re-walking per import.
+  const occurrencesBySymbol = new Map<ts.Symbol, ts.Identifier[]>();
+  const visit = (node: ts.Node): void => {
+    if (ts.isIdentifier(node)) {
+      const symbol = typeChecker.getSymbolAtLocation(node);
+      if (symbol) {
+        const existing = occurrencesBySymbol.get(symbol);
+        if (existing) existing.push(node);
+        else occurrencesBySymbol.set(symbol, [node]);
+      }
+    }
+    ts.forEachChild(node, visit);
+  };
+  visit(source);
+
+  const bindings: ts.Identifier[] = [];
+  findAllImports(source).forEach(imp => {
+    const clause = imp.importClause;
+    if (!clause) return;
+    if (clause.name) bindings.push(clause.name);
+    const namedBindings = clause.namedBindings;
+    if (namedBindings) {
+      if (ts.isNamespaceImport(namedBindings)) {
+        bindings.push(namedBindings.name);
+      } else {
+        namedBindings.elements.forEach(element => bindings.push(element.name));
+      }
+    }
+  });
+
+  bindings.forEach(binding => {
+    const symbol = typeChecker.getSymbolAtLocation(binding);
+    if (!symbol) return;
+    const occurrences = occurrencesBySymbol.get(symbol) || [];
+    const usedDirectly = occurrences.some(
+      identifier =>
+        identifier !== binding && !fragmentRefIdentifiers.has(identifier)
+    );
+    if (!usedDirectly) return;
+    getFragmentNamesForIdentifier(binding, typeChecker).forEach(name =>
+      directlyUsedFragments.add(name)
+    );
+  });
+
+  return directlyUsedFragments;
+}
+
 const runDiagnostics = (
   source: ts.SourceFile,
   {
@@ -516,7 +608,7 @@ const runDiagnostics = (
     nodes: {
       node: ts.TaggedTemplateExpression | ts.StringLiteralLike;
       schema: string | null;
-      tadaFragmentRefs?: readonly ts.Identifier[];
+      tadaFragmentRefs?: readonly ts.Identifier[] | null;
     }[];
     fragments: FragmentDefinitionNode[];
   },
@@ -569,7 +661,10 @@ const runDiagnostics = (
       const endPosition = startingPosition + node.getText().length;
       let docFragments = [...fragments];
 
-      if (originalNode.tadaFragmentRefs !== undefined) {
+      if (
+        originalNode.tadaFragmentRefs !== undefined &&
+        originalNode.tadaFragmentRefs !== null
+      ) {
         const fragmentNames = new Set<string>();
         for (const identifier of originalNode.tadaFragmentRefs) {
           const unrolled = unrollFragment(identifier, info, typeChecker);

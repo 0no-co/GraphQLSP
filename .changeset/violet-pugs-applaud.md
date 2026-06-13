@@ -1,5 +1,0 @@
----
-'@0no-co/graphqlsp': minor
----
-
-Surface plugin misconfiguration and schema failures as editor diagnostics instead of failing silently with errors only visible in the tsserver log. The plugin configuration is now validated with `@gql.tada/internal`'s `parseConfig` (adding `${configDir}` substitution and consistent validation with the gql.tada CLI), and the following are reported on a file's first GraphQL document: invalid configuration (code 52006), schema load and reload failures (52006, attributed per schema where possible), typings files that fail to be written or that aren't part of the TypeScript project (52006), documents naming an unconfigured schema (52008), and GraphQL documents written in the mode the plugin isn't configured for, e.g. tagged templates while `templateIsCallExpression` is on (52007). The plugin also detects schema file changes that the file watcher missed and force-reloads them, and exceptions in plugin code no longer fail whole tsserver requests but fall back to the underlying language service

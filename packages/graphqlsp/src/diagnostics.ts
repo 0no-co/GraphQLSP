@@ -16,7 +16,6 @@ import {
   findAllImports,
   findAllPersistedCallExpressions,
   findAllTaggedTemplateNodes,
-  findAllMaskFragmentsCalls,
   getSource,
   unrollFragment,
 } from './ast';
@@ -464,25 +463,9 @@ export function getGraphQLDiagnostics(
       } catch (e) {}
     });
 
-    // check for maskFragments() calls
-    const maskFragmentsCalls = findAllMaskFragmentsCalls(source);
-    maskFragmentsCalls.forEach(call => {
-      const firstArg = call.arguments[0];
-      if (!firstArg) return;
-
-      // Handle array of fragments: maskFragments([Fragment1, Fragment2], data)
-      if (ts.isArrayLiteralExpression(firstArg)) {
-        firstArg.elements.forEach(element => {
-          if (ts.isIdentifier(element)) {
-            const fragmentDefs = unrollFragment(element, info, typeChecker);
-            fragmentDefs.forEach(def => usedFragments.add(def.name.value));
-          }
-        });
-      }
-    });
-
-    // A fragment referenced directly (as a type/value) rather than declared in a
-    // fragment-reference array isn't meant to be spread here, so don't flag it.
+    // A fragment referenced directly (as a type/value, or via maskFragments())
+    // rather than declared in a fragment-reference array isn't meant to be
+    // spread here, so don't flag it.
     const directlyUsedFragments = getDirectlyUsedFragments(
       source,
       nodes,

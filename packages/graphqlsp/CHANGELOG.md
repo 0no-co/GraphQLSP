@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.17.1
+
+### Patch Changes
+
+- Mute co-located fragment warnings, when fragments are directly referenced
+  Submitted by [@kitten](https://github.com/kitten) (See [#400](https://github.com/0no-co/GraphQLSP/pull/400))
+
 ## 1.17.0
 
 ### Minor Changes

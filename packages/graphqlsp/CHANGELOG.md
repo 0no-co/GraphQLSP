@@ -1,5 +1,21 @@
 # @0no-co/graphqlsp
 
+## 1.17.0
+
+### Minor Changes
+
+- Surface plugin misconfiguration and schema failures as editor diagnostics instead of failing silently with errors only visible in the tsserver log. The plugin configuration is now validated with `@gql.tada/internal`'s `parseConfig` (adding `${configDir}` substitution and consistent validation with the gql.tada CLI), and the following are reported on a file's first GraphQL document: invalid configuration (code 52006), schema load and reload failures (52006, attributed per schema where possible), typings files that fail to be written or that aren't part of the TypeScript project (52006), documents naming an unconfigured schema (52008), and GraphQL documents written in the mode the plugin isn't configured for, e.g. tagged templates while `templateIsCallExpression` is on (52007). The plugin also detects schema file changes that the file watcher missed and force-reloads them, and exceptions in plugin code no longer fail whole tsserver requests but fall back to the underlying language service
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#398](https://github.com/0no-co/GraphQLSP/pull/398))
+
+### Patch Changes
+
+- Upgrade `@gql.tada/internal` and `@0no-co/graphql.web`
+  Submitted by [@kitten](https://github.com/kitten) (See [#399](https://github.com/0no-co/GraphQLSP/pull/399))
+- Reject call expressions whose first argument cannot start a GraphQL document (after ignored tokens, a document must begin with `{` or a definition keyword) before resolving the callee's type in call discovery. Ordinary string-argument calls — translations, test titles, event names — no longer touch the type checker at all, which speeds up scanning codebases where GraphQL files are a small fraction of all files. Note that documents passed to a gql.tada function under a non-default name are now only discovered when they start with a valid document prefix; functions matching configured `templates` names are unaffected
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#397](https://github.com/0no-co/GraphQLSP/pull/397))
+- Treat `||` and `??` as value pass-throughs in unused-field tracking: `fn(a.b || fallback)` now marks `a.b`'s sub-selections as used, like other escapes of an access chain. `&&` keeps its guard semantics, so `a?.b && a?.b.c` retains leaf-level precision
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#395](https://github.com/0no-co/GraphQLSP/pull/395))
+
 ## 1.16.0
 
 ### Minor Changes

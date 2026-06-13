@@ -42,7 +42,7 @@
   },
   "homepage": "https://github.com/0no-co/GraphQLSP#readme",
   "devDependencies": {
-    "@0no-co/graphql.web": "^1.0.4",
+    "@0no-co/graphql.web": "^1.3.2",
     "@sindresorhus/fnv1a": "^2.0.0",
     "@types/node": "^18.15.11",
     "graphql-language-service": "^5.2.0",
@@ -50,7 +50,7 @@
     "typescript": "^5.3.3"
   },
   "dependencies": {
-    "@gql.tada/internal": "^1.0.0",
+    "@gql.tada/internal": "^1.1.0",
     "graphql": "^15.5.0 || ^16.0.0 || ^17.0.0"
   },
   "peerDependencies": {

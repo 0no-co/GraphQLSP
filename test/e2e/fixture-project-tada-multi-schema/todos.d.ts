@@ -1,6 +1,14 @@
 /* eslint-disable */
 /* prettier-ignore */
 
+export type introspection_types = {
+    'Boolean': unknown;
+    'ID': unknown;
+    'Query': { kind: 'OBJECT'; name: 'Query'; fields: { 'todo': { name: 'todo'; type: { kind: 'OBJECT'; name: 'Todo'; ofType: null; } }; }; };
+    'String': unknown;
+    'Todo': { kind: 'OBJECT'; name: 'Todo'; fields: { 'completed': { name: 'completed'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; } }; 'id': { name: 'id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'ID'; ofType: null; }; } }; 'text': { name: 'text'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; }; };
+};
+
 /** An IntrospectionQuery representation of your schema.
  *
  * @remarks
@@ -14,13 +22,7 @@ export type introspection = {
   query: 'Query';
   mutation: never;
   subscription: never;
-  types: {
-    'Boolean': unknown;
-    'ID': unknown;
-    'Query': { kind: 'OBJECT'; name: 'Query'; fields: { 'todo': { name: 'todo'; type: { kind: 'OBJECT'; name: 'Todo'; ofType: null; } }; }; };
-    'String': unknown;
-    'Todo': { kind: 'OBJECT'; name: 'Todo'; fields: { 'completed': { name: 'completed'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'Boolean'; ofType: null; }; } }; 'id': { name: 'id'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'ID'; ofType: null; }; } }; 'text': { name: 'text'; type: { kind: 'NON_NULL'; name: never; ofType: { kind: 'SCALAR'; name: 'String'; ofType: null; }; } }; }; };
-  };
+  types: introspection_types;
 };
 
 import * as gqlTada from 'gql.tada';

@@ -5,6 +5,11 @@ packages:
 allowBuilds:
   esbuild: true
 
+minimumReleaseAgeExclude:
+  - '@0no-co/*'
+  - '@gql.tada/*'
+  - 'gql.tada'
+
 overrides:
   typescript: ^5.3.3
   ua-parser-js@<0.7.33: '>=0.7.33'

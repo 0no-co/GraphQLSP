@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.17.2
+
+### Patch Changes
+
+- Update `@gql.tada/internal` and preserve introspection output file header
+  Submitted by [@kitten](https://github.com/kitten) (See [#402](https://github.com/0no-co/GraphQLSP/pull/402))
+
 ## 1.17.1
 
 ### Patch Changes

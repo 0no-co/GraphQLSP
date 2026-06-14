@@ -170,7 +170,7 @@ export const checkFieldUsageInFile = (
             const path = inProgress.length
               ? `${inProgress.join('.')}.${alias}`
               : alias;
-            const parent = trieStack[trieStack.length - 1];
+            const parent = trieStack[trieStack.length - 1]!;
 
             if (
               !fieldNode.selectionSet &&
@@ -693,7 +693,7 @@ export const checkFieldUsageInFile = (
     // Phase B4: drain the worklist; entries enqueued while walking
     // (aliases, destructured bindings, callback params) are picked up here.
     for (let i = 0; i < queue.length; i++) {
-      const entry = queue[i];
+      const entry = queue[i]!;
       const occurrences = identifiersByName.get(entry.symbol.name);
       if (!occurrences) continue;
       for (const occurrence of occurrences) {

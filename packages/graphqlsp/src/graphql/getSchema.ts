@@ -13,6 +13,7 @@ import {
   loadRef,
   minifyIntrospection,
   outputIntrospectionFile,
+  extractIntrospectionHeader,
   parseConfig,
   resolveTypeScriptRootDir,
 } from '@gql.tada/internal';
@@ -78,12 +79,6 @@ async function saveTadaIntrospection(
   logger: Logger
 ) {
   try {
-    const minified = minifyIntrospection(introspection);
-    const contents = outputIntrospectionFile(minified, {
-      fileType: tadaOutputLocation,
-      shouldPreprocess: !disablePreprocessing,
-    });
-
     let output = tadaOutputLocation;
     if (await statFile(output, stat => stat.isDirectory())) {
       output = path.join(output, 'introspection.d.ts');
@@ -93,6 +88,16 @@ async function saveTadaIntrospection(
         output = path.join(output, 'introspection.d.ts');
       }
     }
+
+    const existing = await fs.readFile(output, 'utf8').catch(() => undefined);
+    const minified = minifyIntrospection(introspection);
+    const contents = outputIntrospectionFile(minified, {
+      fileType: tadaOutputLocation,
+      shouldPreprocess: !disablePreprocessing,
+      preamble: existing
+        ? extractIntrospectionHeader(existing) || undefined
+        : undefined,
+    });
 
     await swapWrite(output, contents);
     errors.write.delete(tadaOutputLocation);

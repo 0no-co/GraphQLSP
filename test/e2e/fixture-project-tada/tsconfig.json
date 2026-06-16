@@ -4,7 +4,8 @@
       {
         "name": "@0no-co/graphqlsp",
         "schema": "./schema.graphql",
-        "tadaOutputLocation": "./introspection.d.ts"
+        "tadaOutputLocation": "./introspection.d.ts",
+        "tadaTurboLocation": "./graphql-cache.d.ts"
       }
     ],
     "target": "es2016",

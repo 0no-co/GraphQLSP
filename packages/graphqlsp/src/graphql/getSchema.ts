@@ -137,6 +137,10 @@ export interface SchemaRef {
   readonly errors: SchemaErrors;
   /** Typings output paths successfully written this session, mapped to their last write time. */
   readonly outputLocations: ReadonlyMap<string, number>;
+  /** File-based schema origins, keyed by schema name (`null` for single-schema setups). */
+  readonly sourceLocations: ReadonlyMap<string | null, string>;
+  /** gql.tada turbo cache files, keyed by schema name (`null` for single-schema setups). */
+  readonly turboLocations: ReadonlyMap<string | null, string>;
   /** Best-effort detection of schema file changes that the file watcher
    * missed; throttled internally, so it's safe to call often. */
   checkStale(): void;
@@ -171,6 +175,8 @@ export const loadSchema = (
     write: new Map(),
   };
   const outputLocations = new Map<string, number>();
+  const sourceLocations = new Map<string | null, string>();
+  const turboLocations = new Map<string | null, string>();
 
   let inner: InternalSchemaRef<SchemaLoaderResult | null> | null = null;
   let detectStaleSchemas: (() => void) | null = null;
@@ -179,6 +185,8 @@ export const loadSchema = (
   const ref: SchemaRef = {
     errors,
     outputLocations,
+    sourceLocations,
+    turboLocations,
     get current() {
       return inner && inner.current;
     },
@@ -220,6 +228,29 @@ export const loadSchema = (
       info.config.tadaDisablePreprocessing ?? false;
 
     logger('Resolving schema from "schema" config: ' + JSON.stringify(config));
+
+    sourceLocations.clear();
+    turboLocations.clear();
+    const rememberLocations = (
+      name: string | null,
+      input: SingleSchemaInput
+    ) => {
+      if (typeof input.schema === 'string' && !getURLConfig(input.schema)) {
+        sourceLocations.set(name, path.resolve(rootPath, input.schema));
+      }
+      if (input.tadaTurboLocation) {
+        turboLocations.set(
+          name,
+          path.resolve(rootPath, input.tadaTurboLocation)
+        );
+      }
+    };
+    if ('schemas' in config) {
+      for (const input of config.schemas) rememberLocations(input.name, input);
+    } else {
+      rememberLocations(null, config);
+    }
+
     inner = loadRef(config);
 
     const setLoadError = (name: string | null | undefined, error: unknown) => {

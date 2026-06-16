@@ -4,6 +4,10 @@ import { ts, init as initTypeScript } from './ts';
 import { loadSchema } from './graphql/getSchema';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
+import {
+  getGraphQLDefinitionAndBoundSpan,
+  getGraphQLDefinitionAtPosition,
+} from './definition';
 import { ALL_DIAGNOSTICS, getGraphQLDiagnostics } from './diagnostics';
 import { templates } from './ast/templates';
 import { getPersistedCodeFixAtPosition } from './persisted';
@@ -199,6 +203,50 @@ function create(info: ts.server.PluginCreateInfo) {
     } else {
       return original;
     }
+  };
+
+  proxy.getDefinitionAtPosition = (
+    filename: string,
+    cursorPosition: number
+  ) => {
+    const originalDefinitions = info.languageService.getDefinitionAtPosition(
+      filename,
+      cursorPosition
+    );
+
+    const definitions = guard('getDefinitionAtPosition', undefined, () =>
+      getGraphQLDefinitionAtPosition(
+        filename,
+        cursorPosition,
+        schema,
+        info,
+        originalDefinitions
+      )
+    );
+
+    return definitions || originalDefinitions;
+  };
+
+  proxy.getDefinitionAndBoundSpan = (
+    filename: string,
+    cursorPosition: number
+  ) => {
+    const original = info.languageService.getDefinitionAndBoundSpan(
+      filename,
+      cursorPosition
+    );
+
+    const definition = guard('getDefinitionAndBoundSpan', undefined, () =>
+      getGraphQLDefinitionAndBoundSpan(
+        filename,
+        cursorPosition,
+        schema,
+        info,
+        original
+      )
+    );
+
+    return definition || original;
   };
 
   proxy.getQuickInfoAtPosition = (

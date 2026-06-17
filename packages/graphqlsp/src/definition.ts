@@ -116,38 +116,65 @@ const getTadaCacheMatch = (node: ts.Node): TadaCacheMatch | undefined => {
 
 const findTadaCacheMatch = (
   definition: ts.DefinitionInfo,
-  info: ts.server.PluginCreateInfo
+  program: ts.Program
 ): TadaCacheMatch | undefined => {
-  const program = info.languageService.getProgram();
-  const source = program?.getSourceFile(definition.fileName);
+  const source = program.getSourceFile(definition.fileName);
   if (!source) return undefined;
 
   const node = findNode(source, definition.textSpan.start);
   return node && getTadaCacheMatch(node);
 };
 
-const findDocumentCall = (
+const findDocumentCallInSource = (
+  source: ts.SourceFile,
   documentText: string,
   schemaName: string | null,
   info: ts.server.PluginCreateInfo
 ): { fileName: string; node: ts.StringLiteralLike } | undefined => {
-  const program = info.languageService.getProgram();
-  if (!program) return undefined;
+  if (source.isDeclarationFile) return undefined;
+  if (!source.getText().includes(documentText)) return undefined;
+
+  const { nodes } = findAllCallExpressions(source, info, {
+    searchExternal: false,
+    collectFragments: false,
+  });
+
+  for (const found of nodes) {
+    if (found.node.text !== documentText) continue;
+    if (schemaName && found.schema !== schemaName) continue;
+    return { fileName: source.fileName, node: found.node };
+  }
+};
+
+const findDocumentCall = (
+  documentText: string,
+  schemaName: string | null,
+  preferFileName: string,
+  program: ts.Program,
+  info: ts.server.PluginCreateInfo
+): { fileName: string; node: ts.StringLiteralLike } | undefined => {
+  // The document literal is usually co-located with the result usage, so the
+  // originating file is the likeliest match.
+  const preferred = program.getSourceFile(preferFileName);
+  if (preferred) {
+    const match = findDocumentCallInSource(
+      preferred,
+      documentText,
+      schemaName,
+      info
+    );
+    if (match) return match;
+  }
 
   for (const source of program.getSourceFiles()) {
-    if (source.isDeclarationFile) continue;
-    if (!source.getText().includes(documentText)) continue;
-
-    const { nodes } = findAllCallExpressions(source, info, {
-      searchExternal: false,
-      collectFragments: false,
-    });
-
-    for (const found of nodes) {
-      if (found.node.text !== documentText) continue;
-      if (schemaName && found.schema !== schemaName) continue;
-      return { fileName: source.fileName, node: found.node };
-    }
+    if (source === preferred) continue;
+    const match = findDocumentCallInSource(
+      source,
+      documentText,
+      schemaName,
+      info
+    );
+    if (match) return match;
   }
 };
 
@@ -181,6 +208,8 @@ const findFieldByResponsePath = (
     }
   }
 
+  // Cyclic fragment spreads can only loop at a fixed response-path position.
+  // Advancing into a field shrinks the path, so the cycle guard resets there.
   const findInSelectionSet = (
     selectionSet: SelectionSetNode,
     path: readonly string[],
@@ -197,11 +226,7 @@ const findFieldByResponsePath = (
         if (responseName !== head) continue;
         if (!rest.length) return selection;
         if (!selection.selectionSet) return undefined;
-        const found = findInSelectionSet(
-          selection.selectionSet,
-          rest,
-          seenFragments
-        );
+        const found = findInSelectionSet(selection.selectionSet, rest);
         if (found) return found;
       } else if (selection.kind === Kind.INLINE_FRAGMENT) {
         const found = findInSelectionSet(
@@ -392,15 +417,19 @@ const getDefinitionForDocumentField = (
 };
 
 const getDefinitionForTadaResultField = (
+  filename: string,
   schema: SchemaRef,
   info: ts.server.PluginCreateInfo,
   originalDefinitions: readonly ts.DefinitionInfo[] | undefined
 ): readonly ts.DefinitionInfo[] | undefined => {
   if (!originalDefinitions?.length) return undefined;
 
+  const program = info.languageService.getProgram();
+  if (!program) return undefined;
+
   let sawTadaCacheDefinition = false;
   for (const definition of originalDefinitions) {
-    const cacheMatch = findTadaCacheMatch(definition, info);
+    const cacheMatch = findTadaCacheMatch(definition, program);
     if (!cacheMatch) continue;
     sawTadaCacheDefinition = true;
 
@@ -408,6 +437,8 @@ const getDefinitionForTadaResultField = (
     const documentCall = findDocumentCall(
       cacheMatch.documentText,
       schemaName,
+      filename,
+      program,
       info
     );
     if (!documentCall) continue;
@@ -434,9 +465,8 @@ const getDefinitionForTadaResultField = (
     ];
   }
 
-  // If TypeScript was about to navigate into gql.tada's turbo cache, don't
-  // fall back to that generated file. We either remap to the user's GraphQL
-  // document above, or suppress the generated-cache location.
+  // `[]` suppresses navigation into gql.tada's generated turbo cache;
+  // `undefined` lets the original definitions stand.
   return sawTadaCacheDefinition ? [] : undefined;
 };
 
@@ -457,7 +487,12 @@ export function getGraphQLDefinitionAtPosition(
     return documentFieldDefinition.definitions;
   }
 
-  return getDefinitionForTadaResultField(schema, info, originalDefinitions);
+  return getDefinitionForTadaResultField(
+    filename,
+    schema,
+    info,
+    originalDefinitions
+  );
 }
 
 export function getGraphQLDefinitionAndBoundSpan(
@@ -478,6 +513,7 @@ export function getGraphQLDefinitionAndBoundSpan(
   }
 
   const definitions = getDefinitionForTadaResultField(
+    filename,
     schema,
     info,
     original?.definitions

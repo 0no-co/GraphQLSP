@@ -22,6 +22,12 @@ const positionAt = (text: string, index: number) => {
   return { line, offset: index - lastNewline };
 };
 
+const indexOf = (text: string, search: string) => {
+  const index = text.indexOf(search);
+  if (index === -1) throw new Error(`Could not find "${search}" in fixture`);
+  return index;
+};
+
 const requestDefinition = async (
   server: TSServer,
   position: { line: number; offset: number }
@@ -105,8 +111,10 @@ describe('go-to-definition', () => {
   it('remaps gql.tada turbo-cache result fields to the source GraphQL document', async () => {
     const position = positionAt(
       fixture,
-      fixture.indexOf('data.pokemon') + 'data.'.length
+      indexOf(fixture, 'data.pokemon') + 'data.'.length
     );
+    const targetFieldIndex =
+      indexOf(fixture, '    pokemon(id: $id)') + '    '.length;
 
     const definition = await waitForDefinition(
       server,
@@ -115,12 +123,15 @@ describe('go-to-definition', () => {
     );
 
     expect(path.normalize(definition.file)).toBe(outfile);
-    expect(definition.start).toEqual({ line: 5, offset: 5 });
+    expect(definition.start).toEqual(positionAt(fixture, targetFieldIndex));
+    expect(definition.end).toEqual(
+      positionAt(fixture, targetFieldIndex + 'pokemon'.length)
+    );
   }, 30000);
 
   it('maps GraphQL document fields to their schema definitions', async () => {
     const schemaFile = path.join(projectPath, 'schema.graphql');
-    const position = positionAt(fixture, fixture.indexOf('      name') + 6);
+    const position = positionAt(fixture, indexOf(fixture, '      name') + 6);
 
     const definition = await waitForDefinition(
       server,

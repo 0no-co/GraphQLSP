@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.17.3
+
+### Patch Changes
+
+- Add go-to-definition support for gql.tada result fields and GraphQL document fields
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#404](https://github.com/0no-co/GraphQLSP/pull/404))
+
 ## 1.17.2
 
 ### Patch Changes

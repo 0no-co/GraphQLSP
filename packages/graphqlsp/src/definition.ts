@@ -24,7 +24,7 @@ import {
   getSource,
 } from './ast';
 import * as checks from './ast/checks';
-import { SchemaRef } from './graphql/getSchema';
+import { SchemaRef, getSchemaForName } from './graphql/getSchema';
 
 interface GraphQLFieldLocation {
   fileName: string;
@@ -41,11 +41,6 @@ interface TadaCacheMatch {
 
 const isPositionInRange = (position: number, start: number, end: number) =>
   position >= start && position < end;
-
-const getSchemaResult = (schema: SchemaRef, schemaName: string | null) =>
-  schemaName && schema.multi[schemaName]
-    ? schema.multi[schemaName]
-    : schema.current;
 
 const makeDefinitionInfo = (
   location: GraphQLFieldLocation
@@ -354,7 +349,7 @@ const getDefinitionForDocumentField = (
 
   if (isCallExpression && checks.isGraphQLCall(node, typeChecker)) {
     schemaName = checks.getSchemaName(node, typeChecker);
-    schemaToUse = getSchemaResult(schema, schemaName)?.schema;
+    schemaToUse = getSchemaForName(schema, schemaName);
     documentNode = node.arguments[0] as ts.StringLiteralLike;
   } else if (!isCallExpression && checks.isGraphQLTag(node)) {
     if (!ts.isNoSubstitutionTemplateLiteral(node.template)) return undefined;

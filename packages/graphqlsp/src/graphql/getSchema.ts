@@ -2,7 +2,7 @@ import type { Stats, PathLike } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'path';
 
-import type { IntrospectionQuery } from 'graphql';
+import type { GraphQLSchema, IntrospectionQuery } from 'graphql';
 
 import {
   type GraphQLSPConfig,
@@ -145,6 +145,15 @@ export interface SchemaRef {
    * missed; throttled internally, so it's safe to call often. */
   checkStale(): void;
 }
+
+/** Falls back to the `current` schema for single-schema setups or unnamed documents. */
+export const getSchemaForName = (
+  schema: SchemaRef,
+  schemaName: string | null
+): GraphQLSchema | undefined =>
+  schemaName && schema.multi[schemaName]
+    ? schema.multi[schemaName]?.schema
+    : schema.current?.schema;
 
 // `onError` on autoupdate and `reload` on load ship with newer
 // @gql.tada/internal versions; older versions simply ignore both

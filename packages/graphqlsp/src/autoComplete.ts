@@ -27,7 +27,7 @@ import { Cursor } from './ast/cursor';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { getSuggestionsForFragmentSpread } from './graphql/getFragmentSpreadSuggestions';
-import { SchemaRef } from './graphql/getSchema';
+import { SchemaRef, getSchemaForName } from './graphql/getSchema';
 
 export function getGraphQLCompletions(
   filename: string,
@@ -51,10 +51,7 @@ export function getGraphQLCompletions(
   if (isCallExpression && checks.isGraphQLCall(node, typeChecker)) {
     const schemaName = checks.getSchemaName(node, typeChecker);
 
-    schemaToUse =
-      schemaName && schema.multi[schemaName]
-        ? schema.multi[schemaName]?.schema
-        : schema.current?.schema;
+    schemaToUse = getSchemaForName(schema, schemaName);
 
     const foundToken = getToken(node.arguments[0], cursorPosition);
     if (

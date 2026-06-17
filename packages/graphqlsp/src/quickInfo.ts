@@ -14,7 +14,7 @@ import * as checks from './ast/checks';
 import { resolveTemplate } from './ast/resolve';
 import { getToken } from './ast/token';
 import { Cursor } from './ast/cursor';
-import { SchemaRef } from './graphql/getSchema';
+import { SchemaRef, getSchemaForName } from './graphql/getSchema';
 
 export function getGraphQLQuickInfo(
   filename: string,
@@ -40,10 +40,7 @@ export function getGraphQLQuickInfo(
     const typeChecker = info.languageService.getProgram()?.getTypeChecker();
     const schemaName = getSchemaName(node, typeChecker);
 
-    schemaToUse =
-      schemaName && schema.multi[schemaName]
-        ? schema.multi[schemaName]?.schema
-        : schema.current?.schema;
+    schemaToUse = getSchemaForName(schema, schemaName);
 
     const foundToken = getToken(node.arguments[0], cursorPosition);
     if (!schemaToUse || !foundToken) return undefined;

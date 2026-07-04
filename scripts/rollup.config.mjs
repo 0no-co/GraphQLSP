@@ -1,5 +1,6 @@
 import fs from 'node:fs/promises';
 import path from 'node:path/posix';
+import nodePath from 'node:path';
 import { readFileSync } from 'node:fs';
 
 import * as prettier from 'prettier';
@@ -27,6 +28,8 @@ const extension = name => {
     return path.extname(name);
   }
 };
+
+const isDevelopment = process.env.NODE_ENV === 'development';
 
 const meta = JSON.parse(readFileSync('package.json'));
 const name = normalize(meta.name);
@@ -87,6 +90,19 @@ const commonOutput = {
   exports: 'auto',
   sourcemap: true,
   sourcemapExcludeSources: false,
+  // In development builds, sourcemap sources are rewritten to absolute paths.
+  // pnpm links or copies the built package into the example project's
+  // node_modules, from where relative sources never resolve back to the
+  // actual files in packages/graphqlsp/src, leaving debugger breakpoints
+  // unbound. See: https://github.com/0no-co/GraphQLSP/issues/304
+  ...(isDevelopment && {
+    sourcemapPathTransform(relativeSourcePath, sourcemapPath) {
+      return nodePath.resolve(
+        nodePath.dirname(sourcemapPath),
+        relativeSourcePath
+      );
+    },
+  }),
   hoistTransitiveImports: false,
   indent: false,
   freeze: false,
@@ -134,35 +150,38 @@ const outputPlugins = [
 
   cjsCheck(),
 
-  terser({
-    warnings: true,
-    ecma: 2015,
-    keep_fnames: true,
-    ie8: false,
-    compress: {
-      pure_getters: true,
-      toplevel: true,
-      booleans_as_integers: false,
+  // Minification is skipped in development builds to keep the emitted
+  // sourcemap mappings as close to the original sources as possible.
+  !isDevelopment &&
+    terser({
+      warnings: true,
+      ecma: 2015,
       keep_fnames: true,
-      keep_fargs: true,
-      if_return: false,
       ie8: false,
-      sequences: false,
-      loops: false,
-      conditionals: false,
-      join_vars: false,
-    },
-    mangle: {
-      module: true,
-      keep_fnames: true,
-    },
-    output: {
-      beautify: true,
-      braces: true,
-      indent_level: 2,
-    },
-  }),
-];
+      compress: {
+        pure_getters: true,
+        toplevel: true,
+        booleans_as_integers: false,
+        keep_fnames: true,
+        keep_fargs: true,
+        if_return: false,
+        ie8: false,
+        sequences: false,
+        loops: false,
+        conditionals: false,
+        join_vars: false,
+      },
+      mangle: {
+        module: true,
+        keep_fnames: true,
+      },
+      output: {
+        beautify: true,
+        braces: true,
+        indent_level: 2,
+      },
+    }),
+].filter(Boolean);
 
 export default [
   {

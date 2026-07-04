@@ -4,7 +4,8 @@
       {
         "name": "@0no-co/graphqlsp",
         "schema": "./schema.graphql",
-        "templateIsCallExpression": false
+        "templateIsCallExpression": false,
+        "logPerformance": true
       }
     ],
     "target": "es2016",

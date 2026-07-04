@@ -1,3 +1,5 @@
+import { performance } from 'node:perf_hooks';
+
 import type { SchemaOrigin } from '@gql.tada/internal';
 
 import { ts, init as initTypeScript } from './ts';
@@ -37,6 +39,7 @@ interface Config {
   clientDirectives?: string[];
   trackFieldUsage?: boolean;
   tadaOutputLocation?: string;
+  logPerformance?: boolean;
 }
 
 function create(info: ts.server.PluginCreateInfo) {
@@ -69,26 +72,53 @@ function create(info: ts.server.PluginCreateInfo) {
     }
   };
 
+  // Times GraphQLSP's own contribution to a proxied language-service call.
+  // Where the plugin's work is separable from the underlying TypeScript
+  // language service call (as it is for every wrapped call site below), only
+  // the plugin's work is timed. When `logPerformance` is off this is a plain
+  // passthrough, so the option adds no timer calls or string building
+  const withPerfLog: <T>(
+    operation: string,
+    filename: string,
+    run: () => T
+  ) => T = config.logPerformance
+    ? (operation, filename, run) => {
+        const start = performance.now();
+        try {
+          return run();
+        } finally {
+          const duration = (performance.now() - start).toFixed(1);
+          logger(`perf: ${operation} ${duration}ms ${filename}`);
+        }
+      }
+    : (_operation, _filename, run) => run();
+
   proxy.getSemanticDiagnostics = (filename: string): ts.Diagnostic[] => {
     const originalDiagnostics =
       info.languageService.getSemanticDiagnostics(filename);
 
-    return guard('getSemanticDiagnostics', originalDiagnostics, () => {
-      // Diagnostics requests are a steady editor-driven heartbeat, which
-      // makes them a good time to detect missed schema watcher events
-      schema.checkStale();
+    return guard('getSemanticDiagnostics', originalDiagnostics, () =>
+      withPerfLog('getSemanticDiagnostics', filename, () => {
+        // Diagnostics requests are a steady editor-driven heartbeat, which
+        // makes them a good time to detect missed schema watcher events
+        schema.checkStale();
 
-      const hasGraphQLDiagnostics = originalDiagnostics.some(x =>
-        ALL_DIAGNOSTICS.includes(x.code)
-      );
-      if (hasGraphQLDiagnostics) return originalDiagnostics;
+        const hasGraphQLDiagnostics = originalDiagnostics.some(x =>
+          ALL_DIAGNOSTICS.includes(x.code)
+        );
+        if (hasGraphQLDiagnostics) return originalDiagnostics;
 
-      const graphQLDiagnostics = getGraphQLDiagnostics(filename, schema, info);
+        const graphQLDiagnostics = getGraphQLDiagnostics(
+          filename,
+          schema,
+          info
+        );
 
-      return graphQLDiagnostics
-        ? [...graphQLDiagnostics, ...originalDiagnostics]
-        : originalDiagnostics;
-    });
+        return graphQLDiagnostics
+          ? [...graphQLDiagnostics, ...originalDiagnostics]
+          : originalDiagnostics;
+      })
+    );
   };
 
   proxy.getCompletionsAtPosition = (
@@ -97,7 +127,9 @@ function create(info: ts.server.PluginCreateInfo) {
     options: any
   ): ts.WithMetadata<ts.CompletionInfo> | undefined => {
     const completions = guard('getCompletionsAtPosition', undefined, () =>
-      getGraphQLCompletions(filename, cursorPosition, schema, info)
+      withPerfLog('getCompletionsAtPosition', filename, () =>
+        getGraphQLCompletions(filename, cursorPosition, schema, info)
+      )
     );
 
     if (completions && completions.entries.length) {
@@ -138,12 +170,14 @@ function create(info: ts.server.PluginCreateInfo) {
     );
 
     const codefix = guard('getEditsForRefactor', undefined, () =>
-      getPersistedCodeFixAtPosition(
-        filename,
-        typeof positionOrRange === 'number'
-          ? positionOrRange
-          : positionOrRange.pos,
-        info
+      withPerfLog('getEditsForRefactor', filename, () =>
+        getPersistedCodeFixAtPosition(
+          filename,
+          typeof positionOrRange === 'number'
+            ? positionOrRange
+            : positionOrRange.pos,
+          info
+        )
       )
     );
     if (!codefix) return original;
@@ -175,12 +209,14 @@ function create(info: ts.server.PluginCreateInfo) {
     );
 
     const codefix = guard('getApplicableRefactors', undefined, () =>
-      getPersistedCodeFixAtPosition(
-        filename,
-        typeof positionOrRange === 'number'
-          ? positionOrRange
-          : positionOrRange.pos,
-        info
+      withPerfLog('getApplicableRefactors', filename, () =>
+        getPersistedCodeFixAtPosition(
+          filename,
+          typeof positionOrRange === 'number'
+            ? positionOrRange
+            : positionOrRange.pos,
+          info
+        )
       )
     );
 
@@ -215,12 +251,14 @@ function create(info: ts.server.PluginCreateInfo) {
     );
 
     const definitions = guard('getDefinitionAtPosition', undefined, () =>
-      getGraphQLDefinitionAtPosition(
-        filename,
-        cursorPosition,
-        schema,
-        info,
-        originalDefinitions
+      withPerfLog('getDefinitionAtPosition', filename, () =>
+        getGraphQLDefinitionAtPosition(
+          filename,
+          cursorPosition,
+          schema,
+          info,
+          originalDefinitions
+        )
       )
     );
 
@@ -237,12 +275,14 @@ function create(info: ts.server.PluginCreateInfo) {
     );
 
     const definition = guard('getDefinitionAndBoundSpan', undefined, () =>
-      getGraphQLDefinitionAndBoundSpan(
-        filename,
-        cursorPosition,
-        schema,
-        info,
-        original
+      withPerfLog('getDefinitionAndBoundSpan', filename, () =>
+        getGraphQLDefinitionAndBoundSpan(
+          filename,
+          cursorPosition,
+          schema,
+          info,
+          original
+        )
       )
     );
 
@@ -254,7 +294,9 @@ function create(info: ts.server.PluginCreateInfo) {
   ) => {
     const [filename, cursorPosition] = args;
     const quickInfo = guard('getQuickInfoAtPosition', undefined, () =>
-      getGraphQLQuickInfo(filename, cursorPosition, schema, info)
+      withPerfLog('getQuickInfoAtPosition', filename, () =>
+        getGraphQLQuickInfo(filename, cursorPosition, schema, info)
+      )
     );
 
     if (quickInfo) return quickInfo;

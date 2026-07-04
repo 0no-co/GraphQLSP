@@ -1,5 +1,6 @@
 import type { Stats, PathLike } from 'node:fs';
 import fs from 'node:fs/promises';
+import { performance } from 'node:perf_hooks';
 import path from 'path';
 
 import type { GraphQLSchema, IntrospectionQuery } from 'graphql';
@@ -187,6 +188,8 @@ export const loadSchema = (
   const sourceLocations = new Map<string | null, string>();
   const turboLocations = new Map<string | null, string>();
 
+  const logPerformance = !!info.config.logPerformance;
+
   let inner: InternalSchemaRef<SchemaLoaderResult | null> | null = null;
   let detectStaleSchemas: (() => void) | null = null;
   let lastStaleCheck = 0;
@@ -235,6 +238,19 @@ export const loadSchema = (
 
     const tadaDisablePreprocessing =
       info.config.tadaDisablePreprocessing ?? false;
+
+    // Human-readable description of where the schema(s) come from, only
+    // used for `logPerformance` log lines
+    const describeOrigins = (): string =>
+      'schemas' in config
+        ? config.schemas
+            .map(input =>
+              typeof input.schema === 'string' ? input.schema : input.schema.url
+            )
+            .join(', ')
+        : typeof config.schema === 'string'
+        ? config.schema
+        : config.schema.url;
 
     logger('Resolving schema from "schema" config: ' + JSON.stringify(config));
 
@@ -314,8 +330,9 @@ export const loadSchema = (
     // results for healthy loaders and only retries failed ones, so e.g. one
     // schema updating in a multi-schema setup doesn't clear another schema's
     // error, and a recovered schema clears its own
-    const revalidate = (reload?: boolean) =>
-      (inner!.load as LoadWithReload)({ rootPath, reload })
+    const revalidate = (reload?: boolean) => {
+      const start = logPerformance ? performance.now() : 0;
+      return (inner!.load as LoadWithReload)({ rootPath, reload })
         .then(() => {
           errors.load.clear();
         })
@@ -323,7 +340,14 @@ export const loadSchema = (
           errors.load.clear();
           setLoadError(null, error);
         })
+        .then(() => {
+          if (logPerformance) {
+            const duration = (performance.now() - start).toFixed(1);
+            logger(`perf: schema reload ${duration}ms ${describeOrigins()}`);
+          }
+        })
         .then(recordMtimes);
+    };
 
     detectStaleSchemas = () => {
       (async () => {
@@ -344,6 +368,7 @@ export const loadSchema = (
       });
     };
 
+    const loadStart = logPerformance ? performance.now() : 0;
     try {
       logger(`Loading schema...`);
       await inner.load({ rootPath });
@@ -351,6 +376,11 @@ export const loadSchema = (
     } catch (error) {
       setLoadError(null, error);
       logger(`Failed to load schema: ${error}`);
+    } finally {
+      if (logPerformance) {
+        const duration = (performance.now() - loadStart).toFixed(1);
+        logger(`perf: schema load ${duration}ms ${describeOrigins()}`);
+      }
     }
 
     await recordMtimes();

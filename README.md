@@ -71,6 +71,10 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
   an `introspection.ts` file for you, just give it the directory to output to and you're done
 - `tadaDisablePreprocessing` this setting disables the optimisation of `tadaOutput` to a pre-processed TypeScript type, this is off by default.
 - `clientDirectives` this setting allows you to specify additional `clientDirectives` which won't be seen as a missing schema-directive.
+- `logPerformance` when turned on, GraphQLSP will log a timing entry (i.e. `[GraphQLSP] perf: getSemanticDiagnostics 12.3ms <file>`)
+  to the TypeScript server log for every operation it performs — diagnostics, completions, quick-info, go-to-definition, refactors and
+  schema loads. Useful to diagnose slow editor feedback; the timings cover only GraphQLSP's own work, not the underlying
+  TypeScript language service. (default: false)
 
 ## Tracking unused fields
 

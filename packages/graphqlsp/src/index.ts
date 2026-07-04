@@ -11,6 +11,7 @@ import {
 import { ALL_DIAGNOSTICS, getGraphQLDiagnostics } from './diagnostics';
 import { templates } from './ast/templates';
 import { getPersistedCodeFixAtPosition } from './persisted';
+import { canExtractFragment, getExtractFragmentEdits } from './extractFragment';
 
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
@@ -127,7 +128,38 @@ function create(info: ts.server.PluginCreateInfo) {
     preferences,
     interactive
   ) => {
-    const original = info.languageService.getEditsForRefactor(
+    if (refactorName === 'GraphQL') {
+      if (actionName === 'Insert document-id') {
+        const codefix = guard('getEditsForRefactor', undefined, () =>
+          getPersistedCodeFixAtPosition(
+            filename,
+            typeof positionOrRange === 'number'
+              ? positionOrRange
+              : positionOrRange.pos,
+            info
+          )
+        );
+        if (codefix) {
+          return {
+            edits: [
+              {
+                fileName: filename,
+                textChanges: [
+                  { newText: codefix.replacement, span: codefix.span },
+                ],
+              },
+            ],
+          };
+        }
+      } else if (actionName === 'Extract to fragment') {
+        const refactor = guard('getEditsForRefactor', undefined, () =>
+          getExtractFragmentEdits(filename, positionOrRange, schema, info)
+        );
+        if (refactor) return refactor;
+      }
+    }
+
+    return info.languageService.getEditsForRefactor(
       filename,
       formatOptions,
       positionOrRange,
@@ -136,25 +168,6 @@ function create(info: ts.server.PluginCreateInfo) {
       preferences,
       interactive
     );
-
-    const codefix = guard('getEditsForRefactor', undefined, () =>
-      getPersistedCodeFixAtPosition(
-        filename,
-        typeof positionOrRange === 'number'
-          ? positionOrRange
-          : positionOrRange.pos,
-        info
-      )
-    );
-    if (!codefix) return original;
-    return {
-      edits: [
-        {
-          fileName: filename,
-          textChanges: [{ newText: codefix.replacement, span: codefix.span }],
-        },
-      ],
-    };
   };
 
   proxy.getApplicableRefactors = (
@@ -174,6 +187,8 @@ function create(info: ts.server.PluginCreateInfo) {
       includeInteractive
     );
 
+    const actions: ts.RefactorActionInfo[] = [];
+
     const codefix = guard('getApplicableRefactors', undefined, () =>
       getPersistedCodeFixAtPosition(
         filename,
@@ -183,19 +198,31 @@ function create(info: ts.server.PluginCreateInfo) {
         info
       )
     );
-
     if (codefix) {
+      actions.push({
+        name: 'Insert document-id',
+        description:
+          'Generate a document-id for your persisted-operation, by default a SHA256 hash.',
+      });
+    }
+
+    const extractFragment = guard('getApplicableRefactors', false, () =>
+      canExtractFragment(filename, positionOrRange, schema, info)
+    );
+    if (extractFragment) {
+      actions.push({
+        name: 'Extract to fragment',
+        description:
+          'Extract the selected fields into a new co-located fragment.',
+      });
+    }
+
+    if (actions.length) {
       return [
         {
           name: 'GraphQL',
           description: 'Operations specific to gql.tada!',
-          actions: [
-            {
-              name: 'Insert document-id',
-              description:
-                'Generate a document-id for your persisted-operation, by default a SHA256 hash.',
-            },
-          ],
+          actions,
           inlineable: true,
         },
         ...original,

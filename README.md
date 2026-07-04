@@ -9,6 +9,7 @@ auto-complete.
 - Hover information showing the decriptions of fields
 - Diagnostics for adding fields that don't exist, are deprecated, missmatched argument types, ...
 - Auto-complete inside your editor for fields
+- Find references and rename for GraphQL fragments, across your project's files
 - Will warn you when you are importing from a file that is exporting fragments that you're not using
 
 > Note that this plugin does not do syntax highlighting, for that you still need something like

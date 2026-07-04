@@ -193,7 +193,8 @@ describe('Fragment + operations', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.documentation).toEqual(`Pokemon.name: String!`);
+    expect(res?.body.displayString).toEqual(`Pokemon.name: String!`);
+    expect(res?.body.documentation).toEqual('');
   }, 30000);
 
   it('gives quick-info with documents', async () => {
@@ -219,11 +220,98 @@ describe('Fragment + operations', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.documentation).toEqual(
-      `Query.pokemons: [Pokemon]
-
-List out all Pokémon, optionally in pages`
+    expect(res?.body.displayString).toEqual(
+      `Query.pokemons(limit: Int = 10, skip: Int): [Pokemon]`
     );
+    expect(res?.body.documentation).toEqual(
+      `List out all Pokémon, optionally in pages`
+    );
+  }, 30000);
+
+  it('gives quick-info for deprecated fields', async () => {
+    server.send({
+      seq: 14,
+      type: 'request',
+      command: 'quickinfo',
+      arguments: {
+        file: outfileCombo,
+        line: 11,
+        offset: 9,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'quickinfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(resp => resp.type === 'response' && resp.command === 'quickinfo');
+
+    expect(res).toBeDefined();
+    expect(typeof res?.body).toEqual('object');
+    expect(res?.body.displayString).toEqual(`Pokemon.classification: String`);
+    expect(res?.body.documentation).toEqual(
+      `@deprecated: And this is the reason why`
+    );
+    expect(res?.body.tags).toEqual([
+      { name: 'deprecated', text: 'And this is the reason why' },
+    ]);
+  }, 30000);
+
+  it('gives quick-info for field arguments', async () => {
+    server.send({
+      seq: 15,
+      type: 'request',
+      command: 'quickinfo',
+      arguments: {
+        file: outfileCombo,
+        line: 7,
+        offset: 15,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'quickinfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(resp => resp.type === 'response' && resp.command === 'quickinfo');
+
+    expect(res).toBeDefined();
+    expect(typeof res?.body).toEqual('object');
+    expect(res?.body.displayString).toEqual(`Query.pokemons(limit: Int = 10)`);
+    expect(res?.body.documentation).toEqual('');
+  }, 30000);
+
+  it('gives quick-info for fragment type-conditions', async () => {
+    server.send({
+      seq: 16,
+      type: 'request',
+      command: 'quickinfo',
+      arguments: {
+        file: outfileCombinations,
+        line: 5,
+        offset: 31,
+      },
+    });
+
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' && response.command === 'quickinfo'
+    );
+
+    const res = server.responses
+      .reverse()
+      .find(resp => resp.type === 'response' && resp.command === 'quickinfo');
+
+    expect(res).toBeDefined();
+    expect(typeof res?.body).toEqual('object');
+    expect(res?.body.displayString).toEqual(`Pokemon`);
+    expect(res?.body.documentation).toEqual('');
   }, 30000);
 
   it('gives suggestions with preceding fragments', async () => {
@@ -570,7 +658,8 @@ List out all Pokémon, optionally in pages`
 
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.documentation).toEqual(`Pokemon.name: String!`);
+    expect(res?.body.displayString).toEqual(`Pokemon.name: String!`);
+    expect(res?.body.documentation).toEqual('');
   }, 30000);
 
   it('gives suggestions with empty line (#190)', async () => {

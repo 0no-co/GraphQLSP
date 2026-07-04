@@ -72,6 +72,21 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 - `tadaDisablePreprocessing` this setting disables the optimisation of `tadaOutput` to a pre-processed TypeScript type, this is off by default.
 - `clientDirectives` this setting allows you to specify additional `clientDirectives` which won't be seen as a missing schema-directive.
 
+## Diagnostics
+
+Every warning or error GraphQLSP shows in your editor carries a numeric code,
+displayed like `ts(52005)`. All codes are documented in
+[docs/diagnostics.md](./docs/diagnostics.md):
+
+- `52001` GraphQL validation error
+- `52003` Unused co-located fragment
+- `52004` Deprecated field
+- `52005` Unused field
+- `52006` Misconfiguration
+- `52007` Mode mismatch
+- `52008` Unknown schema name
+- `520100`-`520103` Persisted-operations issues
+
 ## Tracking unused fields
 
 Currently the tracking unused fields feature has a few caveats with regards to tracking, first and foremost

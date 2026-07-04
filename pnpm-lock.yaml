@@ -238,6 +238,19 @@ importers:
         specifier: ^6.0.3
         version: 6.0.3
 
+  test/e2e/fixture-project-code-fixes:
+    dependencies:
+      '@0no-co/graphqlsp':
+        specifier: workspace:*
+        version: link:../../../packages/graphqlsp
+      graphql:
+        specifier: ^16.0.0
+        version: 16.8.1
+    devDependencies:
+      typescript:
+        specifier: ^6.0.3
+        version: 6.0.3
+
   test/e2e/fixture-project-misconfiguration:
     dependencies:
       '@0no-co/graphqlsp':
@@ -3026,7 +3039,7 @@ snapshots:
 
   '@0no-co/graphqlsp@1.17.3(graphql@16.8.1)(typescript@6.0.3)':
     dependencies:
-      '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@6.0.3)
+      '@gql.tada/internal': 1.2.1(graphql@16.8.1)(typescript@6.0.3)
       graphql: 16.8.1
       typescript: 6.0.3
 

@@ -1,0 +1,19 @@
+type Attack {
+  name: String
+  damage: Int
+}
+
+type Pokemon {
+  id: ID!
+  name: String!
+  nickname: String @deprecated(reason: "Use `name` instead")
+  level: Int @deprecated(reason: "This field is replaced by `power`")
+  power: Int
+  fleeRate: Float @deprecated(reason: "No longer supported")
+  attacks: [Attack]
+}
+
+type Query {
+  pokemon(id: ID!): Pokemon
+  pokemons(limit: Int): [Pokemon]
+}

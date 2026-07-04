@@ -72,6 +72,89 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 - `tadaDisablePreprocessing` this setting disables the optimisation of `tadaOutput` to a pre-processed TypeScript type, this is off by default.
 - `clientDirectives` this setting allows you to specify additional `clientDirectives` which won't be seen as a missing schema-directive.
 
+## Framework support
+
+GraphQLSP is a [TypeScript Language Service plugin](https://github.com/microsoft/TypeScript/wiki/Writing-a-Language-Service-Plugin):
+it only runs inside `tsserver`. Whether it can work inside a framework's single-file
+components therefore depends on whether that framework's language tooling routes those
+files through `tsserver` (where `tsconfig.json` plugins are loaded) or through its own,
+separate language server (where they are not).
+
+Regular `.ts`/`.tsx` files work in any framework project, so keeping your GraphQL
+documents in plain TypeScript files and importing them into components always works.
+
+### Vue - supported
+
+[Vue Language Tools](https://github.com/vuejs/language-tools) serves TypeScript features
+for `.vue` files through the regular `tsserver` running `@vue/typescript-plugin`
+("hybrid mode", [the only mode as of Vue Language Tools v3](https://github.com/vuejs/language-tools/discussions/5456)).
+Because the Vue plugin maps positions between the SFC and its virtual TypeScript
+representation at the `tsserver` boundary, GraphQLSP diagnostics, hover information,
+and auto-completions inside `<script setup lang="ts">` blocks all work and are reported
+at the correct `.vue` source locations.
+
+Setup ([full example](https://github.com/0no-co/GraphQLSP/tree/main/packages/example-vue)):
+
+1. Add `@0no-co/graphqlsp` to `compilerOptions.plugins` in your `tsconfig.json` as usual
+2. Make sure your `include` covers your `.vue` files, e.g. `"include": ["src/**/*.ts", "src/**/*.vue"]`
+3. Use the official [Vue (Official) editor extension](https://marketplace.visualstudio.com/items?itemName=Vue.volar),
+   which loads `@vue/typescript-plugin` into `tsserver` for you, and make sure the
+   workspace version of TypeScript is used. In other editors (Neovim, ...), configure
+   `vtsls` or `typescript-language-server` with `@vue/typescript-plugin` as a global
+   plugin with `languages: ["vue"]` as per
+   [the Vue Language Tools upgrade guide](https://github.com/vuejs/language-tools/discussions/5456)
+
+This was verified headlessly against the raw `tsserver` protocol with
+`@vue/typescript-plugin@3.3.6` and TypeScript 5.3.3: GraphQL validation diagnostics,
+schema hover information, and field auto-completions all appear inside `.vue` files.
+
+Known limitations:
+
+- `vue-tsc` (like `tsc`) never runs language service plugins, so GraphQLSP's document
+  validation won't show up in CLI type checks. When using `gql.tada` you can run
+  [`gql-tada check`](https://gql-tada.0no.co/get-started/installation) with the
+  `@gql.tada/vue-support` package installed to get the same document diagnostics in CI
+- `gql.tada`'s type-level checking still works in `.vue` files with `vue-tsc`, but on
+  its own it won't error on fields that don't exist in the schema - the document
+  diagnostics come from GraphQLSP or `gql-tada check`
+
+### Svelte - partial (`.ts` files only)
+
+The [svelte-language-server](https://github.com/sveltejs/language-tools) handles
+`.svelte` files itself instead of routing them through `tsserver`, and it does not load
+TypeScript plugins from `tsconfig.json`. Its companion `typescript-svelte-plugin` only
+teaches `tsserver` about `.svelte` imports inside `.ts` files and deliberately returns
+no diagnostics for `.svelte` files themselves. Loading external TypeScript plugins in
+`.svelte` files is a long-standing open feature request, see
+[sveltejs/language-tools#905](https://github.com/sveltejs/language-tools/issues/905)
+(labeled as a limitation) and [#251](https://github.com/0no-co/GraphQLSP/issues/251) /
+[#168](https://github.com/0no-co/GraphQLSP/issues/168) on this repository.
+
+What this means for a SvelteKit project:
+
+- GraphQL documents in `.ts`/`.js` modules (`+page.ts`, `load` functions, a co-located
+  `queries.ts`, ...) get the full GraphQLSP experience
+- documents inside `.svelte` `<script>` blocks get no GraphQLSP features; prefer
+  defining documents in `.ts` files and importing them
+- when using `gql.tada`, `gql-tada check` with the `@gql.tada/svelte-support` package
+  can validate documents inside `.svelte` files on the CLI
+
+### Astro - not supported in `.astro` files (`.ts` files work)
+
+The Astro language server (Volar-based, now part of the
+[Astro monorepo](https://github.com/withastro/astro/tree/main/packages/language-tools))
+type-checks `.astro` frontmatter in its own language server instead of delegating to
+`tsserver`, and it does not initialize plugins from `compilerOptions.plugins`. Requests
+for this were declined, see
+[withastro/language-tools#991](https://github.com/withastro/language-tools/issues/991)
+and [withastro/astro#16917](https://github.com/withastro/astro/issues/16917) (both
+closed as not planned), and [#242](https://github.com/0no-co/GraphQLSP/issues/242) on
+this repository.
+
+Until Astro's tooling loads `tsconfig.json` plugins, keep GraphQL documents in `.ts`
+files - where GraphQLSP works as usual, including in Astro projects - and import them
+into your `.astro` components.
+
 ## Tracking unused fields
 
 Currently the tracking unused fields feature has a few caveats with regards to tracking, first and foremost

@@ -1,0 +1,23 @@
+{
+  "name": "example-vue",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Example showing GraphQLSP inside Vue single-file components",
+  "scripts": {
+    "check": "vue-tsc --noEmit"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "gql.tada": "^1.11.0",
+    "graphql": "^16.8.1",
+    "vue": "^3.5.0"
+  },
+  "devDependencies": {
+    "@0no-co/graphqlsp": "file:../graphqlsp",
+    "@gql.tada/vue-support": "^1.0.0",
+    "@vue/typescript-plugin": "^3.0.0",
+    "typescript": "^5.3.3",
+    "vue-tsc": "^3.0.0"
+  }
+}

@@ -2,7 +2,9 @@ import { appendFileSync, existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
-const ignoredDirectories = new Set(['.git', 'dist', 'node_modules']);
+// .staging is the vsix staging area of the VSCode extension; it contains a
+// copy of the extension's manifest with the `private` flag stripped
+const ignoredDirectories = new Set(['.git', 'dist', 'node_modules', '.staging']);
 const workspaceRoot = process.cwd();
 const hasWorkspaceManifest = existsSync(path.join(workspaceRoot, 'pnpm-workspace.yaml'));
 

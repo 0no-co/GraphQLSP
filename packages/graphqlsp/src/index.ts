@@ -55,6 +55,23 @@ function create(info: ts.server.PluginCreateInfo) {
     info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
   const config: Config = info.config;
 
+  // When an editor extension contributes GraphQLSP, tsserver loads it as a
+  // "global" plugin into every project — including ones that never set up
+  // GraphQLSP. Without any schema configuration there's nothing to do, so
+  // the language service is passed through untouched rather than surfacing
+  // "missing schema" configuration errors in unrelated projects. (tsserver
+  // marks the synthetic config entry of global plugins with `global: true`,
+  // and skips the global copy when a project's tsconfig lists the plugin
+  // under the same name.)
+  if (
+    (config as { global?: boolean }).global &&
+    config.schema === undefined &&
+    config.schemas === undefined
+  ) {
+    logger('Loaded as a global plugin without configuration; skipping setup');
+    return createBasicDecorator(info);
+  }
+
   logger('config: ' + JSON.stringify(config));
 
   logger('Setting up the GraphQL Plugin');

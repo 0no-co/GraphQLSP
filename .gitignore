@@ -108,3 +108,7 @@ dist
 
 packages/graphqlsp/api/*
 packages/graphqlsp/api
+
+# VSCode extension packaging
+packages/vscode-graphqlsp/.staging
+*.vsix

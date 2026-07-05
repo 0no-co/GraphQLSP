@@ -1,0 +1,78 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "Inline GraphQL",
+  "scopeName": "inline.graphql",
+  "injectionSelector": "L:source.js -comment -string, L:source.js.jsx -comment -string, L:source.jsx -comment -string, L:source.ts -comment -string, L:source.tsx -comment -string",
+  "patterns": [
+    { "include": "#graphql-tagged-template" },
+    { "include": "#graphql-call-expression" },
+    { "include": "#graphql-marked-template" }
+  ],
+  "repository": {
+    "graphql-tagged-template": {
+      "comment": "gql`...` and graphql`...` tagged template literals",
+      "begin": "\\b(gql|graphql)\\s*(?:<[^<>]*>)?\\s*(`)",
+      "beginCaptures": {
+        "1": { "name": "entity.name.function.tagged-template.js" },
+        "2": { "name": "punctuation.definition.string.template.begin.js" }
+      },
+      "end": "`",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.template.end.js" }
+      },
+      "contentName": "meta.embedded.block.graphql",
+      "patterns": [{ "include": "#template-content" }]
+    },
+    "graphql-call-expression": {
+      "comment": "gql(`...`) and graphql(`...`) call expressions (the gql.tada style)",
+      "begin": "\\b(gql|graphql)(?:\\s*\\.\\s*(persisted))?\\s*(?:<[^<>]*>)?\\s*(\\()\\s*(`)",
+      "beginCaptures": {
+        "1": { "name": "entity.name.function.js" },
+        "2": { "name": "entity.name.function.js" },
+        "3": { "name": "meta.brace.round.js" },
+        "4": { "name": "punctuation.definition.string.template.begin.js" }
+      },
+      "end": "`",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.template.end.js" }
+      },
+      "contentName": "meta.embedded.block.graphql",
+      "patterns": [{ "include": "#template-content" }]
+    },
+    "graphql-marked-template": {
+      "comment": "Untagged template literals whose content starts with a #graphql comment",
+      "begin": "(`)(?=\\s*#graphql\\b)",
+      "beginCaptures": {
+        "1": { "name": "punctuation.definition.string.template.begin.js" }
+      },
+      "end": "`",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.template.end.js" }
+      },
+      "contentName": "meta.embedded.block.graphql",
+      "patterns": [{ "include": "#template-content" }]
+    },
+    "template-content": {
+      "patterns": [
+        { "include": "#template-substitution" },
+        {
+          "name": "constant.character.escape.js",
+          "match": "\\\\[`$\\\\]"
+        },
+        { "include": "source.graphql" }
+      ]
+    },
+    "template-substitution": {
+      "name": "meta.template.expression.ts",
+      "begin": "\\$\\{",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.template-expression.begin.ts" }
+      },
+      "end": "\\}",
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.template-expression.end.ts" }
+      },
+      "patterns": [{ "include": "source.ts#expression" }]
+    }
+  }
+}

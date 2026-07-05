@@ -1,0 +1,8 @@
+src/**
+scripts/**
+tsconfig.json
+*.tsbuildinfo
+**/*.map
+.staging/**
+*.vsix
+*.tgz

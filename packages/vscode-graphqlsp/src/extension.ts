@@ -25,13 +25,16 @@ interface TypeScriptLanguageFeaturesExports {
   getAPI(version: 0): TypeScriptLanguageFeaturesApi | undefined;
 }
 
-const getPluginConfiguration = (): Record<string, unknown> | undefined => {
+const getPluginConfiguration = (): Record<string, unknown> => {
   const settings = vscode.workspace.getConfiguration(configurationSection);
-  let configuration: Record<string, unknown> | undefined;
+  // The marker tells the plugin this configuration comes from an editor
+  // extension, so it can give a project's own tsconfig "plugins" entry
+  // precedence over these settings
+  const configuration: Record<string, unknown> = { editorContributed: true };
   for (const key of pluginSettings) {
     const value = settings.get(key);
     if (value !== null && value !== undefined) {
-      (configuration || (configuration = {}))[key] = value;
+      configuration[key] = value;
     }
   }
   return configuration;
@@ -50,13 +53,7 @@ export async function activate(
   if (!api) return;
 
   const synchronize = () => {
-    const configuration = getPluginConfiguration();
-    // Without any editor settings the plugin is configured through the
-    // project's tsconfig instead. Sending an empty configuration would
-    // replace tsserver's `global: true` marker on the plugin's config
-    // entry, which the plugin relies on to stay dormant in projects that
-    // never set up GraphQLSP.
-    if (configuration) api.configurePlugin(pluginName, configuration);
+    api.configurePlugin(pluginName, getPluginConfiguration());
   };
 
   synchronize();

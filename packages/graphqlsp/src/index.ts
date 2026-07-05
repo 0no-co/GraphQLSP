@@ -23,6 +23,14 @@ import { templates } from './ast/templates';
 import { getPersistedCodeFixAtPosition } from './persisted';
 import { canExtractFragment, getExtractFragmentEdits } from './extractFragment';
 
+/** Marks the language service proxies of active GraphQLSP instances.
+ *
+ * `Symbol.for` uses the shared symbol registry, so the marker survives
+ * multiple module copies of the plugin being loaded side by side — e.g. a
+ * project's own `gql.tada/ts-plugin` and a copy bundled with an editor
+ * extension. */
+const instanceMarker = Symbol.for('@0no-co/graphqlsp');
+
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
   for (let k of Object.keys(info.languageService) as Array<
@@ -31,6 +39,12 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
     const x = info.languageService[k]!;
     // @ts-expect-error - JS runtime trickery which is tricky to type tersely
     proxy[k] = (...args: Array<{}>) => x.apply(info.languageService, args);
+  }
+
+  // Keep the active-instance marker of a wrapped GraphQLSP proxy visible to
+  // any plugin instance loaded on top of this one
+  if ((info.languageService as any)[instanceMarker]) {
+    (proxy as any)[instanceMarker] = true;
   }
 
   return proxy;
@@ -48,29 +62,72 @@ interface Config {
   clientDirectives?: string[];
   trackFieldUsage?: boolean;
   tadaOutputLocation?: string;
+  /** Set by tsserver on the synthetic config entries of "global" plugins,
+   * i.e. plugins contributed by editor extensions, that received no
+   * configuration overrides. */
+  global?: boolean;
+  /** Set by editor extensions on the configuration they pass through
+   * tsserver's `configurePlugin`, which replaces the synthetic entry
+   * carrying `global` above. */
+  editorContributed?: boolean;
+}
+
+/** Names GraphQLSP ships under in tsconfig "plugins" entries. */
+const PLUGIN_NAMES = new Set(['@0no-co/graphqlsp', 'gql.tada/ts-plugin']);
+
+/** Resolves the configuration this instance should run with, or `null` to
+ * stay dormant.
+ *
+ * A project-local instance (configured through a tsconfig "plugins" entry)
+ * always runs with its entry as-is. For an editor-contributed ("global")
+ * instance the project's configuration wins over editor settings:
+ * - a live local instance already handles the project → stay dormant,
+ * - a tsconfig entry that produced no instance (e.g. the package isn't
+ *   installed in the project) → adopt the entry's configuration,
+ * - editor settings passed through `configurePlugin` → use them,
+ * - no configuration anywhere → stay dormant, so unrelated projects don't
+ *   get "missing schema" configuration errors. */
+function resolveConfig(
+  info: ts.server.PluginCreateInfo,
+  logger: Logger
+): Config | null {
+  const config: Config = info.config;
+  if (!config.global && !config.editorContributed) return config;
+
+  if ((info.languageService as any)[instanceMarker]) {
+    logger('The project already has a GraphQLSP instance; deferring to it');
+    return null;
+  }
+
+  const plugins = (info.project.getCompilerOptions().plugins || []) as Array<
+    ts.PluginImport & Partial<Config>
+  >;
+  const localEntry = plugins.find(entry => PLUGIN_NAMES.has(entry.name));
+  if (localEntry) {
+    logger(
+      `Adopting the project's "${localEntry.name}" tsconfig configuration`
+    );
+    return localEntry as Config;
+  }
+
+  if (config.schema !== undefined || config.schemas !== undefined) {
+    return config;
+  }
+
+  logger('Loaded as a global plugin without configuration; skipping setup');
+  return null;
 }
 
 function create(info: ts.server.PluginCreateInfo) {
   const logger: Logger = (msg: string) =>
     info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-  const config: Config = info.config;
 
-  // When an editor extension contributes GraphQLSP, tsserver loads it as a
-  // "global" plugin into every project — including ones that never set up
-  // GraphQLSP. Without any schema configuration there's nothing to do, so
-  // the language service is passed through untouched rather than surfacing
-  // "missing schema" configuration errors in unrelated projects. (tsserver
-  // marks the synthetic config entry of global plugins with `global: true`,
-  // and skips the global copy when a project's tsconfig lists the plugin
-  // under the same name.)
-  if (
-    (config as { global?: boolean }).global &&
-    config.schema === undefined &&
-    config.schemas === undefined
-  ) {
-    logger('Loaded as a global plugin without configuration; skipping setup');
-    return createBasicDecorator(info);
-  }
+  const config = resolveConfig(info, logger);
+  if (!config) return createBasicDecorator(info);
+
+  // Everything downstream (diagnostics, completions, schema loading) reads
+  // `info.config` directly, so an adopted configuration has to land there
+  info.config = config;
 
   logger('config: ' + JSON.stringify(config));
 
@@ -81,6 +138,9 @@ function create(info: ts.server.PluginCreateInfo) {
   }
 
   const proxy = createBasicDecorator(info);
+  // Marks this project as handled, keeping an editor-contributed instance
+  // loaded on top of this one dormant
+  (proxy as any)[instanceMarker] = true;
 
   const schema = loadSchema(info, logger);
 

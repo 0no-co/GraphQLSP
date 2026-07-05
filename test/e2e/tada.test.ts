@@ -489,13 +489,13 @@ List out all Pokémon, optionally in pages`
       tmpfile: outfileUsedFragmentMask,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
-    // A single "geterr" round suffices: the schema is known to be loaded
-    // once the preceding tests have seen GraphQL diagnostics
+    // The settled state is empty, so only wait out transient TypeScript
+    // diagnostics; the schema is known to be loaded once the preceding
+    // tests have seen GraphQL diagnostics
     const diagnostics = await pollDiagnostics(
       server,
       outfileUsedFragmentMask,
-      () => true,
-      1
+      d => d.every(x => x.code >= 52000)
     );
     // Should have no diagnostics about unused fragments since maskFragments uses them
     expect(diagnostics).toMatchInlineSnapshot(`[]`);
@@ -510,8 +510,7 @@ List out all Pokémon, optionally in pages`
     const diagnostics = await pollDiagnostics(
       server,
       outfileUsedFragmentDirect,
-      () => true,
-      1
+      d => d.every(x => x.code >= 52000)
     );
     expect(diagnostics).toMatchInlineSnapshot(`[]`);
   }, 30000);

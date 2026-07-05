@@ -11,12 +11,19 @@ type WaitForExpectOptions = {
  *
  * The plugin loads schemas asynchronously, so the diagnostics tsserver emits
  * automatically after a file is opened may predate the schema and come back
- * empty; asserting on the first received event races the schema load. */
+ * empty; asserting on the first received event races the schema load.
+ *
+ * The default readiness check requires at least one diagnostic and no
+ * regular TypeScript diagnostics: while the project is still resolving
+ * modules, tsserver reports transient errors (e.g. 2307 for imports of
+ * generated files) that disappear once loading settles, and the plugin's
+ * own diagnostics all use codes from 52001 upwards. Pass a custom check
+ * for files whose settled state includes TypeScript diagnostics. */
 export const pollDiagnostics = async (
   server: TSServer,
   file: string,
   isReady: (diagnostics: any[]) => boolean = diagnostics =>
-    diagnostics.length > 0,
+    diagnostics.length > 0 && diagnostics.every(d => d.code >= 52000),
   attempts = 40
 ): Promise<any[]> => {
   let diagnostics: any[] = [];

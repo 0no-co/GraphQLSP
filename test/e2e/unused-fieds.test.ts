@@ -381,7 +381,11 @@ describe('unused fields', () => {
   }, 30000);
 
   it('Bails unused fields when memo func is used', async () => {
-    const diagnostics = await pollDiagnostics(server, outfileBail);
+    // The settled state for this file is a TypeScript diagnostic, so the
+    // default all-GraphQL readiness check doesn't apply
+    const diagnostics = await pollDiagnostics(server, outfileBail, d =>
+      d.some(x => x.code === 2578)
+    );
     expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
@@ -402,7 +406,11 @@ describe('unused fields', () => {
   }, 30000);
 
   it('Tracks multiple documents, alias chains and named callbacks in one file', async () => {
-    const diagnostics = await pollDiagnostics(server, outfileMultiDocument);
+    // The Pok document has no generated type, so TypeScript diagnostics
+    // remain in the settled state; wait for the unused-field warnings
+    const diagnostics = await pollDiagnostics(server, outfileMultiDocument, d =>
+      d.some(x => x.code === 52005)
+    );
     // The Pok document has no generated type (same as chained-usage.ts), so
     // we only assert the unused-field diagnostics here.
     const unusedFieldDiagnostics = diagnostics.filter(
@@ -506,7 +514,11 @@ describe('unused fields', () => {
   }, 30000);
 
   it('Finds field usage in chained call-expressions', async () => {
-    const diagnostics = await pollDiagnostics(server, outfileChainedUsage);
+    // The chained document has no generated type, so TypeScript diagnostics
+    // remain in the settled state; wait for the unused-field warning
+    const diagnostics = await pollDiagnostics(server, outfileChainedUsage, d =>
+      d.some(x => x.code === 52005)
+    );
     expect(diagnostics[0]).toEqual({
       category: 'warning',
       code: 52005,

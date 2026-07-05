@@ -9,7 +9,18 @@
       "type": "node",
       "request": "attach",
       "name": "Attach to VS Code TS Server via Port",
-      "port": 9559
+      "port": 9559,
+      "sourceMaps": true,
+      // The plugin is loaded by tsserver from the example project's
+      // node_modules. The default value of "resolveSourceMapLocations"
+      // excludes anything inside node_modules, which prevents breakpoints in
+      // packages/graphqlsp/src from ever binding, so it's widened here.
+      // See: https://github.com/0no-co/GraphQLSP/issues/304
+      "resolveSourceMapLocations": ["${workspaceFolder}/**"],
+      "outFiles": [
+        "${workspaceFolder}/packages/graphqlsp/dist/**/*.js",
+        "${workspaceFolder}/**/node_modules/@0no-co/graphqlsp/dist/**/*.js"
+      ]
     }
   ]
 }

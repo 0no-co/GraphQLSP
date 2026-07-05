@@ -135,3 +135,28 @@ breakpoints do it with the `TSS_DEBUG_BRK=9559` prefix. When you make changes in
 to do is run `pnpm i` in your other editor and restart the `TypeScript server` for the changes to apply.
 
 > Ensure that both instances of your editor are using the Workspace Version of TypeScript
+
+### Debugging with breakpoints
+
+To set breakpoints in the TypeScript sources of `packages/graphqlsp` you need a
+development build of the plugin, which emits sourcemaps that point back at the
+files in `packages/graphqlsp/src`:
+
+1. Build the plugin with `pnpm --filter @0no-co/graphqlsp dev` (this watches for
+   changes; a one-off `NODE_ENV=development pnpm --filter @0no-co/graphqlsp build`
+   works too)
+2. Open the example project with `TSS_DEBUG_BRK=9559 code packages/example` and
+   run `pnpm i` in it, so it picks up the freshly built plugin
+3. In the VS Code window that has the repository root open, set your breakpoints
+   in `packages/graphqlsp/src` and start the "Attach to VS Code TS Server via
+   Port" launch configuration from the "Run and Debug" panel
+4. Trigger the plugin from the example window (e.g. by typing inside a `graphql()`
+   document) and your breakpoints will be hit
+
+After making changes in `packages/graphqlsp`, restart the example window's
+TypeScript server ("TypeScript: Restart TS Server" in the command palette) and
+reattach the debugger for the changes to apply.
+
+> Production builds (`pnpm build` without `NODE_ENV=development`) also emit
+> sourcemaps, but their `sources` are relative paths that don't resolve from the
+> location pnpm installs the package to, so breakpoints won't bind with them.

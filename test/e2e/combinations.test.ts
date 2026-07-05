@@ -65,7 +65,7 @@ describe('Fragment + operations', () => {
             "line": 6,
             "offset": 5,
           },
-          "text": "Cannot query field \\"someUnknownField\\" on type \\"Post\\".",
+          "text": "Cannot query field "someUnknownField" on type "Post".",
         },
         {
           "category": "error",
@@ -78,7 +78,7 @@ describe('Fragment + operations', () => {
             "line": 11,
             "offset": 3,
           },
-          "text": "Cannot query field \\"someUnknownField\\" on type \\"Post\\".",
+          "text": "Cannot query field "someUnknownField" on type "Post".",
         },
         {
           "category": "error",
@@ -91,7 +91,7 @@ describe('Fragment + operations', () => {
             "line": 16,
             "offset": 7,
           },
-          "text": "Cannot query field \\"__typenam\\" on type \\"Post\\".",
+          "text": "Cannot query field "__typenam" on type "Post".",
         },
       ]
     `);
@@ -156,41 +156,62 @@ describe('Fragment + operations', () => {
     expect(res?.body.entries).toMatchInlineSnapshot(`
       [
         {
+          "deprecated": false,
+          "detail": "ID!",
+          "isDeprecated": false,
           "kind": "var",
           "kindModifiers": "declare",
+          "label": "id",
           "labelDetails": {
             "detail": " ID!",
           },
           "name": "id",
           "sortText": "0id",
+          "type": "ID!",
         },
         {
+          "deprecated": false,
+          "detail": "String!",
+          "isDeprecated": false,
           "kind": "var",
           "kindModifiers": "declare",
+          "label": "title",
           "labelDetails": {
             "detail": " String!",
           },
           "name": "title",
           "sortText": "1title",
+          "type": "String!",
         },
         {
+          "deprecated": false,
+          "detail": "String!",
+          "isDeprecated": false,
           "kind": "var",
           "kindModifiers": "declare",
+          "label": "content",
           "labelDetails": {
             "detail": " String!",
           },
           "name": "content",
           "sortText": "2content",
+          "type": "String!",
         },
         {
+          "deprecated": false,
+          "detail": "String!",
+          "documentation": "The name of the current Object type at runtime.",
+          "isDeprecated": false,
           "kind": "var",
           "kindModifiers": "declare",
+          "label": "__typename",
           "labelDetails": {
             "description": "The name of the current Object type at runtime.",
             "detail": " String!",
           },
           "name": "__typename",
           "sortText": "3__typename",
+          "type": "String!",
         },
       ]
     `);

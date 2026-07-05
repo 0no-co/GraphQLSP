@@ -206,7 +206,7 @@ const getModeMismatchDiagnostic = (
   };
 };
 
-const cache = new LRUCache<number, ts.Diagnostic[]>({
+const cache = new LRUCache<bigint, ts.Diagnostic[]>({
   // how long to live in ms
   ttl: 1000 * 60 * 15,
   max: 5000,
@@ -798,10 +798,10 @@ const runDiagnostics = (
           typeof diag.code === 'number'
             ? diag.code
             : diag.severity === 2
-            ? USING_DEPRECATED_FIELD_CODE
-            : SEMANTIC_DIAGNOSTIC_CODE,
+              ? USING_DEPRECATED_FIELD_CODE
+              : SEMANTIC_DIAGNOSTIC_CODE,
         messageText: diag.message.split('\n')[0],
-      } as ts.Diagnostic)
+      }) as ts.Diagnostic
   );
 
   if (isCallExpression) {

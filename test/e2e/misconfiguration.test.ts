@@ -60,7 +60,9 @@ const openFixture = async (server: TSServer, projectPath: string) => {
   } satisfies ts.server.protocol.SavetoRequestArgs);
 
   await server.waitForResponse(
-    response => response.type === 'event' && response.event === 'setTypings'
+    response =>
+      response.type === 'event' && response.event === 'projectLoadingFinish',
+    true
   );
 
   return testFile;
@@ -160,7 +162,9 @@ describe('Unknown schema name', () => {
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
     await server.waitForResponse(
-      response => response.type === 'event' && response.event === 'setTypings'
+      response =>
+        response.type === 'event' && response.event === 'projectLoadingFinish',
+      true
     );
   });
 

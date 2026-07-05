@@ -11,13 +11,14 @@ import terser from '@rollup/plugin-terser';
 import cjsCheck from 'rollup-plugin-cjs-check';
 import dts from 'rollup-plugin-dts';
 
-const normalize = name => []
-  .concat(name)
-  .join(' ')
-  .replace(/[@\s/.]+/g, ' ')
-  .trim()
-  .replace(/\s+/, '-')
-  .toLowerCase();
+const normalize = name =>
+  []
+    .concat(name)
+    .join(' ')
+    .replace(/[@\s/.]+/g, ' ')
+    .trim()
+    .replace(/\s+/, '-')
+    .toLowerCase();
 
 const extension = name => {
   if (/\.d.ts$/.test(name)) {
@@ -123,23 +124,27 @@ const outputPlugins = [
         const entry = exports[key];
         if (entry.path) {
           const output = path.relative(entry.path, process.cwd());
-          const json = JSON.stringify({
-            name: key,
-            private: true,
-            version: '0.0.0',
-            main: path.join(output, entry.require),
-            module: path.join(output, entry.import),
-            types: path.join(output, entry.types),
-            source: path.join(output, entry.source),
-            exports: {
-              '.': {
-                types: path.join(output, entry.types),
-                import: path.join(output, entry.import),
-                require: path.join(output, entry.require),
-                source: path.join(output, entry.source),
+          const json = JSON.stringify(
+            {
+              name: key,
+              private: true,
+              version: '0.0.0',
+              main: path.join(output, entry.require),
+              module: path.join(output, entry.import),
+              types: path.join(output, entry.types),
+              source: path.join(output, entry.source),
+              exports: {
+                '.': {
+                  types: path.join(output, entry.types),
+                  import: path.join(output, entry.import),
+                  require: path.join(output, entry.require),
+                  source: path.join(output, entry.source),
+                },
               },
             },
-          }, null, 2);
+            null,
+            2
+          );
 
           await fs.mkdir(entry.path, { recursive: true });
           await fs.writeFile(path.join(entry.path, 'package.json'), json);
@@ -234,10 +239,7 @@ export default [
 
   {
     ...commonConfig,
-    plugins: [
-      ...commonPlugins,
-      dts(),
-    ],
+    plugins: [...commonPlugins, dts()],
     output: {
       ...commonOutput,
       sourcemap: false,
@@ -252,12 +254,13 @@ export default [
       },
       plugins: [
         {
-          renderChunk(code, chunk) {
+          async renderChunk(code, chunk) {
             if (chunk.fileName.endsWith('d.ts')) {
-              const gqlImportRe = /(import\s+(?:[*\s{}\w\d]+)\s*from\s*'graphql';?)/g;
+              const gqlImportRe =
+                /(import\s+(?:[*\s{}\w\d]+)\s*from\s*'graphql';?)/g;
               code = code.replace(gqlImportRe, x => '/*!@ts-ignore*/\n' + x);
 
-              code = prettier.format(code, {
+              code = await prettier.format(code, {
                 filepath: chunk.fileName,
                 parser: 'typescript',
                 singleQuote: true,

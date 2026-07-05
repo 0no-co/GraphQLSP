@@ -42,9 +42,34 @@ describe('simple', () => {
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
     await server.waitForResponse(
-      response => response.type === 'event' && response.event === 'setTypings'
+      response =>
+        response.type === 'event' && response.event === 'projectLoadingFinish',
+      true
     );
-  });
+
+    // The schema is loaded asynchronously, so completions inside the GraphQL
+    // document are empty until the plugin has finished loading it. Poll until
+    // the plugin starts serving GraphQL completions before running the tests.
+    for (let attempt = 0; attempt < 40; attempt++) {
+      server.sendCommand('completionInfo', {
+        file: testFile,
+        line: 7,
+        offset: 7,
+        triggerKind: 1,
+      } satisfies ts.server.protocol.CompletionsRequestArgs);
+      await server.waitForResponse(
+        response =>
+          response.type === 'response' && response.command === 'completionInfo'
+      );
+      const res = server.responses
+        .filter(
+          resp => resp.type === 'response' && resp.command === 'completionInfo'
+        )
+        .pop() as any;
+      if (res?.body?.entries?.length) break;
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+  }, 30000);
 
   afterAll(() => {
     try {
@@ -83,24 +108,39 @@ describe('simple', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body.entries).toEqual('object');
-    const defaultAttrs = { kind: 'var', kindModifiers: 'declare' };
+    const defaultAttrs = {
+      kind: 'var',
+      kindModifiers: 'declare',
+      deprecated: false,
+      isDeprecated: false,
+    };
     expect(res?.body.entries).toEqual([
       {
         ...defaultAttrs,
         name: 'id',
+        label: 'id',
         sortText: '0id',
+        detail: 'ID!',
+        type: 'ID!',
         labelDetails: { detail: ' ID!' },
       },
       {
         ...defaultAttrs,
         name: 'content',
+        label: 'content',
         sortText: '2content',
+        detail: 'String!',
+        type: 'String!',
         labelDetails: { detail: ' String!' },
       },
       {
         ...defaultAttrs,
         name: '__typename',
+        label: '__typename',
         sortText: '3__typename',
+        detail: 'String!',
+        type: 'String!',
+        documentation: 'The name of the current Object type at runtime.',
         labelDetails: {
           detail: ' String!',
           description: 'The name of the current Object type at runtime.',
@@ -164,24 +204,40 @@ describe('simple', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body.entries).toEqual('object');
-    const defaultAttrs = { kind: 'var', kindModifiers: 'declare' };
+    const defaultAttrs = {
+      kind: 'var',
+      kindModifiers: 'declare',
+      deprecated: false,
+      isDeprecated: false,
+    };
     expect(res?.body.entries).toEqual([
       {
         ...defaultAttrs,
         name: 'post',
+        label: 'post',
         sortText: '0post',
+        detail: 'Post',
+        type: 'Post',
         labelDetails: { detail: ' Post' },
       },
       {
         ...defaultAttrs,
         name: 'posts',
+        label: 'posts',
         sortText: '1posts',
+        detail: '[Post]',
+        type: '[Post]',
+        documentation: 'List out all posts',
         labelDetails: { detail: ' [Post]', description: 'List out all posts' },
       },
       {
         ...defaultAttrs,
         name: '__typename',
+        label: '__typename',
         sortText: '2__typename',
+        detail: 'String!',
+        type: 'String!',
+        documentation: 'The name of the current Object type at runtime.',
         labelDetails: {
           detail: ' String!',
           description: 'The name of the current Object type at runtime.',
@@ -190,7 +246,11 @@ describe('simple', () => {
       {
         ...defaultAttrs,
         name: '__schema',
+        label: '__schema',
         sortText: '3__schema',
+        detail: '__Schema!',
+        type: '__Schema!',
+        documentation: 'Access the current type schema of this server.',
         labelDetails: {
           detail: ' __Schema!',
           description: 'Access the current type schema of this server.',
@@ -199,7 +259,11 @@ describe('simple', () => {
       {
         ...defaultAttrs,
         name: '__type',
+        label: '__type',
         sortText: '4__type',
+        detail: '__Type',
+        type: '__Type',
+        documentation: 'Request the type information of a single type.',
         labelDetails: {
           detail: ' __Type',
           description: 'Request the type information of a single type.',

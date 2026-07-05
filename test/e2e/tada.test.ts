@@ -1,5 +1,6 @@
 import { expect, afterAll, beforeAll, it, describe } from 'vitest';
 import { TSServer } from './server';
+import { pollDiagnostics } from './util';
 import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
@@ -142,16 +143,8 @@ describe('Fragment + operations', () => {
   });
 
   it('gives semantic-diagnostics with preceding fragments', async () => {
-    await server.waitForResponse(
-      e => e.type === 'event' && e.event === 'semanticDiag'
-    );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileCombo
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+    const diagnostics = await pollDiagnostics(server, outfileCombo);
+    expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
           "category": "warning",
@@ -470,20 +463,8 @@ List out all Pokémon, optionally in pages`
       tmpfile: outfileUnusedFragment,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileUnusedFragment
-    );
-
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileUnusedFragment
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+    const diagnostics = await pollDiagnostics(server, outfileUnusedFragment);
+    expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
           "category": "warning",
@@ -508,21 +489,16 @@ List out all Pokémon, optionally in pages`
       tmpfile: outfileUsedFragmentMask,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileUsedFragmentMask
-    );
-
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileUsedFragmentMask
+    // A single "geterr" round suffices: the schema is known to be loaded
+    // once the preceding tests have seen GraphQL diagnostics
+    const diagnostics = await pollDiagnostics(
+      server,
+      outfileUsedFragmentMask,
+      () => true,
+      1
     );
     // Should have no diagnostics about unused fragments since maskFragments uses them
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`[]`);
+    expect(diagnostics).toMatchInlineSnapshot(`[]`);
   }, 30000);
 
   it('should not warn about unused fragments when the fragment is used directly (not co-located)', async () => {
@@ -531,20 +507,13 @@ List out all Pokémon, optionally in pages`
       tmpfile: outfileUsedFragmentDirect,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileUsedFragmentDirect
+    const diagnostics = await pollDiagnostics(
+      server,
+      outfileUsedFragmentDirect,
+      () => true,
+      1
     );
-
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileUsedFragmentDirect
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`[]`);
+    expect(diagnostics).toMatchInlineSnapshot(`[]`);
   }, 30000);
 
   it('gives quick-info at start of word (#15)', async () => {
@@ -899,25 +868,15 @@ describe('Fragment dependencies - Issue #494', () => {
   });
 
   it('warns about missing fragment dep even when fragment is used in another query in same file', async () => {
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileMissingFragmentDep
-    );
-
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileMissingFragmentDep
+    const diagnostics = await pollDiagnostics(
+      server,
+      outfileMissingFragmentDep
     );
 
     // Should have a diagnostic about the unknown fragment in SecondQuery
-    expect(res.length).toBeGreaterThan(0);
-    expect(res[0].body.diagnostics.length).toBeGreaterThan(0);
+    expect(diagnostics.length).toBeGreaterThan(0);
 
-    const fragmentError = res[0].body.diagnostics.find((diag: any) =>
+    const fragmentError = diagnostics.find((diag: any) =>
       diag.text.includes('PokemonBasicInfo')
     );
 

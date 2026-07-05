@@ -1,5 +1,6 @@
 import { expect, afterAll, beforeAll, it, describe } from 'vitest';
 import { TSServer } from './server';
+import { pollDiagnostics } from './util';
 import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
@@ -178,20 +179,8 @@ describe('unused fields', () => {
   });
 
   it('gives unused fields with fragments', async () => {
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileFragment,
-      true
-    );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileFragment
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+    const diagnostics = await pollDiagnostics(server, outfileFragment);
+    expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
           "category": "warning",
@@ -211,20 +200,11 @@ describe('unused fields', () => {
   }, 30000);
 
   it('gives unused fields with fragments destructuring', async () => {
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileFragmentDestructuring,
-      true
+    const diagnostics = await pollDiagnostics(
+      server,
+      outfileFragmentDestructuring
     );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileFragmentDestructuring
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+    expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
           "category": "warning",
@@ -244,20 +224,8 @@ describe('unused fields', () => {
   }, 30000);
 
   it('gives semantc diagnostics with property access', async () => {
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfilePropAccess,
-      true
-    );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfilePropAccess
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+    const diagnostics = await pollDiagnostics(server, outfilePropAccess);
+    expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
           "category": "warning",
@@ -316,20 +284,8 @@ describe('unused fields', () => {
   }, 30000);
 
   it('gives unused fields with destructuring', async () => {
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileDestructuring,
-      true
-    );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileDestructuring
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+    const diagnostics = await pollDiagnostics(server, outfileDestructuring);
+    expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
           "category": "warning",
@@ -375,20 +331,11 @@ describe('unused fields', () => {
   }, 30000);
 
   it('gives unused fields with immedaite destructuring', async () => {
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileDestructuringFromStart,
-      true
+    const diagnostics = await pollDiagnostics(
+      server,
+      outfileDestructuringFromStart
     );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileDestructuringFromStart
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+    expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
           "category": "warning",
@@ -434,20 +381,8 @@ describe('unused fields', () => {
   }, 30000);
 
   it('Bails unused fields when memo func is used', async () => {
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileBail,
-      true
-    );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileBail
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+    const diagnostics = await pollDiagnostics(server, outfileBail);
+    expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
           "category": "error",
@@ -467,22 +402,10 @@ describe('unused fields', () => {
   }, 30000);
 
   it('Tracks multiple documents, alias chains and named callbacks in one file', async () => {
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileMultiDocument,
-      true
-    );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileMultiDocument
-    );
+    const diagnostics = await pollDiagnostics(server, outfileMultiDocument);
     // The Pok document has no generated type (same as chained-usage.ts), so
     // we only assert the unused-field diagnostics here.
-    const unusedFieldDiagnostics = res[0].body.diagnostics.filter(
+    const unusedFieldDiagnostics = diagnostics.filter(
       (diagnostic: any) => diagnostic.code === 52005
     );
     expect(unusedFieldDiagnostics).toMatchInlineSnapshot(`
@@ -583,20 +506,8 @@ describe('unused fields', () => {
   }, 30000);
 
   it('Finds field usage in chained call-expressions', async () => {
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileChainedUsage,
-      true
-    );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileChainedUsage
-    );
-    expect(res[0].body.diagnostics[0]).toEqual({
+    const diagnostics = await pollDiagnostics(server, outfileChainedUsage);
+    expect(diagnostics[0]).toEqual({
       category: 'warning',
       code: 52005,
       end: {

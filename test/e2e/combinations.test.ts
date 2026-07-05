@@ -1,5 +1,6 @@
 import { expect, afterAll, beforeAll, it, describe } from 'vitest';
 import { TSServer } from './server';
+import { pollDiagnostics } from './util';
 import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
@@ -46,33 +47,7 @@ describe('Fragment + operations', () => {
   });
 
   it('gives semantic-diagnostics with preceding fragments', async () => {
-    // The schema is loaded asynchronously, so the automatically emitted
-    // diagnostics may predate it; poll with "geterr" until the plugin
-    // reports GraphQL diagnostics for the document.
-    let diagnostics: any[] = [];
-    for (let attempt = 0; attempt < 40; attempt++) {
-      const seen = server.responses.length;
-      server.sendCommand('geterr', { files: [outfileCombinations], delay: 0 });
-      await server.waitForResponse(
-        e =>
-          e.type === 'event' &&
-          e.event === 'semanticDiag' &&
-          e.body?.file === outfileCombinations
-      );
-      const res = server.responses
-        .slice(seen)
-        .find(
-          e =>
-            e.type === 'event' &&
-            e.event === 'semanticDiag' &&
-            e.body?.file === outfileCombinations
-        ) as any;
-      if (res && res.body.diagnostics.length) {
-        diagnostics = res.body.diagnostics;
-        break;
-      }
-      await new Promise(resolve => setTimeout(resolve, 250));
-    }
+    const diagnostics = await pollDiagnostics(server, outfileCombinations);
     expect(diagnostics).toMatchInlineSnapshot(`
       [
         {

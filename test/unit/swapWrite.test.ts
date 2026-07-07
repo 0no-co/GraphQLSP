@@ -72,4 +72,26 @@ describe('swapWrite', () => {
     await expect(fs.readFile(target, 'utf8')).resolves.toBe('new contents');
     await expect(fs.stat(`${target}.tmp`)).rejects.toThrow();
   });
+
+  // Multiple plugin instances may share one `tadaOutputLocation`, e.g.
+  // several TS projects in a monorepo extending the same tsconfig. See:
+  // https://github.com/0no-co/gql.tada/issues/571
+  it('tolerates concurrent writes to the same target', async () => {
+    const target = await makeTarget();
+    await fs.writeFile(target, 'initial');
+
+    const writers = Array.from({ length: 20 }, (_, index) =>
+      swapWrite(target, `contents-${index}`)
+    );
+    await expect(Promise.all(writers)).resolves.not.toThrow();
+
+    // The last rename wins, but the target must match one write in full
+    // and no swap-files may be left behind
+    const contents = await fs.readFile(target, 'utf8');
+    expect(contents).toMatch(/^contents-\d+$/);
+    const leftovers = (await fs.readdir(path.dirname(target))).filter(file =>
+      file.endsWith('.tmp')
+    );
+    expect(leftovers).toEqual([]);
+  });
 });

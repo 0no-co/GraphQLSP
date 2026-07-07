@@ -39,6 +39,8 @@ const touchFile = async (file: PathLike): Promise<void> => {
   } catch (_error) {}
 };
 
+let swapFileCounter = 0;
+
 /** Writes changed contents to a swapfile then moves it into place. */
 export const swapWrite = async (
   target: PathLike,
@@ -54,13 +56,19 @@ export const swapWrite = async (
   } else {
     // If the file exists, we write to a swap-file, then rename (i.e. move)
     // the file into place. No try-catch around `writeFile` for proper
-    // directory/permission errors
-    const tempTarget = target + '.tmp';
+    // directory/permission errors.
+    // The swap-file's name must be unique per process and call. Multiple
+    // plugin instances may target the same output file (e.g. several TS
+    // projects in a monorepo sharing one `tadaOutputLocation`), and a
+    // shared swap-file name would let one instance rename the file away
+    // while another still expects it
+    const tempTarget = `${target}.${process.pid}.${swapFileCounter++}.tmp`;
     await fs.writeFile(tempTarget, contents);
     try {
       await fs.rename(tempTarget, target);
     } catch (error) {
-      await fs.unlink(tempTarget);
+      // Clean-up is best-effort and must not mask the rename error
+      await fs.unlink(tempTarget).catch(() => {});
       throw error;
     } finally {
       // When we move the file into place, we also update its access and

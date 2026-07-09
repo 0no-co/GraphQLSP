@@ -76,9 +76,12 @@ describe('swapWrite', () => {
   // Multiple plugin instances may share one `tadaOutputLocation`, e.g.
   // several TS projects in a monorepo extending the same tsconfig. See:
   // https://github.com/0no-co/gql.tada/issues/571
-  it('tolerates concurrent writes to the same target', async () => {
+  it.each([
+    { name: 'an existing target', createTarget: true },
+    { name: 'a missing target', createTarget: false },
+  ])('tolerates concurrent writes to $name', async ({ createTarget }) => {
     const target = await makeTarget();
-    await fs.writeFile(target, 'initial');
+    if (createTarget) await fs.writeFile(target, 'initial');
 
     const writers = Array.from({ length: 20 }, (_, index) =>
       swapWrite(target, `contents-${index}`)

@@ -1,5 +1,14 @@
 # @0no-co/graphqlsp
 
+## 1.17.4
+
+### Patch Changes
+
+- Update dependencies. The bundled `graphql-language-service` has been updated to 5.5, which adds `label`, `detail`, `type`, `documentation`, and deprecation metadata to GraphQL completion entries, and the bundled `lru-cache` has been updated to v11, which requires Node.js 20 or higher
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#417](https://github.com/0no-co/GraphQLSP/pull/417))
+- Validate `graphql()` documents with statically resolvable template interpolation and warn when interpolation cannot be resolved statically
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#424](https://github.com/0no-co/GraphQLSP/pull/424))
+
 ## 1.17.3
 
 ### Patch Changes

@@ -140,7 +140,7 @@ export function findAllCallExpressions(
   options: boolean | FindAllCallExpressionsOptions = true
 ): {
   nodes: Array<{
-    node: ts.StringLiteralLike;
+    node: ts.StringLiteralLike | ts.TemplateExpression;
     schema: string | null;
     // For gql.tada call-expressions, this contains the identifiers of explicitly declared fragments
     tadaFragmentRefs?: readonly ts.Identifier[] | null;
@@ -151,7 +151,7 @@ export function findAllCallExpressions(
     typeof options === 'boolean' ? { searchExternal: options } : options;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   const result: Array<{
-    node: ts.StringLiteralLike;
+    node: ts.StringLiteralLike | ts.TemplateExpression;
     schema: string | null;
     tadaFragmentRefs?: readonly ts.Identifier[];
   }> = [];
@@ -206,7 +206,10 @@ export function findAllCallExpressions(
       }
     }
 
-    if (text && ts.isStringLiteralLike(text)) {
+    if (
+      text &&
+      (ts.isStringLiteralLike(text) || ts.isTemplateExpression(text))
+    ) {
       result.push({
         node: text,
         schema: name,

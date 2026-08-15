@@ -59,7 +59,7 @@ export const TADA_GRAPHQL_MODULE = `
   export interface GraphQLTadaLike {
     (document: string, fragments?: readonly DocumentNode[]): DocumentNode;
     scalar(name: string, value: unknown): unknown;
-    persisted(id: string): DocumentNode;
+    persisted<Document>(id: string, document?: Document): DocumentNode;
     __name: 'pokemons';
   }
 

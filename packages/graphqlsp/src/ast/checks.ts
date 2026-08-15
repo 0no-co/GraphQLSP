@@ -86,11 +86,18 @@ export const isTadaGraphQLCall = (
     return false;
   } else if (node.arguments.length < 1 || node.arguments.length > 2) {
     return false;
-  } else if (!ts.isStringLiteralLike(node.arguments[0]!)) {
-    return false;
-  } else if (!graphqlDocumentPrefix.test(node.arguments[0]!.text)) {
+  }
+
+  const document = node.arguments[0]!;
+  const prefix = ts.isTemplateExpression(document)
+    ? document.head.text
+    : ts.isStringLiteralLike(document)
+      ? document.text
+      : null;
+  if (prefix == null || !graphqlDocumentPrefix.test(prefix)) {
     return false;
   }
+
   return checker ? isTadaGraphQLFunction(node.expression, checker) : false;
 };
 

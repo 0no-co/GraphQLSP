@@ -7,6 +7,7 @@ import {
 
 type TemplateResult = {
   combinedText: string;
+  isStatic: boolean;
   resolvedSpans: Array<{
     lines: number;
     identifier: string;
@@ -16,12 +17,57 @@ type TemplateResult = {
 };
 
 export function resolveTemplate(
-  node: ts.TaggedTemplateExpression | ts.StringLiteralLike,
+  node:
+    ts.TaggedTemplateExpression | ts.StringLiteralLike | ts.TemplateExpression,
   filename: string,
   info: ts.server.PluginCreateInfo
 ): TemplateResult {
   if (ts.isStringLiteralLike(node)) {
-    return { combinedText: node.getText().slice(1, -1), resolvedSpans: [] };
+    return {
+      combinedText: node.getText().slice(1, -1),
+      isStatic: true,
+      resolvedSpans: [],
+    };
+  }
+
+  if (ts.isTemplateExpression(node)) {
+    const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+    if (!typeChecker) {
+      return { combinedText: '', isStatic: false, resolvedSpans: [] };
+    }
+
+    let combinedText = node.head.text;
+    let addedCharacters = 0;
+    const resolvedSpans: TemplateResult['resolvedSpans'] = [];
+
+    for (const span of node.templateSpans) {
+      const expressionType = typeChecker.getTypeAtLocation(span.expression);
+      if (!(expressionType.flags & ts.TypeFlags.StringLiteral)) {
+        return { combinedText: '', isStatic: false, resolvedSpans: [] };
+      }
+
+      const originalStart = span.expression.getStart() - 2;
+      const original = {
+        start: originalStart,
+        length: span.expression.end - originalStart + 1,
+      };
+      const replacement = (expressionType as ts.StringLiteralType).value;
+      resolvedSpans.push({
+        lines: replacement.split('\n').length,
+        identifier: span.expression.getText(),
+        original,
+        new: {
+          // GraphQL diagnostic offsets are measured from the first character
+          // inside the opening backtick, while source spans include it.
+          start: original.start - 1 + addedCharacters,
+          length: replacement.length,
+        },
+      });
+      addedCharacters += replacement.length - original.length;
+      combinedText += replacement + span.literal.text;
+    }
+
+    return { combinedText, isStatic: true, resolvedSpans };
   }
 
   let templateText = node.template.getText().slice(1, -1);
@@ -29,7 +75,7 @@ export function resolveTemplate(
     ts.isNoSubstitutionTemplateLiteral(node.template) ||
     node.template.templateSpans.length === 0
   ) {
-    return { combinedText: templateText, resolvedSpans: [] };
+    return { combinedText: templateText, isStatic: true, resolvedSpans: [] };
   }
 
   let addedCharacters = 0;
@@ -137,7 +183,7 @@ export function resolveTemplate(
     })
     .filter(Boolean) as TemplateResult['resolvedSpans'];
 
-  return { combinedText: templateText, resolvedSpans };
+  return { combinedText: templateText, isStatic: true, resolvedSpans };
 }
 
 export const resolveTadaFragmentArray = (

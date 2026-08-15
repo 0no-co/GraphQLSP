@@ -140,6 +140,7 @@ const findDocumentCallInSource = (
   });
 
   for (const found of nodes) {
+    if (!ts.isStringLiteralLike(found.node)) continue;
     if (found.node.text !== documentText) continue;
     if (schemaName && found.schema !== schemaName) continue;
     return { fileName: source.fileName, node: found.node };

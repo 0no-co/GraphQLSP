@@ -59,6 +59,7 @@ export const USING_DEPRECATED_FIELD_CODE = 52004;
 export const MISCONFIGURATION_CODE = 52006;
 export const MODE_MISMATCH_CODE = 52007;
 export const UNKNOWN_SCHEMA_NAME_CODE = 52008;
+export const DYNAMIC_TEMPLATE_INTERPOLATION_CODE = 52009;
 export const MISSING_PERSISTED_TYPE_ARG = 520100;
 export const MISSING_PERSISTED_CODE_ARG = 520101;
 export const MISSING_PERSISTED_DOCUMENT = 520102;
@@ -71,6 +72,7 @@ export const ALL_DIAGNOSTICS = [
   MISCONFIGURATION_CODE,
   MODE_MISMATCH_CODE,
   UNKNOWN_SCHEMA_NAME_CODE,
+  DYNAMIC_TEMPLATE_INTERPOLATION_CODE,
   MISSING_PERSISTED_TYPE_ARG,
   MISSING_PERSISTED_CODE_ARG,
   MISSING_PERSISTED_DOCUMENT,
@@ -87,7 +89,10 @@ const OUTPUT_PICKUP_GRACE_PERIOD = 30_000;
 const getMisconfigurationDiagnostics = (
   source: ts.SourceFile,
   nodes: {
-    node: ts.StringLiteralLike | ts.TaggedTemplateExpression;
+    node:
+      | ts.StringLiteralLike
+      | ts.TemplateExpression
+      | ts.TaggedTemplateExpression;
     schema: string | null;
   }[],
   schema: SchemaRef,
@@ -187,9 +192,12 @@ const getModeMismatchDiagnostic = (
     node = findAllCallExpressions(source, info, {
       searchExternal: false,
       collectFragments: false,
-    }).nodes.find(x =>
-      /^[\s,]*(?:query|mutation|subscription|fragment|\{)/.test(x.node.text)
-    )?.node;
+    }).nodes.find(x => {
+      const text = ts.isTemplateExpression(x.node)
+        ? x.node.head.text
+        : x.node.text;
+      return /^[\s,]*(?:query|mutation|subscription|fragment|\{)/.test(text);
+    })?.node;
     messageText =
       'Found GraphQL documents in graphql()/gql() calls, but GraphQLSP is configured to search for tagged templates. ' +
       'If you use call expressions, remove "templateIsCallExpression": false from the plugin configuration in your tsconfig.json.';
@@ -224,7 +232,10 @@ export function getGraphQLDiagnostics(
 
   let fragments: Array<FragmentDefinitionNode> = [],
     nodes: {
-      node: ts.StringLiteralLike | ts.TaggedTemplateExpression;
+      node:
+        | ts.StringLiteralLike
+        | ts.TemplateExpression
+        | ts.TaggedTemplateExpression;
       schema: string | null;
       tadaFragmentRefs?: readonly ts.Identifier[] | null;
     }[];
@@ -380,11 +391,15 @@ export function getGraphQLDiagnostics(
         }
 
         const initializer = foundNode;
+        const document =
+          ts.isCallExpression(initializer) && initializer.arguments[0];
         if (
           !initializer ||
           !ts.isCallExpression(initializer) ||
-          !initializer.arguments[0] ||
-          !ts.isStringLiteralLike(initializer.arguments[0])
+          !document ||
+          (!ts.isStringLiteralLike(document) &&
+            (!ts.isTemplateExpression(document) ||
+              !resolveTemplate(document, foundFilename, info).isStatic))
         ) {
           // TODO: we can make this check more stringent where we also parse and resolve
           // the accompanying template.
@@ -415,7 +430,7 @@ export function getGraphQLDiagnostics(
         if (hash.startsWith('sha256:')) {
           const generatedHash = generateHashForDocument(
             info,
-            initializer.arguments[0],
+            document,
             foundFilename,
             initializer.arguments[1] &&
               ts.isArrayLiteralExpression(initializer.arguments[1])
@@ -452,7 +467,9 @@ export function getGraphQLDiagnostics(
     const usedFragments = new Set();
     nodes.forEach(({ node }) => {
       try {
-        const parsed = parse(node.getText().slice(1, -1), {
+        const resolved = resolveTemplate(node, filename, info);
+        if (!resolved.isStatic) return;
+        const parsed = parse(resolved.combinedText, {
           noLocation: true,
         });
         visit(parsed, {
@@ -469,7 +486,8 @@ export function getGraphQLDiagnostics(
     const directlyUsedFragments = getDirectlyUsedFragments(
       source,
       nodes,
-      typeChecker
+      typeChecker,
+      info
     );
 
     Object.keys(moduleSpecifierToFragments).forEach(moduleSpecifier => {
@@ -509,14 +527,26 @@ export function getGraphQLDiagnostics(
  * document, excluding fragments it only composes via its reference array. */
 function getFragmentNamesForIdentifier(
   identifier: ts.Identifier,
-  checker: ts.TypeChecker
+  checker: ts.TypeChecker,
+  info: ts.server.PluginCreateInfo
 ): string[] {
   const value = getValueOfIdentifier(identifier, checker);
   if (!value || !ts.isCallExpression(value)) return [];
   const documentArg = value.arguments[0];
-  if (!documentArg || !ts.isStringLiteralLike(documentArg)) return [];
+  if (
+    !documentArg ||
+    (!ts.isStringLiteralLike(documentArg) &&
+      !ts.isTemplateExpression(documentArg))
+  )
+    return [];
   try {
-    const parsed = parse(documentArg.getText().slice(1, -1), {
+    const resolved = resolveTemplate(
+      documentArg,
+      documentArg.getSourceFile().fileName,
+      info
+    );
+    if (!resolved.isStatic) return [];
+    const parsed = parse(resolved.combinedText, {
       noLocation: true,
     });
     return parsed.definitions
@@ -538,7 +568,8 @@ function getFragmentNamesForIdentifier(
 function getDirectlyUsedFragments(
   source: ts.SourceFile,
   nodes: Array<{ tadaFragmentRefs?: readonly ts.Identifier[] | null }>,
-  typeChecker: ts.TypeChecker | undefined
+  typeChecker: ts.TypeChecker | undefined,
+  info: ts.server.PluginCreateInfo
 ): Set<string> {
   const directlyUsedFragments = new Set<string>();
   if (!typeChecker) return directlyUsedFragments;
@@ -591,7 +622,7 @@ function getDirectlyUsedFragments(
         identifier !== binding && !fragmentRefIdentifiers.has(identifier)
     );
     if (!usedDirectly) return;
-    getFragmentNamesForIdentifier(binding, typeChecker).forEach(name =>
+    getFragmentNamesForIdentifier(binding, typeChecker, info).forEach(name =>
       directlyUsedFragments.add(name)
     );
   });
@@ -606,7 +637,10 @@ const runDiagnostics = (
     fragments,
   }: {
     nodes: {
-      node: ts.TaggedTemplateExpression | ts.StringLiteralLike;
+      node:
+        | ts.TaggedTemplateExpression
+        | ts.StringLiteralLike
+        | ts.TemplateExpression;
       schema: string | null;
       tadaFragmentRefs?: readonly ts.Identifier[] | null;
     }[];
@@ -618,6 +652,7 @@ const runDiagnostics = (
   const filename = source.fileName;
   const isCallExpression = info.config.templateIsCallExpression ?? true;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
+  const templateWarnings: ts.Diagnostic[] = [];
 
   const diagnostics = nodes
     .map(originalNode => {
@@ -634,11 +669,23 @@ const runDiagnostics = (
         }
       }
 
-      const { combinedText: text, resolvedSpans } = resolveTemplate(
-        node,
-        filename,
-        info
-      );
+      const {
+        combinedText: text,
+        isStatic,
+        resolvedSpans,
+      } = resolveTemplate(node, filename, info);
+      if (ts.isTemplateExpression(node) && !isStatic) {
+        templateWarnings.push({
+          category: ts.DiagnosticCategory.Warning,
+          code: DYNAMIC_TEMPLATE_INTERPOLATION_CODE,
+          file: source,
+          messageText:
+            'GraphQL documents with non-static template interpolation cannot be validated.',
+          start: node.getStart(),
+          length: node.getWidth(),
+        });
+        return undefined;
+      }
       const lines = text.split('\n');
 
       let isExpression = false;
@@ -743,7 +790,7 @@ const runDiagnostics = (
 
           const locatedInFragment = resolvedSpans.find(x => {
             const newEnd = x.new.start + x.new.length;
-            return startChar >= x.new.start && endChar <= newEnd;
+            return startChar >= x.new.start && startChar < newEnd;
           });
 
           if (!!locatedInFragment) {
@@ -753,28 +800,19 @@ const runDiagnostics = (
               length: locatedInFragment.original.length,
             };
           } else {
-            if (startChar > endPosition) {
-              // we have to calculate the added length and fix this
-              const addedCharacters = resolvedSpans
-                .filter(x => x.new.start + x.new.length < startChar)
-                .reduce(
-                  (acc, span) => acc + (span.new.length - span.original.length),
-                  0
-                );
-              startChar = startChar - addedCharacters;
-              endChar = endChar - addedCharacters;
-              return {
-                ...x,
-                start: startChar + 1,
-                length: endChar - startChar,
-              };
-            } else {
-              return {
-                ...x,
-                start: startChar + 1,
-                length: endChar - startChar,
-              };
-            }
+            const addedCharacters = resolvedSpans
+              .filter(x => x.new.start + x.new.length <= startChar)
+              .reduce(
+                (acc, span) => acc + (span.new.length - span.original.length),
+                0
+              );
+            startChar -= addedCharacters;
+            endChar -= addedCharacters;
+            return {
+              ...x,
+              start: startChar + 1,
+              length: endChar - startChar,
+            };
           }
         })
         .filter(x => x.start + x.length <= endPosition);
@@ -812,10 +850,10 @@ const runDiagnostics = (
         info
       ) || [];
 
-    if (!usageDiagnostics) return tsDiagnostics;
+    if (!usageDiagnostics) return [...templateWarnings, ...tsDiagnostics];
 
-    return [...tsDiagnostics, ...usageDiagnostics];
+    return [...templateWarnings, ...tsDiagnostics, ...usageDiagnostics];
   } else {
-    return tsDiagnostics;
+    return [...templateWarnings, ...tsDiagnostics];
   }
 };

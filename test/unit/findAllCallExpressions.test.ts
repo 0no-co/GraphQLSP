@@ -1,11 +1,38 @@
 import { describe, it, expect } from 'vitest';
+import { buildSchema } from '../../packages/graphqlsp/node_modules/graphql/index.js';
 
 import {
   createTestEnvironment,
   countTypeProbes,
   TADA_GRAPHQL_MODULE,
+  ts,
 } from './language-service';
 import { findAllCallExpressions } from '../../packages/graphqlsp/src/ast';
+import { resolveTemplate } from '../../packages/graphqlsp/src/ast/resolve';
+import {
+  DYNAMIC_TEMPLATE_INTERPOLATION_CODE,
+  getGraphQLDiagnostics,
+  MISSMATCH_HASH_TO_DOCUMENT,
+  MISSING_PERSISTED_DOCUMENT,
+} from '../../packages/graphqlsp/src/diagnostics';
+import type { SchemaRef } from '../../packages/graphqlsp/src/graphql/getSchema';
+
+const makeSchemaRef = (): SchemaRef => {
+  const schema = buildSchema(`
+    type Query { pokemon: Pokemon }
+    type Pokemon { id: ID, name: String }
+  `);
+  return {
+    current: { schema },
+    multi: { pokemons: { schema } },
+    version: 1,
+    errors: { config: null, load: new Map(), write: new Map() },
+    outputLocations: new Map(),
+    sourceLocations: new Map(),
+    turboLocations: new Map(),
+    checkStale() {},
+  } as unknown as SchemaRef;
+};
 
 const FRAGMENT_FIXTURE = `
   import { graphql } from './graphql';
@@ -79,6 +106,160 @@ describe('findAllCallExpressions', () => {
 
     expect(result.nodes).toEqual(expected.nodes);
     expect(result.fragments).toEqual([]);
+  });
+
+  it('discovers template expressions passed to graphql calls', () => {
+    const { info, getSourceFile } = createTestEnvironment({
+      '/test-project/graphql.ts': TADA_GRAPHQL_MODULE,
+      '/test-project/index.ts': `
+        import { graphql } from './graphql';
+        const g = graphql;
+        const fields = \`id name\` as const;
+        const Query = g(\`query One { pokemon { \${fields} } }\`);
+      `,
+    });
+    const source = getSourceFile('/test-project/index.ts');
+
+    const { nodes } = findAllCallExpressions(source, info);
+    expect(nodes).toHaveLength(1);
+    expect(nodes[0]?.node).toSatisfy(ts.isTemplateExpression);
+  });
+
+  it('validates statically resolved template expressions', () => {
+    const { info, getSourceFile } = createTestEnvironment({
+      '/test-project/graphql.ts': TADA_GRAPHQL_MODULE,
+      '/test-project/index.ts': `
+        import { graphql } from './graphql';
+        const fields = \`id name\` as const;
+        const Query = graphql(\`
+          query One { pokemon { \${fields} unknownField } }
+        \`);
+      `,
+    });
+    const source = getSourceFile('/test-project/index.ts');
+    const schemaRef = makeSchemaRef();
+
+    const found = findAllCallExpressions(source, info).nodes[0]!;
+    const resolved = resolveTemplate(found.node, source.fileName, info);
+    expect(resolved.combinedText).toContain('id name unknownField');
+    expect(resolved.resolvedSpans).toHaveLength(1);
+
+    const diagnostics = getGraphQLDiagnostics(source.fileName, schemaRef, info);
+    expect(diagnostics?.map(x => x.messageText)).toContain(
+      'Cannot query field "unknownField" on type "Pokemon".'
+    );
+    const diagnostic = diagnostics?.find(x =>
+      `${x.messageText}`.includes('unknownField')
+    );
+    expect(
+      source.text.slice(
+        diagnostic!.start!,
+        diagnostic!.start! + 'unknownField'.length
+      )
+    ).toBe('unknownField');
+  });
+
+  it('maps diagnostics inside static interpolation back to the expression', () => {
+    const { info, getSourceFile } = createTestEnvironment({
+      '/test-project/graphql.ts': TADA_GRAPHQL_MODULE,
+      '/test-project/index.ts': `
+        import { graphql } from './graphql';
+        const fields = \`id unknownField\` as const;
+        const Query = graphql(\`query One { pokemon { \${fields} } }\`);
+      `,
+    });
+    const source = getSourceFile('/test-project/index.ts');
+
+    const diagnostic = getGraphQLDiagnostics(
+      source.fileName,
+      makeSchemaRef(),
+      info
+    )?.find(x => `${x.messageText}`.includes('unknownField'));
+
+    expect(
+      source.text.slice(
+        diagnostic!.start!,
+        diagnostic!.start! + diagnostic!.length!
+      )
+    ).toBe('${fields}');
+  });
+
+  it('maps diagnostics after adjacent static interpolations', () => {
+    const { info, getSourceFile } = createTestEnvironment({
+      '/test-project/graphql.ts': TADA_GRAPHQL_MODULE,
+      '/test-project/index.ts': `
+        import { graphql } from './graphql';
+        const fields = \`id \` as const;
+        const separator = \`\` as const;
+        const Query = graphql(\`query One { pokemon { \${fields}\${separator}unknownField } }\`);
+      `,
+    });
+    const source = getSourceFile('/test-project/index.ts');
+
+    const diagnostic = getGraphQLDiagnostics(
+      source.fileName,
+      makeSchemaRef(),
+      info
+    )?.find(x => `${x.messageText}`.includes('unknownField'));
+
+    expect(
+      source.text.slice(
+        diagnostic!.start!,
+        diagnostic!.start! + 'unknownField'.length
+      )
+    ).toBe('unknownField');
+  });
+
+  it('warns when a template interpolation cannot be resolved statically', () => {
+    const { info, getSourceFile } = createTestEnvironment({
+      '/test-project/graphql.ts': TADA_GRAPHQL_MODULE,
+      '/test-project/index.ts': `
+        import { graphql } from './graphql';
+        const g = graphql;
+        declare const fields: string;
+        const Query = g(\`query One { pokemon { \${fields} } }\`);
+      `,
+    });
+    const source = getSourceFile('/test-project/index.ts');
+
+    const diagnostics = getGraphQLDiagnostics(
+      source.fileName,
+      makeSchemaRef(),
+      info
+    );
+
+    expect(diagnostics).toEqual([
+      expect.objectContaining({
+        category: ts.DiagnosticCategory.Warning,
+        code: DYNAMIC_TEMPLATE_INTERPOLATION_CODE,
+        messageText:
+          'GraphQL documents with non-static template interpolation cannot be validated.',
+      }),
+    ]);
+  });
+
+  it('accepts static interpolation in persisted documents', () => {
+    const { info, getSourceFile } = createTestEnvironment({
+      '/test-project/graphql.ts': TADA_GRAPHQL_MODULE,
+      '/test-project/index.ts': `
+        import { graphql } from './graphql';
+        const fields = \`id name\` as const;
+        const Query = graphql(\`query One { pokemon { \${fields} } }\`);
+        graphql.persisted<typeof Query>('sha256:invalid');
+      `,
+    });
+    const source = getSourceFile('/test-project/index.ts');
+
+    const diagnostics = getGraphQLDiagnostics(
+      source.fileName,
+      makeSchemaRef(),
+      info
+    );
+
+    expect(diagnostics?.map(x => x.code)).toContain(MISSMATCH_HASH_TO_DOCUMENT);
+    expect(diagnostics?.map(x => x.code)).not.toContain(
+      MISSING_PERSISTED_DOCUMENT
+    );
   });
 
   it('discovers documents with leading ignored tokens', () => {

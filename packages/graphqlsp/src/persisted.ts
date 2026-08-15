@@ -118,18 +118,21 @@ export function getPersistedCodeFixAtPosition(
   if (!foundNode) return undefined;
 
   const initializer = foundNode;
+  const document = ts.isCallExpression(initializer) && initializer.arguments[0];
   if (
     !initializer ||
     !ts.isCallExpression(initializer) ||
-    !initializer.arguments[0] ||
-    !ts.isStringLiteralLike(initializer.arguments[0])
+    !document ||
+    (!ts.isStringLiteralLike(document) &&
+      (!ts.isTemplateExpression(document) ||
+        !resolveTemplate(document, foundFilename, info).isStatic))
   ) {
     return undefined;
   }
 
   const hash = generateHashForDocument(
     info,
-    initializer.arguments[0],
+    document,
     foundFilename,
     initializer.arguments[1] &&
       ts.isArrayLiteralExpression(initializer.arguments[1])
@@ -176,7 +179,8 @@ export function getPersistedCodeFixAtPosition(
 
 export const generateHashForDocument = (
   info: ts.server.PluginCreateInfo,
-  templateLiteral: ts.StringLiteralLike | ts.TaggedTemplateExpression,
+  templateLiteral:
+    ts.StringLiteralLike | ts.TemplateExpression | ts.TaggedTemplateExpression,
   foundFilename: string,
   referencedFragments: ts.ArrayLiteralExpression | undefined
 ): string | undefined => {

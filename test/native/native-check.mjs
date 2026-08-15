@@ -44,7 +44,8 @@ test('real GraphQLSP diagnostics run on a TypeScript 7.1 native snapshot', () =>
       []
     );
 
-    const diagnostics = createNativeGraphQLSP({ sync, ast }).getDiagnostics(
+    const nativeGraphQLSP = createNativeGraphQLSP({ sync, ast });
+    const diagnostics = nativeGraphQLSP.getDiagnostics(
       project,
       sourceFileName,
       schema
@@ -85,13 +86,35 @@ test('real GraphQLSP diagnostics run on a TypeScript 7.1 native snapshot', () =>
       type Query { todos: [Todo] }
       type Todo { id: ID!, text: String!, unknownField: String }
     `);
-    const permissiveDiagnostics = createNativeGraphQLSP({
-      sync,
-      ast,
-    }).getDiagnostics(project, sourceFileName, permissiveSchema);
+    const permissiveDiagnostics = nativeGraphQLSP.getDiagnostics(
+      project,
+      sourceFileName,
+      permissiveSchema
+    );
     assert.deepEqual(
       permissiveDiagnostics.map(diagnostic => diagnostic.code),
       [52009]
+    );
+
+    // An equivalent replacement snapshot must return diagnostics referencing
+    // its own remote SourceFile rather than a cached object from the prior one.
+    api.runWithTemporaryFileUpdate(
+      snapshot,
+      sourceFileName,
+      source.text,
+      replacementSnapshot => {
+        const replacementProject = replacementSnapshot.getProject(configFile);
+        assert.ok(replacementProject);
+        const replacementSource =
+          replacementProject.program.getSourceFile(sourceFileName);
+        assert.ok(replacementSource);
+        const replacementDiagnostics = nativeGraphQLSP.getDiagnostics(
+          replacementProject,
+          sourceFileName,
+          schema
+        );
+        assert.equal(replacementDiagnostics[1].file, replacementSource);
+      }
     );
 
     const timing = api.getTimingInfo().totals;

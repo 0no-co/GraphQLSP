@@ -31,6 +31,40 @@ const schemaNameCache = new WeakMap<
   WeakMap<ts.Symbol, string | null>
 >();
 
+// TypeScript 7.1's native API exposes the same information through explicit
+// predicates/accessors rather than the legacy TypeScript JS helpers. Keeping
+// these tiny compatibility probes here lets document discovery remain shared
+// by both hosts without changing the existing tsserver path.
+const getUnionOrIntersectionTypes = (
+  type: ts.Type
+): readonly ts.Type[] | null => {
+  if ('isUnionOrIntersection' in type && type.isUnionOrIntersection()) {
+    return type.types;
+  }
+
+  const nativeType = type as ts.Type & {
+    isUnionType?: () => boolean;
+    isIntersectionType?: () => boolean;
+    getTypes?: () => readonly ts.Type[];
+  };
+  return (nativeType.isUnionType?.() || nativeType.isIntersectionType?.()) &&
+    nativeType.getTypes
+    ? nativeType.getTypes()
+    : null;
+};
+
+const getStringLiteralValue = (type: ts.Type): string | null => {
+  if ('isStringLiteral' in type && type.isStringLiteral()) return type.value;
+  const nativeType = type as ts.Type & {
+    isStringLiteralType?: () => boolean;
+    value?: unknown;
+  };
+  return nativeType.isStringLiteralType?.() &&
+    typeof nativeType.value === 'string'
+    ? nativeType.value
+    : null;
+};
+
 const getCached = <T>(
   caches: WeakMap<ts.TypeChecker, WeakMap<ts.Symbol, T>>,
   checker: ts.TypeChecker,
@@ -167,11 +201,14 @@ export const getSchemaName = (
       const brandTypeSymbol = type.getProperty('__name');
       if (brandTypeSymbol) {
         const brand = typeChecker.getTypeOfSymbol(brandTypeSymbol);
-        if (brand.isUnionOrIntersection()) {
-          const found = brand.types.find(x => x.isStringLiteral());
-          return found && found.isStringLiteral() ? found.value : null;
-        } else if (brand.isStringLiteral()) {
-          return brand.value;
+        const types = getUnionOrIntersectionTypes(brand);
+        if (types) {
+          for (const member of types) {
+            const value = getStringLiteralValue(member);
+            if (value !== null) return value;
+          }
+        } else {
+          return getStringLiteralValue(brand);
         }
       }
     }

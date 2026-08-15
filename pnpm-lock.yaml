@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  typescript: ^5.3.3
+  typescript@<7: ^5.3.3
   ua-parser-js@<0.7.33: '>=0.7.33'
   postcss@<8.4.31: '>=8.4.31'
   semver@<5.7.2: '>=5.7.2'
@@ -346,6 +346,21 @@ importers:
         specifier: ^5.3.3
         version: 5.3.3
 
+  test/native:
+    dependencies:
+      '@0no-co/graphqlsp':
+        specifier: workspace:*
+        version: link:../../packages/graphqlsp
+      gql.tada:
+        specifier: 1.11.3
+        version: 1.11.3(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)
+      graphql:
+        specifier: 16.8.1
+        version: 16.8.1
+      typescript:
+        specifier: 7.1.0-dev.20260815.1
+        version: 7.1.0-dev.20260815.1
+
 packages:
 
   '@0no-co/graphql.web@1.2.0':
@@ -657,6 +672,20 @@ packages:
       '@gql.tada/vue-support':
         optional: true
 
+  '@gql.tada/cli-utils@1.9.3':
+    resolution: {integrity: sha512-P1TiXErpJwIi73sei5fzwGA/SOeCaIHFWFR4RdZPLwqxZzQN0T6MAUivzXBgKCORL67rvYnLaaPoWeqWq/61ug==}
+    peerDependencies:
+      '@0no-co/graphqlsp': ^1.16.0
+      '@gql.tada/svelte-support': 1.0.3
+      '@gql.tada/vue-support': 1.0.3
+      graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
+      typescript: ^5.3.3
+    peerDependenciesMeta:
+      '@gql.tada/svelte-support':
+        optional: true
+      '@gql.tada/vue-support':
+        optional: true
+
   '@gql.tada/internal@1.2.0':
     resolution: {integrity: sha512-mbrWlSLNMCMuP7uGFm4EGFJ0oU1XqzUqykAqQ4emVLUvuERKB6Vhb3KoWdSqSCCBKm7G3WcYCYgFbaMUUMNshw==}
     peerDependencies:
@@ -665,6 +694,12 @@ packages:
 
   '@gql.tada/internal@1.2.1':
     resolution: {integrity: sha512-1kPMv9KRpD6mfVwtXK+iy43U/gi4bpr4ganfhPLD0TjxpbuVJm7CtZ9wMFdwy3FjLBFN2QhwscNnL7lRPHg4vg==}
+    peerDependencies:
+      graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
+      typescript: ^5.3.3
+
+  '@gql.tada/internal@1.2.2':
+    resolution: {integrity: sha512-4lZcElPP6MC8Ct8KN70LR2WQsHjbAsyAmTGG09VsOPhx738UFIYaL0S1XiI2pqq2tj/sDs/y3b9jvKoWGL7iuQ==}
     peerDependencies:
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
       typescript: ^5.3.3
@@ -1390,6 +1425,48 @@ packages:
   '@types/ws@8.18.1':
     resolution: {integrity: sha512-ThVF6DCVhA8kUGy+aazFQ4kXQ7E1Ty7A3ypFOe0IcJV8O/M511G99AW24irKrW56Wt44yG9+ij8FaqoBGkuBXg==}
 
+  '@typescript/typescript-darwin-arm64@7.1.0-dev.20260815.1':
+    resolution: {integrity: sha512-xx3by+4jtumexNJbzCY+h1CcCXeUvwbgtY8r1VUKsSnh6c2UW43DwexirCks+jTKJRosoB7GJ88I8ww03k6tfQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [darwin]
+
+  '@typescript/typescript-darwin-x64@7.1.0-dev.20260815.1':
+    resolution: {integrity: sha512-AYpZQvxoGQEPbnreOOTDX/zHod13AmJsZTdrr4IYlIB1ewGBfjzbCtaShwB1m6SPZcqQxD7SMNhakOPtrNqNyg==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [darwin]
+
+  '@typescript/typescript-linux-arm64@7.1.0-dev.20260815.1':
+    resolution: {integrity: sha512-1HRaiTU8Smie7zhlakZnuHdw699edwizxNJFucuyQ9yk9w2pDlhpG8k1JlrZYU3GkuyfJRxIr3UjvvNBMbzbMQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [linux]
+
+  '@typescript/typescript-linux-arm@7.1.0-dev.20260815.1':
+    resolution: {integrity: sha512-NYz3FiC/OuzzEORRP+XmPQbmursjVSqjDR0GHpZ8coL6+lbgpgGARikeYmlUP8ilLenyYtMLD5YX0Hnou3nIaw==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm]
+    os: [linux]
+
+  '@typescript/typescript-linux-x64@7.1.0-dev.20260815.1':
+    resolution: {integrity: sha512-+ulIyUEtjLo0GdVU2ySMyBd9SiG79ADmABczbty29jiVHwyuG5Wg8D3x39Gan+59wgcprvj28x73dvqzvxo+Ww==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [linux]
+
+  '@typescript/typescript-win32-arm64@7.1.0-dev.20260815.1':
+    resolution: {integrity: sha512-rfYbC96N3DaYTQ/vHVe5XLccCk01TMCNsbXcqe2AOpCfK4F5xDivKNSancdC/pjWnlHBW78xtOE3e12eNAfNQQ==}
+    engines: {node: '>=16.20.0'}
+    cpu: [arm64]
+    os: [win32]
+
+  '@typescript/typescript-win32-x64@7.1.0-dev.20260815.1':
+    resolution: {integrity: sha512-uopfANsZEDztYSDArLT4RYKr6Zx7hdLLic2d5+D09b884AJEdNSC11e1owj97BvS30RlTmYAD5/kh6APPycnQg==}
+    engines: {node: '>=16.20.0'}
+    cpu: [x64]
+    os: [win32]
+
   '@urql/core@3.0.0':
     resolution: {integrity: sha512-C9nVn3+hhht8K0MEr9zLUgzoapkoX7X0crwMB72LrMqerhBjvEEuTngEFlZfALRwOzHjUNXBT9ZVgyzt6cKRhA==}
     peerDependencies:
@@ -1922,6 +1999,12 @@ packages:
 
   gql.tada@1.11.0:
     resolution: {integrity: sha512-QmBB7HTPBH3fBHdAEBBbq8N/1tyq9abdINply2rSUW1FVvZJ/b/jOD8esKVHh+JEajCCtfjGl0Kx2RyvXJFNCQ==}
+    hasBin: true
+    peerDependencies:
+      typescript: ^5.3.3
+
+  gql.tada@1.11.3:
+    resolution: {integrity: sha512-5JCI4j2f0nug8ILaCQys/yjOP78QqqjVUf47OQsME63rZfemsHT3e5vcfbHsnZiG6vxyqpKUJArtXEVwSefUhw==}
     hasBin: true
     peerDependencies:
       typescript: ^5.3.3
@@ -2875,6 +2958,11 @@ packages:
     engines: {node: '>=14.17'}
     hasBin: true
 
+  typescript@7.1.0-dev.20260815.1:
+    resolution: {integrity: sha512-nOY5i7ODbbn+/VDHkfCn64YmQm+PgIBRn1k9iOS9CTUwU2quWA7D/CMjlEUweREH2kWBm/2CYnHFJRTjQ4dTSA==}
+    engines: {node: '>=16.20.0'}
+    hasBin: true
+
   ua-parser-js@1.0.41:
     resolution: {integrity: sha512-LbBDqdIC5s8iROCUjMbW1f5dJQTEFB1+KO9ogbvlb3nm9n4YHa5p4KTvFPWvh2Hs8gZMBuiB1/8+pdfe/tDPug==}
     hasBin: true
@@ -3135,6 +3223,12 @@ snapshots:
       '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@5.3.3)
       graphql: 16.8.1
       typescript: 5.3.3
+
+  '@0no-co/graphqlsp@1.17.3(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)':
+    dependencies:
+      '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)
+      graphql: 16.8.1
+      typescript: 7.1.0-dev.20260815.1
 
   '@0no-co/graphqlsp@file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3)':
     dependencies:
@@ -3588,11 +3682,24 @@ snapshots:
       graphql: 16.8.1
       typescript: 5.3.3
 
+  '@gql.tada/cli-utils@1.9.3(@0no-co/graphqlsp@1.17.3(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1))(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)':
+    dependencies:
+      '@0no-co/graphqlsp': 1.17.3(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)
+      '@gql.tada/internal': 1.2.2(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)
+      graphql: 16.8.1
+      typescript: 7.1.0-dev.20260815.1
+
   '@gql.tada/internal@1.2.0(graphql@16.8.1)(typescript@5.3.3)':
     dependencies:
       '@0no-co/graphql.web': 1.3.2(graphql@16.8.1)
       graphql: 16.8.1
       typescript: 5.3.3
+
+  '@gql.tada/internal@1.2.0(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)':
+    dependencies:
+      '@0no-co/graphql.web': 1.3.2(graphql@16.8.1)
+      graphql: 16.8.1
+      typescript: 7.1.0-dev.20260815.1
 
   '@gql.tada/internal@1.2.1(graphql@16.8.1)(typescript@5.3.3)':
     dependencies:
@@ -3605,6 +3712,12 @@ snapshots:
       '@0no-co/graphql.web': 1.3.2(graphql@16.8.1)
       graphql: 16.8.1
       typescript: 5.9.3
+
+  '@gql.tada/internal@1.2.2(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)':
+    dependencies:
+      '@0no-co/graphql.web': 1.3.2(graphql@16.8.1)
+      graphql: 16.8.1
+      typescript: 7.1.0-dev.20260815.1
 
   '@graphql-codegen/add@5.0.3(graphql@16.8.1)':
     dependencies:
@@ -4482,6 +4595,27 @@ snapshots:
     dependencies:
       '@types/node': 18.19.130
 
+  '@typescript/typescript-darwin-arm64@7.1.0-dev.20260815.1':
+    optional: true
+
+  '@typescript/typescript-darwin-x64@7.1.0-dev.20260815.1':
+    optional: true
+
+  '@typescript/typescript-linux-arm64@7.1.0-dev.20260815.1':
+    optional: true
+
+  '@typescript/typescript-linux-arm@7.1.0-dev.20260815.1':
+    optional: true
+
+  '@typescript/typescript-linux-x64@7.1.0-dev.20260815.1':
+    optional: true
+
+  '@typescript/typescript-win32-arm64@7.1.0-dev.20260815.1':
+    optional: true
+
+  '@typescript/typescript-win32-x64@7.1.0-dev.20260815.1':
+    optional: true
+
   '@urql/core@3.0.0(graphql@16.8.1)':
     dependencies:
       '@graphql-typed-document-node/core': 3.2.0(graphql@16.8.1)
@@ -5020,6 +5154,18 @@ snapshots:
       '@gql.tada/cli-utils': 1.9.0(@0no-co/graphqlsp@file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3))(graphql@16.8.1)(typescript@5.3.3)
       '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@5.3.3)
       typescript: 5.3.3
+    transitivePeerDependencies:
+      - '@gql.tada/svelte-support'
+      - '@gql.tada/vue-support'
+      - graphql
+
+  gql.tada@1.11.3(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1):
+    dependencies:
+      '@0no-co/graphql.web': 1.3.2(graphql@16.8.1)
+      '@0no-co/graphqlsp': 1.17.3(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)
+      '@gql.tada/cli-utils': 1.9.3(@0no-co/graphqlsp@1.17.3(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1))(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)
+      '@gql.tada/internal': 1.2.2(graphql@16.8.1)(typescript@7.1.0-dev.20260815.1)
+      typescript: 7.1.0-dev.20260815.1
     transitivePeerDependencies:
       - '@gql.tada/svelte-support'
       - '@gql.tada/vue-support'
@@ -5927,6 +6073,16 @@ snapshots:
   typescript@5.3.3: {}
 
   typescript@5.9.3: {}
+
+  typescript@7.1.0-dev.20260815.1:
+    optionalDependencies:
+      '@typescript/typescript-darwin-arm64': 7.1.0-dev.20260815.1
+      '@typescript/typescript-darwin-x64': 7.1.0-dev.20260815.1
+      '@typescript/typescript-linux-arm': 7.1.0-dev.20260815.1
+      '@typescript/typescript-linux-arm64': 7.1.0-dev.20260815.1
+      '@typescript/typescript-linux-x64': 7.1.0-dev.20260815.1
+      '@typescript/typescript-win32-arm64': 7.1.0-dev.20260815.1
+      '@typescript/typescript-win32-x64': 7.1.0-dev.20260815.1
 
   ua-parser-js@1.0.41: {}
 

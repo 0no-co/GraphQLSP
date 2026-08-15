@@ -79,8 +79,8 @@ describe('Fragment + operations', () => {
           "category": "error",
           "code": 52001,
           "end": {
-            "line": 7,
-            "offset": 1,
+            "line": 6,
+            "offset": 21,
           },
           "start": {
             "line": 6,
@@ -105,8 +105,8 @@ describe('Fragment + operations', () => {
           "category": "error",
           "code": 52001,
           "end": {
-            "line": 17,
-            "offset": 1,
+            "line": 16,
+            "offset": 16,
           },
           "start": {
             "line": 16,

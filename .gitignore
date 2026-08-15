@@ -108,3 +108,5 @@ dist
 
 packages/graphqlsp/api/*
 packages/graphqlsp/api
+packages/graphqlsp/native/*
+packages/graphqlsp/native

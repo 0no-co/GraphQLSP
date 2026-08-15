@@ -49,3 +49,6 @@ jobs:
 
       - name: Test
         run: pnpm run test:e2e
+
+      - name: Test TypeScript 7.1 native API
+        run: pnpm --filter graphqlsp-native-test test

@@ -18,6 +18,12 @@
       "require": "./dist/api.js",
       "source": "./src/api.ts"
     },
+    "./native": {
+      "types": "./dist/native.d.ts",
+      "import": "./dist/native.mjs",
+      "require": "./dist/native.js",
+      "source": "./src/native.ts"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -55,7 +61,7 @@
   },
   "peerDependencies": {
     "graphql": "^15.5.0 || ^16.0.0 || ^17.0.0",
-    "typescript": "^5.0.0 || ^6.0.0"
+    "typescript": "^5.0.0 || ^6.0.0 || >=7.1.0-dev.20260815.1 <7.2.0"
   },
   "publishConfig": {
     "provenance": true

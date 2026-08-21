@@ -10,6 +10,7 @@
     "prepare": "husky",
     "dev": "pnpm --filter @0no-co/graphqlsp dev",
     "launch-debug": "./scripts/launch-debug.sh",
+    "test:native": "pnpm build && pnpm --filter graphqlsp-native-test test",
     "test:e2e": "vitest run --no-file-parallelism"
   },
   "prettier": {

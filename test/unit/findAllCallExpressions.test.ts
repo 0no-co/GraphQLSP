@@ -154,9 +154,10 @@ describe('findAllCallExpressions', () => {
     expect(
       source.text.slice(
         diagnostic!.start!,
-        diagnostic!.start! + 'unknownField'.length
+        diagnostic!.start! + diagnostic!.length!
       )
     ).toBe('unknownField');
+    expect(diagnostic!.length).toBe('unknownField'.length);
   });
 
   it('maps diagnostics inside static interpolation back to the expression', () => {

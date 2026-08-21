@@ -808,10 +808,18 @@ const runDiagnostics = (
               );
             startChar -= addedCharacters;
             endChar -= addedCharacters;
+            const diagnosticStart = startChar + 1;
+            let diagnosticEnd = endChar + 1;
+            while (
+              diagnosticEnd > diagnosticStart &&
+              /\s/.test(source.text[diagnosticEnd - 1] || '')
+            ) {
+              diagnosticEnd--;
+            }
             return {
               ...x,
-              start: startChar + 1,
-              length: endChar - startChar,
+              start: diagnosticStart,
+              length: diagnosticEnd - diagnosticStart,
             };
           }
         })

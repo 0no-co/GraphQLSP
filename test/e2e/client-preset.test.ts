@@ -133,8 +133,8 @@ describe('Fragment + operations', () => {
           "category": "warning",
           "code": 52004,
           "end": {
-            "line": 10,
-            "offset": 1,
+            "line": 9,
+            "offset": 21,
           },
           "start": {
             "line": 9,

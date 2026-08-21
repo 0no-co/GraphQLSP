@@ -1,3 +1,4 @@
+import { Buffer } from 'node:buffer';
 import type { Stats, PathLike } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'path';
@@ -38,11 +39,14 @@ const touchFile = async (file: PathLike): Promise<void> => {
   } catch (_error) {}
 };
 
-/** Writes a file to a swapfile then moves it into place to prevent excess change events. */
+/** Writes changed contents to a swapfile then moves it into place. */
 export const swapWrite = async (
   target: PathLike,
   contents: string
 ): Promise<void> => {
+  const existing = await fs.readFile(target).catch(() => undefined);
+  if (existing?.equals(Buffer.from(contents))) return;
+
   if (!(await statFile(target, stat => stat.isFile()))) {
     // If the file doesn't exist, we can write directly, and not
     // try-catch so the error falls through

@@ -8,20 +8,20 @@ allowBuilds:
 
 peerDependencyRules:
   allowedVersions:
-    typescript: '7.1.0-dev.20260815.1'
+    typescript: '7.1.0-dev.20260821.1'
 
 minimumReleaseAgeExclude:
   - '@0no-co/*'
   - '@gql.tada/*'
   - 'gql.tada'
-  - '@typescript/typescript-darwin-arm64@7.1.0-dev.20260815.1'
-  - '@typescript/typescript-darwin-x64@7.1.0-dev.20260815.1'
-  - '@typescript/typescript-linux-arm64@7.1.0-dev.20260815.1'
-  - '@typescript/typescript-linux-arm@7.1.0-dev.20260815.1'
-  - '@typescript/typescript-linux-x64@7.1.0-dev.20260815.1'
-  - '@typescript/typescript-win32-arm64@7.1.0-dev.20260815.1'
-  - '@typescript/typescript-win32-x64@7.1.0-dev.20260815.1'
-  - typescript@7.1.0-dev.20260815.1
+  - '@typescript/typescript-darwin-arm64@7.1.0-dev.20260821.1'
+  - '@typescript/typescript-darwin-x64@7.1.0-dev.20260821.1'
+  - '@typescript/typescript-linux-arm64@7.1.0-dev.20260821.1'
+  - '@typescript/typescript-linux-arm@7.1.0-dev.20260821.1'
+  - '@typescript/typescript-linux-x64@7.1.0-dev.20260821.1'
+  - '@typescript/typescript-win32-arm64@7.1.0-dev.20260821.1'
+  - '@typescript/typescript-win32-x64@7.1.0-dev.20260821.1'
+  - typescript@7.1.0-dev.20260821.1
 
 overrides:
   'typescript@<7': ^5.3.3

@@ -1,5 +1,12 @@
 # @0no-co/graphqlsp
 
+## 1.17.5
+
+### Patch Changes
+
+- Avoid rewriting unchanged `tadaOutputLocation` files during schema revalidation
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#427](https://github.com/0no-co/GraphQLSP/pull/427))
+
 ## 1.17.4
 
 ### Patch Changes

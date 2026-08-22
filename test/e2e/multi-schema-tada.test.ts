@@ -132,7 +132,8 @@ describe('Multiple schemas', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.documentation).toEqual(`Pokemon.name: String!`);
+    expect(res?.body.displayString).toEqual(`Pokemon.name: String!`);
+    expect(res?.body.documentation).toEqual('');
   }, 30000);
 
   it('gives quick-info for the pokemon document namespace', async () => {
@@ -158,7 +159,8 @@ describe('Multiple schemas', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.documentation).toEqual(`Pokemon.name: String!`);
+    expect(res?.body.displayString).toEqual(`Pokemon.name: String!`);
+    expect(res?.body.documentation).toEqual('');
   }, 30000);
 
   it('gives quick-info for the todo document', async () => {
@@ -184,7 +186,8 @@ describe('Multiple schemas', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.documentation).toEqual(`Todo.id: ID!`);
+    expect(res?.body.displayString).toEqual(`Todo.id: ID!`);
+    expect(res?.body.documentation).toEqual('');
   }, 30000);
 
   it('gives completion-info for the pokemon document', async () => {

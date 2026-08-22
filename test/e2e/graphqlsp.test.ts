@@ -171,9 +171,8 @@ describe('simple', () => {
       .find(resp => resp.type === 'response' && resp.command === 'quickinfo');
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.documentation).toEqual(
-      `Query.posts: [Post]\n\nList out all posts`
-    );
+    expect(res?.body.displayString).toEqual(`Query.posts: [Post]`);
+    expect(res?.body.documentation).toEqual(`List out all posts`);
   }, 7500);
 
   it('Handles empty line (#190)', async () => {

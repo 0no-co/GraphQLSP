@@ -90,5 +90,5 @@ type Query {
   """
   List out all Pokémon, optionally in pages
   """
-  pokemons(limit: Int, skip: Int): [Pokemon]
+  pokemons(limit: Int = 10, skip: Int): [Pokemon]
 }

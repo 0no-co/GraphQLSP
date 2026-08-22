@@ -116,9 +116,8 @@ describe('Fragment + operations', () => {
 
     expect(res).toBeDefined();
     expect(typeof res?.body).toEqual('object');
-    expect(res?.body.documentation).toEqual(
-      `Query.posts: [Post]\n\nList out all posts`
-    );
+    expect(res?.body.displayString).toEqual(`Query.posts: [Post]`);
+    expect(res?.body.documentation).toEqual(`List out all posts`);
   }, 30000);
 
   it('gives suggestions with preceding fragments', async () => {

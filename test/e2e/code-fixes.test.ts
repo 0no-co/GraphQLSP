@@ -90,6 +90,34 @@ describe('Code fixes', () => {
     server.close();
   });
 
+  it('advertises GraphQL diagnostics as supporting code fixes', async () => {
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfileDidYouMean,
+      true
+    );
+
+    server.sendCommand('getSupportedCodeFixes');
+    await server.waitForResponse(
+      response =>
+        response.type === 'response' &&
+        response.command === 'getSupportedCodeFixes'
+    );
+    const response = [...server.responses]
+      .reverse()
+      .find(
+        response =>
+          response.type === 'response' &&
+          response.command === 'getSupportedCodeFixes'
+      ) as ts.server.protocol.Response;
+
+    expect(response.body).toEqual(
+      expect.arrayContaining(['52001', '52004', '52005'])
+    );
+  }, 30000);
+
   it('gives quick fixes for "Did you mean" suggestions', async () => {
     await server.waitForResponse(
       e =>

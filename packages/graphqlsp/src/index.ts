@@ -15,7 +15,10 @@ import {
   getGraphQLFragmentRenameInfo,
   getGraphQLFragmentRenameLocations,
 } from './references';
-import { getGraphQLCodeFixesAtPosition } from './codeFixes';
+import {
+  getGraphQLCodeFixesAtPosition,
+  registerGraphQLCodeFixes,
+} from './codeFixes';
 import { templates } from './ast/templates';
 import { getPersistedCodeFixAtPosition } from './persisted';
 import { canExtractFragment, getExtractFragmentEdits } from './extractFragment';
@@ -400,6 +403,7 @@ function create(info: ts.server.PluginCreateInfo) {
 
 const init: ts.server.PluginModuleFactory = ts => {
   initTypeScript(ts);
+  registerGraphQLCodeFixes();
   return { create };
 };
 

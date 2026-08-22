@@ -12,11 +12,41 @@ import { UNUSED_FIELD_CODE } from './fieldUsage';
 import { SchemaRef } from './graphql/getSchema';
 
 /** Diagnostic codes we can offer a quick fix for. */
-const CODE_FIXABLE_DIAGNOSTICS: readonly number[] = [
+export const CODE_FIXABLE_DIAGNOSTICS: readonly number[] = [
   SEMANTIC_DIAGNOSTIC_CODE,
   USING_DEPRECATED_FIELD_CODE,
   UNUSED_FIELD_CODE,
 ];
+
+/** Registers GraphQLSP's diagnostic codes with tsserver's code-fix registry.
+ *
+ * VS Code asks tsserver for the global list of supported fix codes before it
+ * requests fixes at a position. Language-service proxies cannot change that
+ * global response, so a no-op registration is needed to make VS Code request
+ * the real fixes provided by `getGraphQLCodeFixesAtPosition` below. */
+export const registerGraphQLCodeFixes = (): void => {
+  const codefix = (ts as any).codefix as
+    | {
+        getSupportedErrorCodes(): readonly string[];
+        registerCodeFix(registration: {
+          errorCodes: readonly number[];
+          getCodeActions(): undefined;
+        }): void;
+      }
+    | undefined;
+  if (!codefix) return;
+
+  const supported = new Set(codefix.getSupportedErrorCodes());
+  const missingCodes = CODE_FIXABLE_DIAGNOSTICS.filter(
+    code => !supported.has(String(code))
+  );
+  if (!missingCodes.length) return;
+
+  codefix.registerCodeFix({
+    errorCodes: missingCodes,
+    getCodeActions: () => undefined,
+  });
+};
 
 /** Computes quick fixes for GraphQLSP's own diagnostics at a position.
  *

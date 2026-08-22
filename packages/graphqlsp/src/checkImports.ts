@@ -1,5 +1,7 @@
 import { ts } from './ts';
-import { FragmentDefinitionNode, Kind, parse } from 'graphql';
+import { FragmentDefinitionNode, Kind } from 'graphql';
+
+import { parse } from './graphql/parse';
 
 import { findAllCallExpressions, findAllImports } from './ast';
 import { resolveTemplate } from './ast/resolve';

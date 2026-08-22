@@ -1,5 +1,7 @@
 import { ts } from './ts';
-import { parse, visit } from 'graphql';
+import { visit } from 'graphql';
+
+import { parse } from './graphql/parse';
 
 import { getValueOfIdentifier } from './ast/declaration';
 

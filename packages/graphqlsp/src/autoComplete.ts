@@ -12,7 +12,9 @@ import {
   CharacterStream,
   ContextToken,
 } from 'graphql-language-service';
-import { FragmentDefinitionNode, GraphQLSchema, Kind, parse } from 'graphql';
+import { FragmentDefinitionNode, GraphQLSchema, Kind } from 'graphql';
+
+import { parse } from './graphql/parse';
 import { print } from '@0no-co/graphql.web';
 
 import * as checks from './ast/checks';

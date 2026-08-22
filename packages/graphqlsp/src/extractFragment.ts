@@ -274,7 +274,7 @@ const printFragmentStatement = (
   if (quote !== '`') {
     // Regular string literals can't span lines, so the fragment document
     // is emitted on a single line, mirroring the current call's style
-    const fields = selectedText.replace(/[\s,]+/g, ' ').trim();
+    const fields = selectedText.trim();
     return (
       `${baseIndent}const ${variableName} = ${callee}(${quote}` +
       `fragment ${fragmentName} on ${found.parentTypeName} { ${fields} }` +

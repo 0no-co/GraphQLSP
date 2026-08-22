@@ -41,4 +41,8 @@ const pokemonQuery = graphql(`
   }
 `);
 
-console.log(existingFields, pokemonsQuery, pokemonQuery);
+const stringQuery = graphql(
+  'query StringQuery { pokemon(id: "foo, bar  baz") { id name } }'
+);
+
+console.log(existingFields, pokemonsQuery, pokemonQuery, stringQuery);

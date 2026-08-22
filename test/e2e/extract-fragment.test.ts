@@ -270,7 +270,11 @@ describe('Extract to fragment refactor', () => {
         }
       \`);
 
-      console.log(existingFields, pokemonsQuery, pokemonQuery);
+      const stringQuery = graphql(
+        'query StringQuery { pokemon(id: "foo, bar  baz") { id name } }'
+      );
+
+      console.log(existingFields, pokemonsQuery, pokemonQuery, stringQuery);
       "
     `);
   }, 30000);
@@ -334,9 +338,30 @@ describe('Extract to fragment refactor', () => {
         }
       \`);
 
-      console.log(existingFields, pokemonsQuery, pokemonQuery);
+      const stringQuery = graphql(
+        'query StringQuery { pokemon(id: "foo, bar  baz") { id name } }'
+      );
+
+      console.log(existingFields, pokemonsQuery, pokemonQuery, stringQuery);
       "
     `);
+  }, 30000);
+
+  it('preserves GraphQL string values in regular string literals', async () => {
+    const anchor = 'pokemon(id: "foo, bar  baz") { id name }';
+    const editInfo = await getEditsForExtractFragment({
+      start: indexOf(anchor),
+      end: indexOf(anchor) + anchor.length,
+    });
+
+    const result = applyEdits(fixtureContent, editInfo.edits[0]!.textChanges);
+    expect(result).toContain(
+      'fragment QueryFields on Query { pokemon(id: "foo, bar  baz") { id name } }'
+    );
+    expect(result).toContain(
+      "'query StringQuery { ...QueryFields }', [queryFields]"
+    );
+    expect(result).not.toContain('pokemon(id: "foo bar baz")');
   }, 30000);
 
   it('adds a fragment array to a call that has none', async () => {
@@ -397,7 +422,11 @@ describe('Extract to fragment refactor', () => {
         }
       \`, [pokemonFields2]);
 
-      console.log(existingFields, pokemonsQuery, pokemonQuery);
+      const stringQuery = graphql(
+        'query StringQuery { pokemon(id: "foo, bar  baz") { id name } }'
+      );
+
+      console.log(existingFields, pokemonsQuery, pokemonQuery, stringQuery);
       "
     `);
   }, 30000);

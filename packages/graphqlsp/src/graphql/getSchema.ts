@@ -41,6 +41,17 @@ const touchFile = async (file: PathLike): Promise<void> => {
 
 let swapFileCounter = 0;
 
+const getSwapFilePath = (target: PathLike): PathLike => {
+  const suffix = `.${process.pid}.${swapFileCounter++}.tmp`;
+  if (typeof target === 'string') return target + suffix;
+  if (Buffer.isBuffer(target))
+    return Buffer.concat([target, Buffer.from(suffix)]);
+
+  const tempTarget = new URL(target);
+  tempTarget.pathname += suffix;
+  return tempTarget;
+};
+
 /** Writes changed contents to a swapfile then moves it into place. */
 export const swapWrite = async (
   target: PathLike,
@@ -57,7 +68,7 @@ export const swapWrite = async (
   // shared swap-file name would let one instance rename the file away
   // while another still expects it, while direct writes to the target
   // could interleave
-  const tempTarget = `${target}.${process.pid}.${swapFileCounter++}.tmp`;
+  const tempTarget = getSwapFilePath(target);
   await fs.writeFile(tempTarget, contents);
   try {
     await fs.rename(tempTarget, target);

@@ -60,6 +60,9 @@ importers:
       dotenv:
         specifier: ^17.4.2
         version: 17.4.2
+      graphql17:
+        specifier: npm:graphql@^17.0.0
+        version: graphql@17.0.2
       husky:
         specifier: ^9.1.7
         version: 9.1.7
@@ -659,7 +662,6 @@ packages:
 
   '@gql.tada/cli-utils@1.9.0':
     resolution: {integrity: sha512-sTlFYC4dFxbJtLwmA43qzt/fo5SHJ4PWFmj45ILNuslZ/0E3Wpb436ll63G5EBFG+Dx/SWMe2S+epVw9rchQVA==}
-    version: 1.9.0
     peerDependencies:
       '@0no-co/graphqlsp': ^1.16.0
       '@gql.tada/svelte-support': 1.0.3
@@ -1968,6 +1970,10 @@ packages:
   graphql@16.8.1:
     resolution: {integrity: sha512-59LZHPdGZVh695Ud9lRzPBVTtlX9ZCV150Er2W43ro37wVof0ctenSaskPPjN7lVTIN8mSZt8PHUNKZuNQUuxw==}
     engines: {node: ^12.22.0 || ^14.16.0 || ^16.0.0 || >=17.0.0}
+
+  graphql@17.0.2:
+    resolution: {integrity: sha512-FRWbddMxfkjiB7z+aQDWIR+E34xo9I8c9mtK2RPv8PmMzKRvrdsreHL/Ui/TmwHJfhHChEtsFPyMHKI+xuarQQ==}
+    engines: {node: ^22.0.0 || ^24.0.0 || ^25.0.0 || >=26.0.0}
 
   has-flag@4.0.0:
     resolution: {integrity: sha512-EykJT/Q1KjTWctppgIAgfSO0tKVuZUjhgMr17kqTumMl6Afv3EISleU7qZUzoXDFTAHTDC4NOoG/ZxU3EvlMPQ==}
@@ -3457,9 +3463,9 @@ snapshots:
 
   '@fastify/busboy@3.2.0': {}
 
-  '@gql.tada/cli-utils@1.9.0(@0no-co/graphqlsp@file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3))(graphql@16.8.1)(typescript@5.3.3)':
+  '@gql.tada/cli-utils@1.9.0(@0no-co/graphqlsp@1.17.3(graphql@16.8.1)(typescript@5.3.3))(graphql@16.8.1)(typescript@5.3.3)':
     dependencies:
-      '@0no-co/graphqlsp': file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3)
+      '@0no-co/graphqlsp': 1.17.3(graphql@16.8.1)(typescript@5.3.3)
       '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@5.3.3)
       graphql: 16.8.1
       typescript: 5.3.3
@@ -4860,7 +4866,7 @@ snapshots:
     dependencies:
       '@0no-co/graphql.web': 1.3.2(graphql@16.8.1)
       '@0no-co/graphqlsp': 1.17.3(graphql@16.8.1)(typescript@5.3.3)
-      '@gql.tada/cli-utils': 1.9.0(@0no-co/graphqlsp@file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3))(graphql@16.8.1)(typescript@5.3.3)
+      '@gql.tada/cli-utils': 1.9.0(@0no-co/graphqlsp@1.17.3(graphql@16.8.1)(typescript@5.3.3))(graphql@16.8.1)(typescript@5.3.3)
       '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@5.3.3)
       typescript: 5.3.3
     transitivePeerDependencies:
@@ -4919,6 +4925,8 @@ snapshots:
       ws: 8.18.3
 
   graphql@16.8.1: {}
+
+  graphql@17.0.2: {}
 
   has-flag@4.0.0: {}
 

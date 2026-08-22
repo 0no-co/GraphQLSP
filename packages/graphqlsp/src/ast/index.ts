@@ -1,5 +1,7 @@
 import { ts } from '../ts';
-import { FragmentDefinitionNode, parse } from 'graphql';
+import { FragmentDefinitionNode } from 'graphql';
+
+import { parse } from '../graphql/parse';
 import * as checks from './checks';
 import { resolveTadaFragmentArray } from './resolve';
 import {

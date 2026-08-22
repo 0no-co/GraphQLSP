@@ -10,10 +10,11 @@ import {
   TypeInfo,
   isInterfaceType,
   isObjectType,
-  parse,
   visit,
   visitWithTypeInfo,
 } from 'graphql';
+
+import { parse } from './graphql/parse';
 
 import { ts } from './ts';
 import {

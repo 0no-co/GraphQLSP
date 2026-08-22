@@ -1,10 +1,15 @@
 import { ts } from './ts';
-import { Diagnostic, getDiagnostics } from 'graphql-language-service';
+import {
+  Diagnostic,
+  getDiagnostics,
+  validateQuery,
+} from 'graphql-language-service';
 import {
   FragmentDefinitionNode,
+  GraphQLSchema,
   Kind,
   OperationDefinitionNode,
-  parse,
+  print as printNode,
   visit,
 } from 'graphql';
 import { LRUCache } from 'lru-cache';
@@ -33,6 +38,35 @@ import {
   getDocumentReferenceFromTypeQuery,
 } from './persisted';
 import { SchemaRef } from './graphql/getSchema';
+import { parse } from './graphql/parse';
+
+/** Runs `graphql-language-service`'s diagnostics over a document.
+ *
+ * `getDiagnostics` parses the document itself, without the parse options
+ * GraphQLSP passes, so fragment arguments would be reported as syntax errors.
+ * Parsing here and handing the AST to `validateQuery` keeps that path intact,
+ * while still falling back to `getDiagnostics` for the ranged syntax error it
+ * reports when a document genuinely doesn't parse.
+ */
+function getDocumentDiagnostics(
+  text: string,
+  schema: GraphQLSchema,
+  fragments: FragmentDefinitionNode[]
+) {
+  const externalFragments = fragments.reduce(
+    (acc, node) => acc + printNode(node) + '\n\n',
+    ''
+  );
+  const enhancedText = externalFragments
+    ? `${text}\n\n${externalFragments}`
+    : text;
+
+  try {
+    return validateQuery(parse(enhancedText), schema);
+  } catch (e) {
+    return getDiagnostics(text, schema, undefined, undefined, fragments);
+  }
+}
 
 const BASE_CLIENT_DIRECTIVES = new Set([
   'populate',
@@ -754,11 +788,9 @@ const runDiagnostics = (
         ...(info.config.clientDirectives || []),
       ]);
 
-      const graphQLDiagnostics = getDiagnostics(
+      const graphQLDiagnostics = getDocumentDiagnostics(
         text,
         schemaToUse,
-        undefined,
-        undefined,
         docFragments
       )
         .filter(diag => {

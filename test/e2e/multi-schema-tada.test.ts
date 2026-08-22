@@ -1,5 +1,6 @@
 import { expect, afterAll, beforeAll, it, describe } from 'vitest';
 import { TSServer } from './server';
+import { pollDiagnostics } from './util';
 import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
@@ -88,20 +89,10 @@ describe('Multiple schemas', () => {
   });
 
   it('gives diagnostics about unused fields', async () => {
-    await server.waitForResponse(
-      e => e.type === 'event' && e.event === 'semanticDiag'
-    );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfilePokemonTest
-    );
+    const diagnostics = await pollDiagnostics(server, outfilePokemonTest);
 
-    expect(res).toBeDefined();
-    expect(res).toHaveLength(1);
-    expect(res[0].body.diagnostics).toHaveLength(1);
-    expect(res[0].body.diagnostics[0]).toMatchInlineSnapshot(`
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchInlineSnapshot(`
       {
         "category": "warning",
         "code": 52004,

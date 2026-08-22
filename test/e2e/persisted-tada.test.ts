@@ -1,6 +1,7 @@
 import { parse, print } from '@0no-co/graphql.web';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { TSServer } from './server';
+import { pollDiagnostics } from './util';
 import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
@@ -52,17 +53,9 @@ describe('Persisted operation hash + tada', () => {
   });
 
   it('reports a hash mismatch when a fragment referenced via nested property access (Component.fragments.<name>) is included in the document', async () => {
-    await server.waitForResponse(
-      e => e.type === 'event' && e.event === 'semanticDiag'
+    const lastDiagnostics = await pollDiagnostics(server, outfile, d =>
+      d.some(x => x.code === MISSMATCH_HASH_TO_DOCUMENT)
     );
-    const responses = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfile
-    );
-    const lastDiagnostics: any[] =
-      responses[responses.length - 1]?.body?.diagnostics ?? [];
 
     const hashMismatch = lastDiagnostics.find(
       d => d.code === MISSMATCH_HASH_TO_DOCUMENT

@@ -4,38 +4,9 @@ import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
 import ts from 'typescript/lib/tsserverlibrary';
+import { pollDiagnostics as waitForDiagnostics } from './util';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
-
-// Polls the server with "geterr" until a non-empty semantic-diagnostics
-// response arrives for the given file. The schema is loaded asynchronously,
-// so the error-state may not have settled when the file is first checked.
-const waitForDiagnostics = async (
-  server: TSServer,
-  file: string
-): Promise<any[]> => {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const seen = server.responses.length;
-    server.sendCommand('geterr', { files: [file], delay: 0 });
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === file
-    );
-    const res = server.responses
-      .slice(seen)
-      .find(
-        e =>
-          e.type === 'event' &&
-          e.event === 'semanticDiag' &&
-          e.body?.file === file
-      ) as any;
-    if (res && res.body.diagnostics.length) return res.body.diagnostics;
-    await new Promise(resolve => setTimeout(resolve, 250));
-  }
-  return [];
-};
 
 const openFixture = async (server: TSServer, projectPath: string) => {
   const testFile = path.join(projectPath, 'simple.ts');

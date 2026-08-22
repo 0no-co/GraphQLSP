@@ -1,5 +1,6 @@
 import { expect, afterAll, beforeAll, it, describe } from 'vitest';
 import { TSServer } from './server';
+import { pollDiagnostics } from './util';
 import path from 'node:path';
 import fs from 'node:fs';
 import url from 'node:url';
@@ -118,16 +119,8 @@ describe('Fragment + operations', () => {
   });
 
   it('gives semantic-diagnostics with preceding fragments', async () => {
-    await server.waitForResponse(
-      e => e.type === 'event' && e.event === 'semanticDiag'
-    );
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileCombo
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+    const diagnostics = await pollDiagnostics(server, outfileCombo);
+    expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
           "category": "warning",
@@ -446,20 +439,8 @@ List out all Pokémon, optionally in pages`
       tmpfile: outfileUnusedFragment,
     } satisfies ts.server.protocol.SavetoRequestArgs);
 
-    await server.waitForResponse(
-      e =>
-        e.type === 'event' &&
-        e.event === 'semanticDiag' &&
-        e.body?.file === outfileUnusedFragment
-    );
-
-    const res = server.responses.filter(
-      resp =>
-        resp.type === 'event' &&
-        resp.event === 'semanticDiag' &&
-        resp.body?.file === outfileUnusedFragment
-    );
-    expect(res[0].body.diagnostics).toMatchInlineSnapshot(`
+    const diagnostics = await pollDiagnostics(server, outfileUnusedFragment);
+    expect(diagnostics).toMatchInlineSnapshot(`
       [
         {
           "category": "warning",

@@ -8,9 +8,13 @@ on:
 
 jobs:
   check:
-    name: Checks
+    name: Checks (TypeScript ${{ matrix.typescript }})
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        typescript: [5.9.3, 6.0.3]
     steps:
       - name: Checkout Repo
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
@@ -41,8 +45,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-
 
+      - name: Configure TypeScript ${{ matrix.typescript }}
+        if: matrix.typescript != '6.0.3'
+        run: node scripts/set-typescript-version.mjs ${{ matrix.typescript }}
+
       - name: Install Dependencies
+        if: matrix.typescript == '6.0.3'
         run: pnpm install --frozen-lockfile --prefer-offline
+
+      - name: Install Dependencies for compatibility test
+        if: matrix.typescript != '6.0.3'
+        run: pnpm install --no-frozen-lockfile --prefer-offline
 
       - name: Build
         run: pnpm --filter @0no-co/graphqlsp run build

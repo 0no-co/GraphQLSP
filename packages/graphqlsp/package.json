@@ -47,7 +47,7 @@
     "@types/node": "^22.20.0",
     "graphql-language-service": "^5.5.2",
     "lru-cache": "^11.5.1",
-    "typescript": "^5.9.3"
+    "typescript": "^6.0.3"
   },
   "dependencies": {
     "@gql.tada/internal": "^1.2.1",

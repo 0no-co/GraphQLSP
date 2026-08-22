@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  typescript: ^5.3.3
+  typescript: ^6.0.3
   ua-parser-js@<0.7.33: '>=0.7.33'
   postcss@<8.4.31: '>=8.4.31'
   semver@<5.7.2: '>=5.7.2'
@@ -53,7 +53,7 @@ importers:
         version: 1.0.0(rollup@4.62.2)
       '@rollup/plugin-typescript':
         specifier: ^12.3.0
-        version: 12.3.0(rollup@4.62.2)(tslib@2.8.1)(typescript@5.9.3)
+        version: 12.3.0(rollup@4.62.2)(tslib@2.8.1)(typescript@6.0.3)
       '@types/node':
         specifier: ^22.20.0
         version: 22.20.0
@@ -77,10 +77,10 @@ importers:
         version: 1.0.3(rollup@4.62.2)
       rollup-plugin-dts:
         specifier: ^6.4.1
-        version: 6.4.1(rollup@4.62.2)(typescript@5.9.3)
+        version: 6.4.1(rollup@4.62.2)(typescript@6.0.3)
       typescript:
-        specifier: ^5.3.3
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
       vite:
         specifier: ^8.1.3
         version: 8.1.3(@types/node@22.20.0)(jiti@2.6.1)(terser@5.48.0)(yaml@2.9.0)
@@ -102,10 +102,10 @@ importers:
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: file:../graphqlsp
-        version: file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3)
+        version: link:../graphqlsp
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   packages/example-external-generator:
     dependencies:
@@ -124,10 +124,10 @@ importers:
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: file:../graphqlsp
-        version: file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3)
+        version: link:../graphqlsp
       '@graphql-codegen/cli':
         specifier: ^5.0.0
-        version: 5.0.0(@types/node@22.20.0)(graphql@16.8.1)(typescript@5.3.3)
+        version: 5.0.0(@types/node@22.20.0)(graphql@16.8.1)(typescript@6.0.3)
       '@graphql-codegen/client-preset':
         specifier: ^4.1.0
         version: 4.1.0(graphql@16.8.1)
@@ -136,10 +136,10 @@ importers:
         version: 18.2.45
       ts-node:
         specifier: ^10.9.1
-        version: 10.9.1(@types/node@22.20.0)(typescript@5.3.3)
+        version: 10.9.1(@types/node@22.20.0)(typescript@6.0.3)
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   packages/example-tada:
     dependencies:
@@ -151,7 +151,7 @@ importers:
         version: 3.0.0(graphql@16.8.1)
       gql.tada:
         specifier: ^1.11.0
-        version: 1.11.0(graphql@16.8.1)(typescript@5.3.3)
+        version: 1.11.0(graphql@16.8.1)(typescript@6.0.3)
       graphql:
         specifier: ^16.8.1
         version: 16.8.1
@@ -161,10 +161,10 @@ importers:
     devDependencies:
       '@0no-co/graphqlsp':
         specifier: file:../graphqlsp
-        version: file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3)
+        version: link:../graphqlsp
       '@graphql-codegen/cli':
         specifier: ^5.0.0
-        version: 5.0.0(@types/node@22.20.0)(graphql@16.8.1)(typescript@5.3.3)
+        version: 5.0.0(@types/node@22.20.0)(graphql@16.8.1)(typescript@6.0.3)
       '@graphql-codegen/client-preset':
         specifier: ^4.1.0
         version: 4.1.0(graphql@16.8.1)
@@ -173,16 +173,16 @@ importers:
         version: 18.2.45
       ts-node:
         specifier: ^10.9.1
-        version: 10.9.1(@types/node@22.20.0)(typescript@5.3.3)
+        version: 10.9.1(@types/node@22.20.0)(typescript@6.0.3)
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   packages/graphqlsp:
     dependencies:
       '@gql.tada/internal':
         specifier: ^1.2.1
-        version: 1.2.1(graphql@16.8.1)(typescript@5.9.3)
+        version: 1.2.1(graphql@16.8.1)(typescript@6.0.3)
       graphql:
         specifier: ^15.5.0 || ^16.0.0 || ^17.0.0
         version: 16.8.1
@@ -203,8 +203,8 @@ importers:
         specifier: ^11.5.1
         version: 11.5.1
       typescript:
-        specifier: ^5.3.3
-        version: 5.9.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   test/e2e/fixture-project:
     dependencies:
@@ -216,8 +216,8 @@ importers:
         version: 4.0.4(graphql@16.8.1)
     devDependencies:
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   test/e2e/fixture-project-client-preset:
     dependencies:
@@ -235,8 +235,8 @@ importers:
         version: 16.8.1
     devDependencies:
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   test/e2e/fixture-project-misconfiguration:
     dependencies:
@@ -248,8 +248,8 @@ importers:
         version: 4.3.0(graphql@16.8.1)
     devDependencies:
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   test/e2e/fixture-project-missing-schema:
     dependencies:
@@ -261,8 +261,8 @@ importers:
         version: 4.3.0(graphql@16.8.1)
     devDependencies:
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   test/e2e/fixture-project-mode-mismatch:
     dependencies:
@@ -274,8 +274,8 @@ importers:
         version: 4.3.0(graphql@16.8.1)
     devDependencies:
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   test/e2e/fixture-project-tada:
     dependencies:
@@ -290,14 +290,14 @@ importers:
         version: 4.0.4(graphql@16.8.1)
       gql.tada:
         specifier: ^1.11.0
-        version: 1.11.0(graphql@16.8.1)(typescript@5.3.3)
+        version: 1.11.0(graphql@16.8.1)(typescript@6.0.3)
       graphql:
         specifier: ^16.0.0
         version: 16.8.1
     devDependencies:
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   test/e2e/fixture-project-tada-multi-schema:
     dependencies:
@@ -312,14 +312,14 @@ importers:
         version: 4.0.4(graphql@16.8.1)
       gql.tada:
         specifier: ^1.11.0
-        version: 1.11.0(graphql@16.8.1)(typescript@5.3.3)
+        version: 1.11.0(graphql@16.8.1)(typescript@6.0.3)
       graphql:
         specifier: ^16.0.0
         version: 16.8.1
     devDependencies:
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
   test/e2e/fixture-project-unused-fields:
     dependencies:
@@ -343,8 +343,8 @@ importers:
         specifier: 18.2.45
         version: 18.2.45
       typescript:
-        specifier: ^5.3.3
-        version: 5.3.3
+        specifier: ^6.0.3
+        version: 6.0.3
 
 packages:
 
@@ -368,13 +368,7 @@ packages:
     resolution: {integrity: sha512-4PPvxDPmbntddpgMyA3VId5/E9YGdRuuS/mW+THOvtTx/C79Pf+lN28LkNNACJrF9L7YACiAJelyOkC6LqUzvw==}
     peerDependencies:
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
-      typescript: ^5.3.3
-
-  '@0no-co/graphqlsp@file:packages/graphqlsp':
-    resolution: {directory: packages/graphqlsp, type: directory}
-    peerDependencies:
-      graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
-      typescript: ^5.3.3
+      typescript: ^6.0.3
 
   '@actions/core@3.0.1':
     resolution: {integrity: sha512-a6d/Nwahm9fliVGRhdhofo40HjHQasUPusmc7vBfyky+7Z+P2A1J68zyFVaNcEclc/Se+eO595oAr5nwEIoIUA==}
@@ -659,13 +653,12 @@ packages:
 
   '@gql.tada/cli-utils@1.9.0':
     resolution: {integrity: sha512-sTlFYC4dFxbJtLwmA43qzt/fo5SHJ4PWFmj45ILNuslZ/0E3Wpb436ll63G5EBFG+Dx/SWMe2S+epVw9rchQVA==}
-    version: 1.9.0
     peerDependencies:
       '@0no-co/graphqlsp': ^1.16.0
       '@gql.tada/svelte-support': 1.0.3
       '@gql.tada/vue-support': 1.0.3
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
-      typescript: ^5.3.3
+      typescript: ^6.0.3
     peerDependenciesMeta:
       '@gql.tada/svelte-support':
         optional: true
@@ -676,13 +669,13 @@ packages:
     resolution: {integrity: sha512-mbrWlSLNMCMuP7uGFm4EGFJ0oU1XqzUqykAqQ4emVLUvuERKB6Vhb3KoWdSqSCCBKm7G3WcYCYgFbaMUUMNshw==}
     peerDependencies:
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
-      typescript: ^5.3.3
+      typescript: ^6.0.3
 
   '@gql.tada/internal@1.2.1':
     resolution: {integrity: sha512-1kPMv9KRpD6mfVwtXK+iy43U/gi4bpr4ganfhPLD0TjxpbuVJm7CtZ9wMFdwy3FjLBFN2QhwscNnL7lRPHg4vg==}
     peerDependencies:
       graphql: ^15.5.0 || ^16.0.0 || ^17.0.0
-      typescript: ^5.3.3
+      typescript: ^6.0.3
 
   '@graphql-codegen/add@5.0.3':
     resolution: {integrity: sha512-SxXPmramkth8XtBlAHu4H4jYcYXM/o3p01+psU+0NADQowA8jtYkK6MW5rV6T+CxkEaNZItfSmZRPgIuypcqnA==}
@@ -1197,7 +1190,7 @@ packages:
     peerDependencies:
       rollup: ^2.14.0||^3.0.0||^4.0.0
       tslib: '*'
-      typescript: ^5.3.3
+      typescript: ^6.0.3
     peerDependenciesMeta:
       rollup:
         optional: true
@@ -1700,7 +1693,7 @@ packages:
     resolution: {integrity: sha512-kcZ6+W5QzcJ3P1Mt+83OUv/oHFqZHIx8DuxG6eZ5RGMERoLqp4BuGjhHLYGK+Kf5XVkQvqBSmAy/nGWN3qDgEA==}
     engines: {node: '>=14'}
     peerDependencies:
-      typescript: ^5.3.3
+      typescript: ^6.0.3
     peerDependenciesMeta:
       typescript:
         optional: true
@@ -1917,7 +1910,7 @@ packages:
     resolution: {integrity: sha512-QmBB7HTPBH3fBHdAEBBbq8N/1tyq9abdINply2rSUW1FVvZJ/b/jOD8esKVHh+JEajCCtfjGl0Kx2RyvXJFNCQ==}
     hasBin: true
     peerDependencies:
-      typescript: ^5.3.3
+      typescript: ^6.0.3
 
   graphql-config@5.1.5:
     resolution: {integrity: sha512-mG2LL1HccpU8qg5ajLROgdsBzx/o2M6kgI3uAmoaXiSH9PCUbtIyLomLqUtCFaAeG2YCFsl0M5cfQ9rKmDoMVA==}
@@ -2540,7 +2533,7 @@ packages:
     engines: {node: '>=20'}
     peerDependencies:
       rollup: ^3.29.4 || ^4
-      typescript: ^5.3.3
+      typescript: ^6.0.3
 
   rollup@4.62.2:
     resolution: {integrity: sha512-RFnrW4lhXA3s3eqHDZvN654g8OTjzRfqpIRJYczCGB6HzphckVAi/Qh4tbPUbRuDi7s1Llv8g/NspLkttY3gTA==}
@@ -2756,7 +2749,7 @@ packages:
       '@swc/core': '>=1.2.50'
       '@swc/wasm': '>=1.2.50'
       '@types/node': '*'
-      typescript: ^5.3.3
+      typescript: ^6.0.3
     peerDependenciesMeta:
       '@swc/core':
         optional: true
@@ -2780,13 +2773,8 @@ packages:
     resolution: {integrity: sha512-t0rzBq87m3fVcduHDUFhKmyyX+9eo6WQjZvf51Ea/M0Q7+T374Jp1aUiyUl0GKxp8M/OETVHSDvmkyPgvX+X2w==}
     engines: {node: '>=10'}
 
-  typescript@5.3.3:
-    resolution: {integrity: sha512-pXWcraxM0uxAS+tN0AG/BF2TyqmHO014Z070UsJ+pFvYuRSq8KH8DmWpnbXe0pEPDHXZV3FcAbJkijJ5oNEnWw==}
-    engines: {node: '>=14.17'}
-    hasBin: true
-
-  typescript@5.9.3:
-    resolution: {integrity: sha512-jl1vZzPDinLr9eUt3J/t7V6FgNEw9QjvBPdysz9KfQDD41fQrC2Y4vKQdiaUpFT4bXlb1RHhLpp8wtm6M5TgSw==}
+  typescript@6.0.3:
+    resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
     engines: {node: '>=14.17'}
     hasBin: true
 
@@ -3036,17 +3024,11 @@ snapshots:
     optionalDependencies:
       graphql: 16.8.1
 
-  '@0no-co/graphqlsp@1.17.3(graphql@16.8.1)(typescript@5.3.3)':
+  '@0no-co/graphqlsp@1.17.3(graphql@16.8.1)(typescript@6.0.3)':
     dependencies:
-      '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@5.3.3)
+      '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@6.0.3)
       graphql: 16.8.1
-      typescript: 5.3.3
-
-  '@0no-co/graphqlsp@file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3)':
-    dependencies:
-      '@gql.tada/internal': 1.2.1(graphql@16.8.1)(typescript@5.3.3)
-      graphql: 16.8.1
-      typescript: 5.3.3
+      typescript: 6.0.3
 
   '@actions/core@3.0.1':
     dependencies:
@@ -3457,30 +3439,24 @@ snapshots:
 
   '@fastify/busboy@3.2.0': {}
 
-  '@gql.tada/cli-utils@1.9.0(@0no-co/graphqlsp@file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3))(graphql@16.8.1)(typescript@5.3.3)':
+  '@gql.tada/cli-utils@1.9.0(@0no-co/graphqlsp@1.17.3(graphql@16.8.1)(typescript@6.0.3))(graphql@16.8.1)(typescript@6.0.3)':
     dependencies:
-      '@0no-co/graphqlsp': file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3)
-      '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@5.3.3)
+      '@0no-co/graphqlsp': 1.17.3(graphql@16.8.1)(typescript@6.0.3)
+      '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@6.0.3)
       graphql: 16.8.1
-      typescript: 5.3.3
+      typescript: 6.0.3
 
-  '@gql.tada/internal@1.2.0(graphql@16.8.1)(typescript@5.3.3)':
+  '@gql.tada/internal@1.2.0(graphql@16.8.1)(typescript@6.0.3)':
     dependencies:
       '@0no-co/graphql.web': 1.3.2(graphql@16.8.1)
       graphql: 16.8.1
-      typescript: 5.3.3
+      typescript: 6.0.3
 
-  '@gql.tada/internal@1.2.1(graphql@16.8.1)(typescript@5.3.3)':
+  '@gql.tada/internal@1.2.1(graphql@16.8.1)(typescript@6.0.3)':
     dependencies:
       '@0no-co/graphql.web': 1.3.2(graphql@16.8.1)
       graphql: 16.8.1
-      typescript: 5.3.3
-
-  '@gql.tada/internal@1.2.1(graphql@16.8.1)(typescript@5.9.3)':
-    dependencies:
-      '@0no-co/graphql.web': 1.3.2(graphql@16.8.1)
-      graphql: 16.8.1
-      typescript: 5.9.3
+      typescript: 6.0.3
 
   '@graphql-codegen/add@5.0.3(graphql@16.8.1)':
     dependencies:
@@ -3488,7 +3464,7 @@ snapshots:
       graphql: 16.8.1
       tslib: 2.6.3
 
-  '@graphql-codegen/cli@5.0.0(@types/node@22.20.0)(graphql@16.8.1)(typescript@5.3.3)':
+  '@graphql-codegen/cli@5.0.0(@types/node@22.20.0)(graphql@16.8.1)(typescript@6.0.3)':
     dependencies:
       '@babel/generator': 7.28.5
       '@babel/template': 7.27.2
@@ -3507,11 +3483,11 @@ snapshots:
       '@graphql-tools/utils': 10.10.1(graphql@16.8.1)
       '@whatwg-node/fetch': 0.8.8
       chalk: 4.1.2
-      cosmiconfig: 8.3.6(typescript@5.3.3)
+      cosmiconfig: 8.3.6(typescript@6.0.3)
       debounce: 1.2.1
       detect-indent: 6.1.0
       graphql: 16.8.1
-      graphql-config: 5.1.5(@types/node@22.20.0)(graphql@16.8.1)(typescript@5.3.3)
+      graphql-config: 5.1.5(@types/node@22.20.0)(graphql@16.8.1)(typescript@6.0.3)
       inquirer: 8.2.7(@types/node@22.20.0)
       is-glob: 4.0.3
       jiti: 1.21.7
@@ -4203,11 +4179,11 @@ snapshots:
     optionalDependencies:
       rollup: 4.62.2
 
-  '@rollup/plugin-typescript@12.3.0(rollup@4.62.2)(tslib@2.8.1)(typescript@5.9.3)':
+  '@rollup/plugin-typescript@12.3.0(rollup@4.62.2)(tslib@2.8.1)(typescript@6.0.3)':
     dependencies:
       '@rollup/pluginutils': 5.4.0(rollup@4.62.2)
       resolve: 1.22.12
-      typescript: 5.9.3
+      typescript: 6.0.3
     optionalDependencies:
       rollup: 4.62.2
       tslib: 2.8.1
@@ -4667,14 +4643,14 @@ snapshots:
 
   convert-source-map@2.0.0: {}
 
-  cosmiconfig@8.3.6(typescript@5.3.3):
+  cosmiconfig@8.3.6(typescript@6.0.3):
     dependencies:
       import-fresh: 3.3.1
       js-yaml: 4.1.0
       parse-json: 5.2.0
       path-type: 4.0.0
     optionalDependencies:
-      typescript: 5.3.3
+      typescript: 6.0.3
 
   create-require@1.1.1: {}
 
@@ -4856,19 +4832,19 @@ snapshots:
       merge2: 1.4.1
       slash: 3.0.0
 
-  gql.tada@1.11.0(graphql@16.8.1)(typescript@5.3.3):
+  gql.tada@1.11.0(graphql@16.8.1)(typescript@6.0.3):
     dependencies:
       '@0no-co/graphql.web': 1.3.2(graphql@16.8.1)
-      '@0no-co/graphqlsp': 1.17.3(graphql@16.8.1)(typescript@5.3.3)
-      '@gql.tada/cli-utils': 1.9.0(@0no-co/graphqlsp@file:packages/graphqlsp(graphql@16.8.1)(typescript@5.3.3))(graphql@16.8.1)(typescript@5.3.3)
-      '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@5.3.3)
-      typescript: 5.3.3
+      '@0no-co/graphqlsp': 1.17.3(graphql@16.8.1)(typescript@6.0.3)
+      '@gql.tada/cli-utils': 1.9.0(@0no-co/graphqlsp@1.17.3(graphql@16.8.1)(typescript@6.0.3))(graphql@16.8.1)(typescript@6.0.3)
+      '@gql.tada/internal': 1.2.0(graphql@16.8.1)(typescript@6.0.3)
+      typescript: 6.0.3
     transitivePeerDependencies:
       - '@gql.tada/svelte-support'
       - '@gql.tada/vue-support'
       - graphql
 
-  graphql-config@5.1.5(@types/node@22.20.0)(graphql@16.8.1)(typescript@5.3.3):
+  graphql-config@5.1.5(@types/node@22.20.0)(graphql@16.8.1)(typescript@6.0.3):
     dependencies:
       '@graphql-tools/graphql-file-loader': 8.1.4(graphql@16.8.1)
       '@graphql-tools/json-file-loader': 8.0.22(graphql@16.8.1)
@@ -4876,7 +4852,7 @@ snapshots:
       '@graphql-tools/merge': 9.1.3(graphql@16.8.1)
       '@graphql-tools/url-loader': 8.0.33(@types/node@22.20.0)(graphql@16.8.1)
       '@graphql-tools/utils': 10.10.1(graphql@16.8.1)
-      cosmiconfig: 8.3.6(typescript@5.3.3)
+      cosmiconfig: 8.3.6(typescript@6.0.3)
       graphql: 16.8.1
       jiti: 2.6.1
       minimatch: 9.0.5
@@ -5450,14 +5426,14 @@ snapshots:
       cjs-module-lexer: 1.4.3
       rollup: 4.62.2
 
-  rollup-plugin-dts@6.4.1(rollup@4.62.2)(typescript@5.9.3):
+  rollup-plugin-dts@6.4.1(rollup@4.62.2)(typescript@6.0.3):
     dependencies:
       '@jridgewell/remapping': 2.3.5
       '@jridgewell/sourcemap-codec': 1.5.5
       convert-source-map: 2.0.0
       magic-string: 0.30.21
       rollup: 4.62.2
-      typescript: 5.9.3
+      typescript: 6.0.3
     optionalDependencies:
       '@babel/code-frame': 7.29.7
 
@@ -5671,7 +5647,7 @@ snapshots:
 
   ts-log@2.2.7: {}
 
-  ts-node@10.9.1(@types/node@22.20.0)(typescript@5.3.3):
+  ts-node@10.9.1(@types/node@22.20.0)(typescript@6.0.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.11
@@ -5685,7 +5661,7 @@ snapshots:
       create-require: 1.1.1
       diff: 4.0.2
       make-error: 1.3.6
-      typescript: 5.3.3
+      typescript: 6.0.3
       v8-compile-cache-lib: 3.0.1
       yn: 3.1.1
 
@@ -5699,9 +5675,7 @@ snapshots:
 
   type-fest@0.21.3: {}
 
-  typescript@5.3.3: {}
-
-  typescript@5.9.3: {}
+  typescript@6.0.3: {}
 
   ua-parser-js@1.0.41: {}
 

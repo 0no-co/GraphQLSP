@@ -39,6 +39,19 @@ const touchFile = async (file: PathLike): Promise<void> => {
   } catch (_error) {}
 };
 
+let swapFileCounter = 0;
+
+const getSwapFilePath = (target: PathLike): PathLike => {
+  const suffix = `.${process.pid}.${swapFileCounter++}.tmp`;
+  if (typeof target === 'string') return target + suffix;
+  if (Buffer.isBuffer(target))
+    return Buffer.concat([target, Buffer.from(suffix)]);
+
+  const tempTarget = new URL(target);
+  tempTarget.pathname += suffix;
+  return tempTarget;
+};
+
 /** Writes changed contents to a swapfile then moves it into place. */
 export const swapWrite = async (
   target: PathLike,
@@ -47,27 +60,27 @@ export const swapWrite = async (
   const existing = await fs.readFile(target).catch(() => undefined);
   if (existing?.equals(Buffer.from(contents))) return;
 
-  if (!(await statFile(target, stat => stat.isFile()))) {
-    // If the file doesn't exist, we can write directly, and not
-    // try-catch so the error falls through
-    await fs.writeFile(target, contents);
-  } else {
-    // If the file exists, we write to a swap-file, then rename (i.e. move)
-    // the file into place. No try-catch around `writeFile` for proper
-    // directory/permission errors
-    const tempTarget = target + '.tmp';
-    await fs.writeFile(tempTarget, contents);
-    try {
-      await fs.rename(tempTarget, target);
-    } catch (error) {
-      await fs.unlink(tempTarget);
-      throw error;
-    } finally {
-      // When we move the file into place, we also update its access and
-      // modification time manually, in case the rename doesn't trigger
-      // a change event
-      await touchFile(target);
-    }
+  // We write to a swap-file, then rename (i.e. move) the file into place.
+  // No try-catch around `writeFile` for proper directory/permission errors.
+  // The swap-file's name must be unique per process and call. Multiple
+  // plugin instances may target the same output file (e.g. several TS
+  // projects in a monorepo sharing one `tadaOutputLocation`), and a
+  // shared swap-file name would let one instance rename the file away
+  // while another still expects it, while direct writes to the target
+  // could interleave
+  const tempTarget = getSwapFilePath(target);
+  await fs.writeFile(tempTarget, contents);
+  try {
+    await fs.rename(tempTarget, target);
+  } catch (error) {
+    // Clean-up is best-effort and must not mask the rename error
+    await fs.unlink(tempTarget).catch(() => {});
+    throw error;
+  } finally {
+    // When we move the file into place, we also update its access and
+    // modification time manually, in case the rename doesn't trigger
+    // a change event
+    await touchFile(target);
   }
 };
 

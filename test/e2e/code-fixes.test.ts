@@ -107,35 +107,35 @@ describe('Code fixes', () => {
     );
     expect(diagnostics[0].body.diagnostics.filter((x: any) => x.code === 52001))
       .toMatchInlineSnapshot(`
-      [
-        {
-          "category": "error",
-          "code": 52001,
-          "end": {
-            "line": 9,
-            "offset": 1,
+        [
+          {
+            "category": "error",
+            "code": 52001,
+            "end": {
+              "line": 9,
+              "offset": 1,
+            },
+            "start": {
+              "line": 8,
+              "offset": 7,
+            },
+            "text": "Cannot query field "nam" on type "Pokemon". Did you mean "name"?",
           },
-          "start": {
-            "line": 8,
-            "offset": 7,
+          {
+            "category": "error",
+            "code": 52001,
+            "end": {
+              "line": 16,
+              "offset": 12,
+            },
+            "start": {
+              "line": 16,
+              "offset": 5,
+            },
+            "text": "Cannot query field "pokemo" on type "Query". Did you mean "pokemon" or "pokemons"?",
           },
-          "text": "Cannot query field \\"nam\\" on type \\"Pokemon\\". Did you mean \\"name\\"?",
-        },
-        {
-          "category": "error",
-          "code": 52001,
-          "end": {
-            "line": 16,
-            "offset": 12,
-          },
-          "start": {
-            "line": 16,
-            "offset": 5,
-          },
-          "text": "Cannot query field \\"pokemo\\" on type \\"Query\\". Did you mean \\"pokemon\\" or \\"pokemons\\"?",
-        },
-      ]
-    `);
+        ]
+      `);
 
     const fixes = await requestCodeFixes({
       file: outfileDidYouMean,

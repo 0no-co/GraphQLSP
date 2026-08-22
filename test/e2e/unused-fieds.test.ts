@@ -26,6 +26,32 @@ describe('unused fields', () => {
   const outfileMultiDocument = path.join(projectPath, 'multi-document.ts');
 
   let server: TSServer;
+
+  const isCodeFixResponse = (response: any) =>
+    response.type === 'response' && response.command === 'getCodeFixes';
+
+  const requestCodeFixes = async (
+    args: ts.server.protocol.CodeFixRequestArgs
+  ): Promise<any> => {
+    const seen = server.responses.filter(isCodeFixResponse).length;
+    server.sendCommand('getCodeFixes', args);
+    await server.waitForResponse(
+      response =>
+        isCodeFixResponse(response) &&
+        server.responses.filter(isCodeFixResponse).length > seen
+    );
+    const responses = server.responses.filter(isCodeFixResponse);
+    const body = responses[responses.length - 1].body || [];
+    // Snapshots have to stay machine-independent
+    return body.map((fix: any) => ({
+      ...fix,
+      changes: fix.changes.map((change: any) => ({
+        ...change,
+        fileName: path.relative(projectPath, change.fileName),
+      })),
+    }));
+  };
+
   beforeAll(async () => {
     server = new TSServer(projectPath, { debugLog: false });
 
@@ -532,5 +558,122 @@ describe('unused fields', () => {
       },
       text: "Field(s) 'pokemons.fleeRate' are not used.",
     });
+  }, 30000);
+
+  it('gives a quick fix removing an unused field', async () => {
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfilePropAccess,
+      true
+    );
+
+    // "Field(s) 'pokemon.fleeRate' are not used." reported on `pokemon`
+    const fixes = await requestCodeFixes({
+      file: outfilePropAccess,
+      startLine: 9,
+      startOffset: 5,
+      endLine: 9,
+      endOffset: 12,
+      errorCodes: [52005],
+    });
+
+    expect(fixes).toMatchInlineSnapshot(`
+      [
+        {
+          "changes": [
+            {
+              "fileName": "property-access.tsx",
+              "textChanges": [
+                {
+                  "end": {
+                    "line": 12,
+                    "offset": 1,
+                  },
+                  "newText": "",
+                  "start": {
+                    "line": 11,
+                    "offset": 1,
+                  },
+                },
+              ],
+            },
+          ],
+          "description": "Remove unused field 'pokemon.fleeRate'",
+          "fixName": "graphqlRemoveUnusedField",
+        },
+      ]
+    `);
+  }, 30000);
+
+  it('gives a quick fix removing a nested unused field', async () => {
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfilePropAccess,
+      true
+    );
+
+    // "Field(s) 'pokemon.attacks.special.damage' are not used." reported on `special`
+    const fixes = await requestCodeFixes({
+      file: outfilePropAccess,
+      startLine: 14,
+      startOffset: 9,
+      endLine: 14,
+      endOffset: 16,
+      errorCodes: [52005],
+    });
+
+    expect(fixes).toMatchInlineSnapshot(`
+      [
+        {
+          "changes": [
+            {
+              "fileName": "property-access.tsx",
+              "textChanges": [
+                {
+                  "end": {
+                    "line": 17,
+                    "offset": 1,
+                  },
+                  "newText": "",
+                  "start": {
+                    "line": 16,
+                    "offset": 1,
+                  },
+                },
+              ],
+            },
+          ],
+          "description": "Remove unused field 'pokemon.attacks.special.damage'",
+          "fixName": "graphqlRemoveUnusedField",
+        },
+      ]
+    `);
+  }, 30000);
+
+  it('gives no quick fix when removing the unused fields would empty the selection set', async () => {
+    await server.waitForResponse(
+      e =>
+        e.type === 'event' &&
+        e.event === 'semanticDiag' &&
+        e.body?.file === outfilePropAccess,
+      true
+    );
+
+    // "Field(s) 'pokemon.weight.minimum', 'pokemon.weight.maximum' are not
+    // used." reported on `weight`, whose selection set has no other fields
+    const fixes = await requestCodeFixes({
+      file: outfilePropAccess,
+      startLine: 19,
+      startOffset: 7,
+      endLine: 19,
+      endOffset: 13,
+      errorCodes: [52005],
+    });
+
+    expect(fixes).toEqual([]);
   }, 30000);
 });

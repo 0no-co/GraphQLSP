@@ -15,6 +15,10 @@ import {
   getGraphQLFragmentRenameInfo,
   getGraphQLFragmentRenameLocations,
 } from './references';
+import {
+  getGraphQLCodeFixesAtPosition,
+  registerGraphQLCodeFixes,
+} from './codeFixes';
 import { templates } from './ast/templates';
 import { getPersistedCodeFixAtPosition } from './persisted';
 import { canExtractFragment, getExtractFragmentEdits } from './extractFragment';
@@ -95,6 +99,39 @@ function create(info: ts.server.PluginCreateInfo) {
       return graphQLDiagnostics
         ? [...graphQLDiagnostics, ...originalDiagnostics]
         : originalDiagnostics;
+    });
+  };
+
+  proxy.getCodeFixesAtPosition = (
+    filename: string,
+    start: number,
+    end: number,
+    errorCodes: readonly number[],
+    formatOptions: ts.FormatCodeSettings,
+    preferences: ts.UserPreferences
+  ): readonly ts.CodeFixAction[] => {
+    const originalFixes = info.languageService.getCodeFixesAtPosition(
+      filename,
+      start,
+      end,
+      errorCodes,
+      formatOptions,
+      preferences
+    );
+
+    return guard('getCodeFixesAtPosition', originalFixes, () => {
+      const graphQLFixes = getGraphQLCodeFixesAtPosition(
+        filename,
+        start,
+        end,
+        errorCodes,
+        schema,
+        info
+      );
+
+      return graphQLFixes.length
+        ? [...graphQLFixes, ...originalFixes]
+        : originalFixes;
     });
   };
 
@@ -366,6 +403,7 @@ function create(info: ts.server.PluginCreateInfo) {
 
 const init: ts.server.PluginModuleFactory = ts => {
   initTypeScript(ts);
+  registerGraphQLCodeFixes();
   return { create };
 };
 

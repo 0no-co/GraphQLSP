@@ -1,6 +1,5 @@
-import type { SchemaOrigin } from '@gql.tada/internal';
-
 import { ts, init as initTypeScript } from './ts';
+import { resolveConfig } from './config';
 import { loadSchema } from './graphql/getSchema';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
@@ -52,77 +51,11 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
 
 export type Logger = (msg: string) => void;
 
-interface Config {
-  schema: SchemaOrigin;
-  schemas: SchemaOrigin[];
-  tadaDisablePreprocessing?: boolean;
-  templateIsCallExpression?: boolean;
-  shouldCheckForColocatedFragments?: boolean;
-  template?: string;
-  clientDirectives?: string[];
-  trackFieldUsage?: boolean;
-  tadaOutputLocation?: string;
-  /** Set by tsserver on the synthetic config entries of "global" plugins,
-   * i.e. plugins contributed by editor extensions, that received no
-   * configuration overrides. */
-  global?: boolean;
-  /** Set by editor extensions on the configuration they pass through
-   * tsserver's `configurePlugin`, which replaces the synthetic entry
-   * carrying `global` above. */
-  editorContributed?: boolean;
-}
-
-/** Names GraphQLSP ships under in tsconfig "plugins" entries. */
-const PLUGIN_NAMES = new Set(['@0no-co/graphqlsp', 'gql.tada/ts-plugin']);
-
-/** Resolves the configuration this instance should run with, or `null` to
- * stay dormant.
- *
- * A project-local instance (configured through a tsconfig "plugins" entry)
- * always runs with its entry as-is. For an editor-contributed ("global")
- * instance the project's configuration wins over editor settings:
- * - a live local instance already handles the project → stay dormant,
- * - a tsconfig entry that produced no instance (e.g. the package isn't
- *   installed in the project) → adopt the entry's configuration,
- * - editor settings passed through `configurePlugin` → use them,
- * - no configuration anywhere → stay dormant, so unrelated projects don't
- *   get "missing schema" configuration errors. */
-function resolveConfig(
-  info: ts.server.PluginCreateInfo,
-  logger: Logger
-): Config | null {
-  const config: Config = info.config;
-  if (!config.global && !config.editorContributed) return config;
-
-  if ((info.languageService as any)[instanceMarker]) {
-    logger('The project already has a GraphQLSP instance; deferring to it');
-    return null;
-  }
-
-  const plugins = (info.project.getCompilerOptions().plugins || []) as Array<
-    ts.PluginImport & Partial<Config>
-  >;
-  const localEntry = plugins.find(entry => PLUGIN_NAMES.has(entry.name));
-  if (localEntry) {
-    logger(
-      `Adopting the project's "${localEntry.name}" tsconfig configuration`
-    );
-    return localEntry as Config;
-  }
-
-  if (config.schema !== undefined || config.schemas !== undefined) {
-    return config;
-  }
-
-  logger('Loaded as a global plugin without configuration; skipping setup');
-  return null;
-}
-
 function create(info: ts.server.PluginCreateInfo) {
   const logger: Logger = (msg: string) =>
     info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
 
-  const config = resolveConfig(info, logger);
+  const config = resolveConfig(info, logger, instanceMarker);
   if (!config) return createBasicDecorator(info);
 
   // Everything downstream (diagnostics, completions, schema loading) reads

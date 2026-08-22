@@ -44,7 +44,7 @@ interface HoverInfo {
   deprecationReason: string | null | undefined;
 }
 
-const getHoverInfo = (
+export const getHoverInfo = (
   schema: GraphQLSchema,
   text: string,
   cursor: Cursor
@@ -69,13 +69,27 @@ const getHoverInfo = (
       description: fieldDef.description,
       deprecationReason: fieldDef.deprecationReason,
     };
+  } else if (kind === 'ObjectField' && step === 0 && typeInfo.fieldDef) {
+    const fieldDef = typeInfo.fieldDef;
+    return {
+      signature: `${printQualifiedField(typeInfo)}: ${fieldDef.type}`,
+      description: fieldDef.description,
+      deprecationReason: fieldDef.deprecationReason,
+    };
+  } else if (kind === 'Variable' && typeInfo.type) {
+    const namedType = getNamedType(typeInfo.type);
+    return {
+      signature: `${typeInfo.type}`,
+      description: namedType.description,
+      deprecationReason: undefined,
+    };
   } else if (kind === 'Argument' && step === 0 && typeInfo.argDef) {
     const argDef = typeInfo.argDef;
     const prefix = typeInfo.directiveDef
       ? `@${typeInfo.directiveDef.name}`
       : typeInfo.fieldDef
-      ? printQualifiedField(typeInfo)
-      : '';
+        ? printQualifiedField(typeInfo)
+        : '';
     return {
       signature: `${prefix}(${printArg(argDef)})`,
       description: argDef.description,

@@ -9,6 +9,12 @@ import {
   getGraphQLDefinitionAtPosition,
 } from './definition';
 import { ALL_DIAGNOSTICS, getGraphQLDiagnostics } from './diagnostics';
+import {
+  getGraphQLFragmentReferences,
+  getGraphQLFragmentReferenceEntries,
+  getGraphQLFragmentRenameInfo,
+  getGraphQLFragmentRenameLocations,
+} from './references';
 import { templates } from './ast/templates';
 import { getPersistedCodeFixAtPosition } from './persisted';
 
@@ -247,6 +253,68 @@ function create(info: ts.server.PluginCreateInfo) {
     );
 
     return definition || original;
+  };
+
+  proxy.findReferences = (filename: string, cursorPosition: number) => {
+    const references = guard('findReferences', undefined, () =>
+      getGraphQLFragmentReferences(filename, cursorPosition, info)
+    );
+
+    return (
+      references ||
+      info.languageService.findReferences(filename, cursorPosition)
+    );
+  };
+
+  proxy.getReferencesAtPosition = (
+    filename: string,
+    cursorPosition: number
+  ) => {
+    const references = guard('getReferencesAtPosition', undefined, () =>
+      getGraphQLFragmentReferenceEntries(filename, cursorPosition, info)
+    );
+
+    return (
+      references ||
+      info.languageService.getReferencesAtPosition(filename, cursorPosition)
+    );
+  };
+
+  proxy.getRenameInfo = (
+    ...args: Parameters<ts.LanguageService['getRenameInfo']>
+  ) => {
+    const [filename, cursorPosition] = args;
+    const renameInfo = guard('getRenameInfo', undefined, () =>
+      getGraphQLFragmentRenameInfo(filename, cursorPosition, info)
+    );
+
+    if (renameInfo) return renameInfo;
+
+    return info.languageService.getRenameInfo(...args);
+  };
+
+  proxy.findRenameLocations = (
+    filename: string,
+    cursorPosition: number,
+    findInStrings: boolean,
+    findInComments: boolean,
+    preferences?: ts.UserPreferences | boolean
+  ) => {
+    const locations = guard('findRenameLocations', undefined, () =>
+      getGraphQLFragmentRenameLocations(filename, cursorPosition, info)
+    );
+
+    if (locations) return locations;
+
+    return info.languageService.findRenameLocations(
+      filename,
+      cursorPosition,
+      findInStrings,
+      findInComments,
+      // Both overloads of `findRenameLocations` are forwarded through the
+      // same call site, which the overloaded signatures can't express
+      preferences as ts.UserPreferences
+    );
   };
 
   proxy.getQuickInfoAtPosition = (

@@ -54,7 +54,7 @@ export function findAllTaggedTemplateNodes(
   return result;
 }
 
-function resolveIdentifierToGraphQLCall(
+export function resolveIdentifierToGraphQLCall(
   input: ts.Identifier,
   info: ts.server.PluginCreateInfo,
   checker: ts.TypeChecker | undefined

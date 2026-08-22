@@ -211,6 +211,9 @@ importers:
       '@0no-co/graphqlsp':
         specifier: workspace:*
         version: link:../graphqlsp
+      graphql:
+        specifier: ^16.0.0
+        version: 16.8.1
     devDependencies:
       '@types/node':
         specifier: ^18.15.11

@@ -9,8 +9,10 @@ import {
   findAllTaggedTemplateNodes,
   findNode,
   getSource,
+  resolveIdentifierToGraphQLCall,
 } from './ast';
 import * as checks from './ast/checks';
+import { resolveTadaFragmentArray } from './ast/resolve';
 
 interface FragmentReferenceLocation {
   fileName: string;
@@ -25,6 +27,8 @@ interface FragmentNameToken {
   start: number;
   length: number;
   schemaName: string | null;
+  isDefinition: boolean;
+  callNode?: checks.GraphQLCallNode;
 }
 
 /** Strips the quotes/backticks off a document literal without unescaping,
@@ -35,7 +39,9 @@ const getDocumentText = (node: ts.StringLiteralLike): string =>
 const findFragmentNameAtOffset = (
   documentText: string,
   offset: number
-): { name: string; start: number; length: number } | undefined => {
+):
+  | { name: string; start: number; length: number; isDefinition: boolean }
+  | undefined => {
   let document;
   try {
     document = parse(documentText);
@@ -43,24 +49,27 @@ const findFragmentNameAtOffset = (
     return undefined;
   }
 
-  let found: { name: string; start: number; length: number } | undefined;
-  const checkName = (name: NameNode) => {
+  let found:
+    | { name: string; start: number; length: number; isDefinition: boolean }
+    | undefined;
+  const checkName = (name: NameNode, isDefinition: boolean) => {
     const loc = name.loc;
     if (loc && offset >= loc.start && offset < loc.end) {
       found = {
         name: name.value,
         start: loc.start,
         length: loc.end - loc.start,
+        isDefinition,
       };
     }
   };
 
   visit(document, {
     FragmentDefinition(node) {
-      checkName(node.name);
+      checkName(node.name, true);
     },
     FragmentSpread(node) {
-      checkName(node.name);
+      checkName(node.name, false);
     },
   });
 
@@ -87,11 +96,13 @@ const getFragmentTokenAtPosition = (
 
   let documentNode: ts.StringLiteralLike;
   let schemaName: string | null = null;
+  let callNode: checks.GraphQLCallNode | undefined;
 
   if (isCallExpression && checks.isGraphQLCall(node, typeChecker)) {
     const text = node.arguments[0];
     if (!ts.isStringLiteralLike(text)) return undefined;
     documentNode = text;
+    callNode = node;
     schemaName = checks.getSchemaName(node, typeChecker);
   } else if (!isCallExpression && checks.isGraphQLTag(node)) {
     // Templates with interpolations shift GraphQL offsets away from TS
@@ -117,97 +128,201 @@ const getFragmentTokenAtPosition = (
     start: documentStart + token.start,
     length: token.length,
     schemaName,
+    isDefinition: token.isDefinition,
+    callNode,
   };
 };
 
-const collectFragmentReferencesInSource = (
-  source: ts.SourceFile,
-  token: FragmentNameToken,
-  isCallExpression: boolean,
-  info: ts.server.PluginCreateInfo,
-  references: FragmentReferenceLocation[]
-): void => {
-  if (source.isDeclarationFile) return;
-  if (source.fileName.includes('node_modules')) return;
-  // Parsing every document in every file is wasteful; a plain-text scan
-  // rules out files that can't possibly mention the fragment
-  if (!source.getText().includes(token.name)) return;
+interface FragmentDocument {
+  callNode?: checks.GraphQLCallNode;
+  dependencies: Set<checks.GraphQLCallNode>;
+  definitions: FragmentReferenceLocation[];
+  spreads: FragmentReferenceLocation[];
+}
 
-  const documents: Array<ts.StringLiteralLike> = [];
-  if (isCallExpression) {
-    const { nodes } = findAllCallExpressions(source, info, {
-      searchExternal: false,
-      collectFragments: false,
-    });
-    for (const found of nodes) {
-      // Same-named fragments may exist per schema in multi-schema setups;
-      // only documents for the originating schema are related
-      if (found.schema !== token.schemaName) continue;
-      documents.push(found.node);
-    }
-  } else {
-    for (const found of findAllTaggedTemplateNodes(source)) {
-      const template = ts.isTaggedTemplateExpression(found)
-        ? found.template
-        : found;
-      if (!ts.isNoSubstitutionTemplateLiteral(template)) continue;
-      documents.push(template);
-    }
+const collectCallDependencies = (
+  callNode: checks.GraphQLCallNode,
+  info: ts.server.PluginCreateInfo,
+  typeChecker: ts.TypeChecker | undefined,
+  dependencies = new Set<checks.GraphQLCallNode>()
+): Set<checks.GraphQLCallNode> => {
+  const fragmentRefs = resolveTadaFragmentArray(callNode.arguments[1]);
+  if (!fragmentRefs) return dependencies;
+
+  for (const identifier of fragmentRefs) {
+    const dependency = resolveIdentifierToGraphQLCall(
+      identifier,
+      info,
+      typeChecker
+    );
+    if (!dependency || dependencies.has(dependency)) continue;
+    dependencies.add(dependency);
+    collectCallDependencies(dependency, info, typeChecker, dependencies);
   }
 
-  for (const documentNode of documents) {
-    const documentText = getDocumentText(documentNode);
-    if (!documentText.includes(token.name)) continue;
+  return dependencies;
+};
 
-    let document;
-    try {
-      document = parse(documentText);
-    } catch (_error) {
+const parseFragmentDocument = (
+  source: ts.SourceFile,
+  documentNode: ts.StringLiteralLike,
+  token: FragmentNameToken,
+  callNode: checks.GraphQLCallNode | undefined,
+  dependencies: Set<checks.GraphQLCallNode>
+): FragmentDocument | undefined => {
+  const documentText = getDocumentText(documentNode);
+  if (!documentText.includes(token.name)) return undefined;
+
+  let document;
+  try {
+    document = parse(documentText);
+  } catch (_error) {
+    return undefined;
+  }
+
+  const definitions: FragmentReferenceLocation[] = [];
+  const spreads: FragmentReferenceLocation[] = [];
+  const documentStart = documentNode.getStart() + 1;
+  const pushName = (name: NameNode, isDefinition: boolean) => {
+    const loc = name.loc;
+    if (name.value !== token.name || !loc) return;
+    (isDefinition ? definitions : spreads).push({
+      fileName: source.fileName,
+      start: documentStart + loc.start,
+      length: loc.end - loc.start,
+      isDefinition,
+    });
+  };
+
+  visit(document, {
+    FragmentDefinition(node) {
+      pushName(node.name, true);
+    },
+    FragmentSpread(node) {
+      pushName(node.name, false);
+    },
+  });
+
+  if (!definitions.length && !spreads.length) return undefined;
+  return { callNode, dependencies, definitions, spreads };
+};
+
+const collectFragmentDocuments = (
+  token: FragmentNameToken,
+  info: ts.server.PluginCreateInfo
+): FragmentDocument[] => {
+  const program = info.languageService.getProgram();
+  if (!program) return [];
+
+  const isCallExpression = info.config.templateIsCallExpression ?? true;
+  const typeChecker = program.getTypeChecker();
+  const documents: FragmentDocument[] = [];
+  for (const source of program.getSourceFiles()) {
+    if (source.isDeclarationFile || source.fileName.includes('node_modules')) {
       continue;
     }
+    // Parsing every document in every file is wasteful; a plain-text scan
+    // rules out files that can't possibly mention the fragment.
+    if (!source.getText().includes(token.name)) continue;
 
-    const documentStart = documentNode.getStart() + 1;
-    const pushName = (name: NameNode, isDefinition: boolean) => {
-      const loc = name.loc;
-      if (name.value !== token.name || !loc) return;
-      references.push({
-        fileName: source.fileName,
-        start: documentStart + loc.start,
-        length: loc.end - loc.start,
-        isDefinition,
+    if (isCallExpression) {
+      const { nodes } = findAllCallExpressions(source, info, {
+        searchExternal: false,
+        collectFragments: false,
       });
-    };
-
-    visit(document, {
-      FragmentDefinition(node) {
-        pushName(node.name, true);
-      },
-      FragmentSpread(node) {
-        pushName(node.name, false);
-      },
-    });
+      for (const found of nodes) {
+        if (found.schema !== token.schemaName) continue;
+        if (!ts.isStringLiteralLike(found.node)) continue;
+        const parent = found.node.parent;
+        const callNode = ts.isCallExpression(parent) ? parent : undefined;
+        const document = parseFragmentDocument(
+          source,
+          found.node,
+          token,
+          callNode,
+          callNode
+            ? collectCallDependencies(callNode, info, typeChecker)
+            : new Set()
+        );
+        if (document) documents.push(document);
+      }
+    } else {
+      for (const found of findAllTaggedTemplateNodes(source)) {
+        const template = ts.isTaggedTemplateExpression(found)
+          ? found.template
+          : found;
+        if (!ts.isNoSubstitutionTemplateLiteral(template)) continue;
+        const document = parseFragmentDocument(
+          source,
+          template,
+          token,
+          undefined,
+          new Set()
+        );
+        if (document) documents.push(document);
+      }
+    }
   }
+
+  return documents;
 };
 
 const findAllFragmentReferences = (
   token: FragmentNameToken,
   info: ts.server.PluginCreateInfo
 ): FragmentReferenceLocation[] => {
-  const program = info.languageService.getProgram();
-  if (!program) return [];
+  const documents = collectFragmentDocuments(token, info);
+  if (!documents.length) return [];
 
-  const isCallExpression = info.config.templateIsCallExpression ?? true;
-  const references: FragmentReferenceLocation[] = [];
-  for (const source of program.getSourceFiles()) {
-    collectFragmentReferencesInSource(
-      source,
-      token,
-      isCallExpression,
-      info,
-      references
-    );
+  // Tagged-template/global-fragment mode has no explicit dependency identity,
+  // so preserve the existing project-wide name matching there.
+  if (!token.callNode) {
+    return documents.flatMap(document => [
+      ...document.definitions,
+      ...document.spreads,
+    ]);
   }
 
+  const targetCalls = new Set<checks.GraphQLCallNode>();
+  if (token.isDefinition) {
+    targetCalls.add(token.callNode);
+  } else {
+    const origin = documents.find(
+      document => document.callNode === token.callNode
+    );
+    if (origin?.definitions.length) targetCalls.add(token.callNode);
+    if (origin) {
+      for (const document of documents) {
+        if (
+          document.callNode &&
+          origin.dependencies.has(document.callNode) &&
+          document.definitions.length
+        ) {
+          targetCalls.add(document.callNode);
+        }
+      }
+    }
+  }
+
+  // Calls without an explicit fragment dependency cannot be disambiguated;
+  // retain the old name-based behavior instead of dropping references.
+  if (!targetCalls.size) {
+    return documents.flatMap(document => [
+      ...document.definitions,
+      ...document.spreads,
+    ]);
+  }
+
+  const references: FragmentReferenceLocation[] = [];
+  for (const document of documents) {
+    if (document.callNode && targetCalls.has(document.callNode)) {
+      references.push(...document.definitions, ...document.spreads);
+      continue;
+    }
+    if ([...targetCalls].some(target => document.dependencies.has(target))) {
+      references.push(...document.spreads);
+    }
+  }
   return references;
 };
 

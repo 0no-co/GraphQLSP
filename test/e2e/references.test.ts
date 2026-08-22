@@ -10,6 +10,7 @@ const projectPath = path.resolve(__dirname, 'fixture-project-tada');
 
 const outfileFragment = path.join(projectPath, 'references-fragment.ts');
 const outfileUsage = path.join(projectPath, 'references-usage.ts');
+const outfileOther = path.join(projectPath, 'references-other-fragment.ts');
 
 const fragmentFixture = fs.readFileSync(
   path.join(projectPath, 'fixtures/references-fragment.ts'),
@@ -17,6 +18,10 @@ const fragmentFixture = fs.readFileSync(
 );
 const usageFixture = fs.readFileSync(
   path.join(projectPath, 'fixtures/references-usage.ts'),
+  'utf-8'
+);
+const otherFixture = fs.readFileSync(
+  path.join(projectPath, 'fixtures/references-other-fragment.ts'),
   'utf-8'
 );
 
@@ -42,6 +47,9 @@ const definitionIndex =
   indexOf(fragmentFixture, `fragment ${fragmentName}`) + 'fragment '.length;
 const fragmentSpreadIndex = indexOf(fragmentFixture, `...${fragmentName}`) + 3;
 const usageSpreadIndex = indexOf(usageFixture, `...${fragmentName}`) + 3;
+const otherDefinitionIndex =
+  indexOf(otherFixture, `fragment ${fragmentName}`) + 'fragment '.length;
+const otherSpreadIndex = indexOf(otherFixture, `...${fragmentName}`) + 3;
 
 const expectedSpans = [
   {
@@ -125,11 +133,18 @@ describe('Fragment references and rename', () => {
       scriptKindName: 'TS',
       projectRootPath: projectPath,
     } satisfies ts.server.protocol.OpenRequestArgs);
+    server.sendCommand('open', {
+      file: outfileOther,
+      fileContent: '// empty',
+      scriptKindName: 'TS',
+      projectRootPath: projectPath,
+    } satisfies ts.server.protocol.OpenRequestArgs);
 
     server.sendCommand('updateOpen', {
       openFiles: [
         { file: outfileFragment, fileContent: fragmentFixture },
         { file: outfileUsage, fileContent: usageFixture },
+        { file: outfileOther, fileContent: otherFixture },
       ],
     } satisfies ts.server.protocol.UpdateOpenRequestArgs);
 
@@ -141,12 +156,17 @@ describe('Fragment references and rename', () => {
       file: outfileUsage,
       tmpfile: outfileUsage,
     } satisfies ts.server.protocol.SavetoRequestArgs);
+    server.sendCommand('saveto', {
+      file: outfileOther,
+      tmpfile: outfileOther,
+    } satisfies ts.server.protocol.SavetoRequestArgs);
   });
 
   afterAll(() => {
     try {
       fs.unlinkSync(outfileFragment);
       fs.unlinkSync(outfileUsage);
+      fs.unlinkSync(outfileOther);
     } catch {}
     server.close();
   });
@@ -249,6 +269,40 @@ describe('Fragment references and rename', () => {
       0
     );
     expect(locationCount).toBe(expectedSpans.length);
+  }, 30000);
+
+  it('keeps an independent same-named fragment set separate', async () => {
+    const body = await waitForResult(async () => {
+      const response = await request(server, 'rename', {
+        file: outfileOther,
+        ...positionAt(otherFixture, otherDefinitionIndex + 2),
+      });
+      return response.body?.info?.canRename ? response.body : undefined;
+    });
+
+    const locations = body.locs.flatMap((group: any) =>
+      group.locs.map((loc: any) => ({
+        file: path.normalize(group.file),
+        start: loc.start,
+        end: loc.end,
+      }))
+    );
+
+    expect(locations).toEqual([
+      {
+        file: outfileOther,
+        start: positionAt(otherFixture, otherDefinitionIndex),
+        end: positionAt(
+          otherFixture,
+          otherDefinitionIndex + fragmentName.length
+        ),
+      },
+      {
+        file: outfileOther,
+        start: positionAt(otherFixture, otherSpreadIndex),
+        end: positionAt(otherFixture, otherSpreadIndex + fragmentName.length),
+      },
+    ]);
   }, 30000);
 
   it('falls back to TypeScript references outside GraphQL documents', async () => {

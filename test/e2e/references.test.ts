@@ -117,11 +117,13 @@ describe('Fragment references and rename', () => {
       file: outfileFragment,
       fileContent: '// empty',
       scriptKindName: 'TS',
+      projectRootPath: projectPath,
     } satisfies ts.server.protocol.OpenRequestArgs);
     server.sendCommand('open', {
       file: outfileUsage,
       fileContent: '// empty',
       scriptKindName: 'TS',
+      projectRootPath: projectPath,
     } satisfies ts.server.protocol.OpenRequestArgs);
 
     server.sendCommand('updateOpen', {

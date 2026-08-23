@@ -1,5 +1,5 @@
 const { config } = require('dotenv');
-const { getInfo } = require('@changesets/get-github-info');
+const { getCommitInfo } = require('@changesets/get-github-info');
 
 config();
 
@@ -7,6 +7,15 @@ const REPO = '0no-co/GraphQLSP';
 const SEE_LINE = /^See:\s*(.*)/i;
 const TRAILING_CHAR = /[.;:]$/g;
 const listFormatter = new Intl.ListFormat('en-US');
+
+const getCommitLinks = async commit => {
+  const info = await getCommitInfo({ repo: REPO, commit });
+  return {
+    commit: info?.commit.markdownLink,
+    pull: info?.pull?.markdownLink,
+    user: info?.author?.markdownLink,
+  };
+};
 
 const getSummaryLines = cs => {
   let lines = cs.summary.trim().split(/\r?\n/);
@@ -49,12 +58,7 @@ const changelogFunctions = {
           return (match && match[1].trim()) || undefined;
         }
 
-        const { links } = await getInfo({
-          repo: REPO,
-          commit: cs.commit,
-        });
-
-        return links;
+        return getCommitLinks(cs.commit);
       })
     );
 
@@ -83,14 +87,11 @@ const changelogFunctions = {
     const [firstLine, ...futureLines] = lines;
 
     if (changeset.commit && !pull) {
-      const { links } = await getInfo({
-        repo: REPO,
-        commit: changeset.commit,
-      });
+      const links = await getCommitLinks(changeset.commit);
 
-      pull = links.pull || undefined;
-      commit = links.commit || undefined;
-      user = links.user || undefined;
+      pull = links.pull;
+      commit = links.commit;
+      user = links.user;
     }
 
     let annotation = '';

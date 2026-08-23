@@ -7,6 +7,8 @@ GraphQL support to TypeScript and JavaScript:
   TypeScript language features, so you get diagnostics, auto-completion, hover information,
   and go-to-definition for GraphQL documents without installing the plugin per project.
 - **Syntax highlighting** for `.graphql`, `.gql`, and `.graphqls` files.
+- **Document symbols** for embedded GraphQL operations and fragments in the Outline view
+  and “Go to Symbol in Editor…” (`Cmd/Ctrl+Shift+O`).
 - **Inline syntax highlighting** for GraphQL documents in TypeScript/JavaScript:
   `` gql`...` `` and `` graphql`...` `` tagged templates, ``graphql(`...`)`` call
   expressions (the [gql.tada](https://gql-tada.0no.co) style), and untagged template

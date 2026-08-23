@@ -56,7 +56,10 @@ const manifest = JSON.parse(
 delete manifest.private;
 delete manifest.scripts;
 delete manifest.devDependencies;
-manifest.dependencies = { '@0no-co/graphqlsp': `file:./${tarball}` };
+manifest.dependencies = {
+  ...manifest.dependencies,
+  '@0no-co/graphqlsp': `file:./${tarball}`,
+};
 fs.writeFileSync(
   path.join(stagingDir, 'package.json'),
   JSON.stringify(manifest, null, 2)
@@ -121,7 +124,10 @@ const installedPlugin = JSON.parse(
     'utf8'
   )
 );
-manifest.dependencies = { '@0no-co/graphqlsp': installedPlugin.version };
+manifest.dependencies = {
+  ...manifest.dependencies,
+  '@0no-co/graphqlsp': installedPlugin.version,
+};
 fs.writeFileSync(
   path.join(stagingDir, 'package.json'),
   JSON.stringify(manifest, null, 2)

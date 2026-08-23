@@ -1,5 +1,7 @@
 import * as vscode from 'vscode';
 
+import { getGraphQLDocumentSymbols } from './documentSymbols';
+
 /** Must match the `typescriptServerPlugins` contribution in package.json. */
 const pluginName = '@0no-co/graphqlsp';
 const configurationSection = 'graphqlsp';
@@ -43,24 +45,67 @@ const getPluginConfiguration = (): Record<string, unknown> => {
 export async function activate(
   context: vscode.ExtensionContext
 ): Promise<void> {
+  const registerDocumentSymbols = () =>
+    vscode.languages.registerDocumentSymbolProvider(
+      [
+        { language: 'javascript' },
+        { language: 'javascriptreact' },
+        { language: 'typescript' },
+        { language: 'typescriptreact' },
+      ],
+      {
+        provideDocumentSymbols(document, token) {
+          if (token.isCancellationRequested) return [];
+          const template = vscode.workspace
+            .getConfiguration(configurationSection, document.uri)
+            .get<string>('template');
+
+          return getGraphQLDocumentSymbols(document.getText(), template).map(
+            symbol =>
+              new vscode.DocumentSymbol(
+                symbol.name,
+                'GraphQL',
+                symbol.type === 'fragment'
+                  ? vscode.SymbolKind.Struct
+                  : vscode.SymbolKind.Function,
+                new vscode.Range(
+                  document.positionAt(symbol.range.start),
+                  document.positionAt(symbol.range.end)
+                ),
+                new vscode.Range(
+                  document.positionAt(symbol.selectionRange.start),
+                  document.positionAt(symbol.selectionRange.end)
+                )
+              )
+          );
+        },
+      }
+    );
+
+  let documentSymbolRegistration = registerDocumentSymbols();
+  context.subscriptions.push({
+    dispose: () => documentSymbolRegistration.dispose(),
+  });
+
   const tsExtension =
     vscode.extensions.getExtension<TypeScriptLanguageFeaturesExports>(
       'vscode.typescript-language-features'
     );
-  if (!tsExtension) return;
-
-  const api = (await tsExtension.activate()).getAPI(0);
-  if (!api) return;
-
-  const synchronize = () => {
-    api.configurePlugin(pluginName, getPluginConfiguration());
-  };
+  const api = tsExtension
+    ? (await tsExtension.activate()).getAPI(0)
+    : undefined;
+  const synchronize = () =>
+    api?.configurePlugin(pluginName, getPluginConfiguration());
 
   synchronize();
 
   context.subscriptions.push(
     vscode.workspace.onDidChangeConfiguration(async event => {
       if (!event.affectsConfiguration(configurationSection)) return;
+      documentSymbolRegistration.dispose();
+      documentSymbolRegistration = registerDocumentSymbols();
+      if (!api) return;
+
       synchronize();
       // The plugin reads its configuration once per project, so changes
       // only take effect after the TypeScript server restarts

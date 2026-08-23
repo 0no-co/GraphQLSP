@@ -1,0 +1,190 @@
+{
+  "name": "vscode-graphqlsp",
+  "displayName": "GraphQLSP",
+  "version": "0.1.0",
+  "private": true,
+  "description": "GraphQL syntax highlighting and schema-aware TypeScript support — diagnostics, auto-complete, hover information, and go-to-definition for GraphQL documents — powered by GraphQLSP.",
+  "publisher": "0no-co",
+  "author": "0no.co <hi@0no.co>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/0no-co/GraphQLSP.git",
+    "directory": "packages/vscode-graphqlsp"
+  },
+  "bugs": {
+    "url": "https://github.com/0no-co/GraphQLSP/issues"
+  },
+  "homepage": "https://github.com/0no-co/GraphQLSP#readme",
+  "keywords": [
+    "GraphQL",
+    "TypeScript",
+    "gql.tada",
+    "urql",
+    "syntax-highlighting"
+  ],
+  "categories": [
+    "Programming Languages",
+    "Linters"
+  ],
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "main": "./dist/extension.js",
+  "extensionKind": [
+    "workspace"
+  ],
+  "capabilities": {
+    "untrustedWorkspaces": {
+      "supported": false,
+      "description": "GraphQLSP runs as a TypeScript server plugin, which is disabled in untrusted workspaces."
+    }
+  },
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:javascriptreact",
+    "onLanguage:typescript",
+    "onLanguage:typescriptreact"
+  ],
+  "contributes": {
+    "typescriptServerPlugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "enableForWorkspaceTypeScriptVersions": true
+      }
+    ],
+    "languages": [
+      {
+        "id": "graphql",
+        "aliases": [
+          "GraphQL",
+          "graphql"
+        ],
+        "extensions": [
+          ".graphql",
+          ".gql",
+          ".graphqls"
+        ],
+        "configuration": "./language-configuration.json"
+      }
+    ],
+    "grammars": [
+      {
+        "language": "graphql",
+        "scopeName": "source.graphql",
+        "path": "./syntaxes/graphql.tmLanguage.json"
+      },
+      {
+        "scopeName": "inline.graphql",
+        "path": "./syntaxes/graphql.js.tmLanguage.json",
+        "injectTo": [
+          "source.js",
+          "source.js.jsx",
+          "source.jsx",
+          "source.ts",
+          "source.tsx"
+        ],
+        "embeddedLanguages": {
+          "meta.embedded.block.graphql": "graphql",
+          "meta.template.expression.ts": "typescript"
+        }
+      }
+    ],
+    "configuration": {
+      "title": "GraphQLSP",
+      "properties": {
+        "graphqlsp.schema": {
+          "type": [
+            "string",
+            "object",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Path to a `.graphql` SDL file, an introspection JSON file, or the URL of a GraphQL API to introspect. May also be an object of the shape `{ \"url\": \"...\", \"headers\": { ... } }`.\n\nProjects that list `@0no-co/graphqlsp` (or `gql.tada/ts-plugin`) under `compilerOptions.plugins` in their `tsconfig.json` are configured from there instead, and these editor settings don't apply to them."
+        },
+        "graphqlsp.schemas": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Multi-schema configuration; an array of `{ \"name\": \"...\", \"schema\": \"...\", \"tadaOutputLocation\": \"...\" }` objects. Mutually exclusive with `#graphqlsp.schema#`."
+        },
+        "graphqlsp.template": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "An additional template tag or function name to detect GraphQL documents by, in addition to the defaults (`gql` and `graphql`)."
+        },
+        "graphqlsp.templateIsCallExpression": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "When `true`, GraphQL documents are detected in `graphql('...')` call expressions (the gql.tada style); when `false`, in tagged template literals. Defaults to `true`."
+        },
+        "graphqlsp.shouldCheckForColocatedFragments": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "When enabled, GraphQLSP checks whether fragments exported from imported files are used in the current document."
+        },
+        "graphqlsp.trackFieldUsage": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "When enabled, GraphQLSP warns about queried fields that are never used in the surrounding code."
+        },
+        "graphqlsp.clientDirectives": {
+          "type": [
+            "array",
+            "null"
+          ],
+          "items": {
+            "type": "string"
+          },
+          "default": null,
+          "markdownDescription": "Additional client-side directive names that shouldn't be validated against the schema."
+        },
+        "graphqlsp.tadaOutputLocation": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Location (file or directory) that the gql.tada introspection output is written to."
+        },
+        "graphqlsp.tadaDisablePreprocessing": {
+          "type": [
+            "boolean",
+            "null"
+          ],
+          "default": null,
+          "markdownDescription": "Disables preprocessing of the gql.tada introspection output."
+        }
+      }
+    }
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "package": "pnpm build && node ./scripts/package.mjs",
+    "vscode:prepublish": "pnpm build"
+  },
+  "dependencies": {
+    "@0no-co/graphqlsp": "workspace:*",
+    "graphql": "^16.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11",
+    "@types/vscode": "1.80.0",
+    "@vscode/vsce": "^3.3.0",
+    "typescript": "^5.3.3"
+  }
+}

@@ -1,0 +1,123 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "GraphQL",
+  "scopeName": "source.graphql",
+  "fileTypes": ["graphql", "gql", "graphqls"],
+  "patterns": [{ "include": "#graphql" }],
+  "repository": {
+    "graphql": {
+      "patterns": [
+        { "include": "#comment" },
+        { "include": "#string-block" },
+        { "include": "#string" },
+        { "include": "#operation-definition" },
+        { "include": "#fragment-definition" },
+        { "include": "#fragment-spread" },
+        { "include": "#type-system-keyword" },
+        { "include": "#directive" },
+        { "include": "#variable" },
+        { "include": "#name-before-colon" },
+        { "include": "#boolean" },
+        { "include": "#null" },
+        { "include": "#number" },
+        { "include": "#type-name" },
+        { "include": "#punctuation" }
+      ]
+    },
+    "comment": {
+      "name": "comment.line.number-sign.graphql",
+      "match": "#.*"
+    },
+    "string-block": {
+      "name": "string.quoted.block.graphql",
+      "begin": "\"\"\"",
+      "end": "\"\"\"",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.graphql" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.graphql" }
+      }
+    },
+    "string": {
+      "name": "string.quoted.double.graphql",
+      "begin": "\"",
+      "end": "\"|(?=\\n)",
+      "beginCaptures": {
+        "0": { "name": "punctuation.definition.string.begin.graphql" }
+      },
+      "endCaptures": {
+        "0": { "name": "punctuation.definition.string.end.graphql" }
+      },
+      "patterns": [
+        {
+          "name": "constant.character.escape.graphql",
+          "match": "\\\\(?:[\"\\\\/bfnrt]|u[0-9A-Fa-f]{4})"
+        }
+      ]
+    },
+    "operation-definition": {
+      "match": "\\b(query|mutation|subscription)\\b\\s*([_A-Za-z][_0-9A-Za-z]*)?",
+      "captures": {
+        "1": { "name": "keyword.operation.graphql" },
+        "2": { "name": "entity.name.function.operation.graphql" }
+      }
+    },
+    "fragment-definition": {
+      "match": "\\b(fragment)\\s+([_A-Za-z][_0-9A-Za-z]*)(?:\\s+(on)\\s+([_A-Za-z][_0-9A-Za-z]*))?",
+      "captures": {
+        "1": { "name": "keyword.fragment.graphql" },
+        "2": { "name": "entity.name.function.fragment.graphql" },
+        "3": { "name": "keyword.on.graphql" },
+        "4": { "name": "support.type.graphql" }
+      }
+    },
+    "fragment-spread": {
+      "match": "(\\.\\.\\.)\\s*(?:\\b(on)\\s+([_A-Za-z][_0-9A-Za-z]*)|([_A-Za-z][_0-9A-Za-z]*))?",
+      "captures": {
+        "1": { "name": "keyword.operator.spread.graphql" },
+        "2": { "name": "keyword.on.graphql" },
+        "3": { "name": "support.type.graphql" },
+        "4": { "name": "variable.fragment.graphql" }
+      }
+    },
+    "type-system-keyword": {
+      "name": "keyword.type.graphql",
+      "match": "\\b(schema|scalar|type|interface|union|enum|input|directive|extend|implements|repeatable|on)\\b"
+    },
+    "directive": {
+      "name": "entity.name.function.directive.graphql",
+      "match": "@[_A-Za-z][_0-9A-Za-z]*"
+    },
+    "variable": {
+      "name": "variable.graphql",
+      "match": "\\$[_A-Za-z][_0-9A-Za-z]*"
+    },
+    "name-before-colon": {
+      "comment": "Field aliases, argument names, input object fields, and field definitions",
+      "name": "variable.parameter.graphql",
+      "match": "\\b[_A-Za-z][_0-9A-Za-z]*(?=\\s*:)"
+    },
+    "boolean": {
+      "name": "constant.language.boolean.graphql",
+      "match": "\\b(?:true|false)\\b"
+    },
+    "null": {
+      "name": "constant.language.null.graphql",
+      "match": "\\bnull\\b"
+    },
+    "number": {
+      "name": "constant.numeric.graphql",
+      "match": "(?<![_0-9A-Za-z.])-?\\d+(?:\\.\\d+)?(?:[eE][+-]?\\d+)?(?![_A-Za-z])"
+    },
+    "type-name": {
+      "comment": "By convention type and enum names are capitalized, while fields are not",
+      "name": "support.type.graphql",
+      "match": "\\b[A-Z][_0-9A-Za-z]*\\b"
+    },
+    "punctuation": {
+      "name": "punctuation.graphql",
+      "match": "[!(){}\\[\\]:=|&,]"
+    }
+  }
+}

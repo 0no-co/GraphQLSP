@@ -22,7 +22,10 @@ function packageJsonPathsFromWorkspace() {
         entry.name === "node_modules" ||
         entry.name === ".pnpm" ||
         entry.name === "dist" ||
-        entry.name === "coverage"
+        entry.name === "coverage" ||
+        // vsix staging area of the VSCode extension; it contains a copy of
+        // the extension's manifest with the `private` flag stripped
+        entry.name === ".staging"
       ) {
         continue;
       }

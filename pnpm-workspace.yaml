@@ -3,7 +3,12 @@ packages:
   - 'test/e2e/**'
 
 allowBuilds:
+  # @vscode/vsce-sign and keytar are pulled in by @vscode/vsce; their install
+  # scripts only matter for marketplace publishing with signing and OS
+  # keychain credentials
+  '@vscode/vsce-sign': false
   esbuild: true
+  keytar: false
 
 minimumReleaseAgeExclude:
   - '@0no-co/*'

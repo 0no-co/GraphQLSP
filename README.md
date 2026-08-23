@@ -13,6 +13,7 @@ auto-complete.
 - Find references and rename for GraphQL fragments, across your project's files
 - Will warn you when you are importing from a file that is exporting fragments that you're not using
 - An "Extract to fragment" refactor that moves selected fields into a new co-located fragment (in `graphql()` call-expression mode)
+- The VS Code extension adds GraphQL operations and fragments to the Outline view and symbol navigation
 
 > Note that this plugin does not do syntax highlighting, for that you still need something like
 > [the VSCode/... plugin](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql-syntax)

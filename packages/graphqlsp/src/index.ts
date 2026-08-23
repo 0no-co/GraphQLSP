@@ -1,6 +1,5 @@
-import type { SchemaOrigin } from '@gql.tada/internal';
-
 import { ts, init as initTypeScript } from './ts';
+import { resolveConfig } from './config';
 import { loadSchema } from './graphql/getSchema';
 import { getGraphQLCompletions } from './autoComplete';
 import { getGraphQLQuickInfo } from './quickInfo';
@@ -23,6 +22,14 @@ import { templates } from './ast/templates';
 import { getPersistedCodeFixAtPosition } from './persisted';
 import { canExtractFragment, getExtractFragmentEdits } from './extractFragment';
 
+/** Marks the language service proxies of active GraphQLSP instances.
+ *
+ * `Symbol.for` uses the shared symbol registry, so the marker survives
+ * multiple module copies of the plugin being loaded side by side — e.g. a
+ * project's own `gql.tada/ts-plugin` and a copy bundled with an editor
+ * extension. */
+const instanceMarker = Symbol.for('@0no-co/graphqlsp');
+
 function createBasicDecorator(info: ts.server.PluginCreateInfo) {
   const proxy: ts.LanguageService = Object.create(null);
   for (let k of Object.keys(info.languageService) as Array<
@@ -33,27 +40,27 @@ function createBasicDecorator(info: ts.server.PluginCreateInfo) {
     proxy[k] = (...args: Array<{}>) => x.apply(info.languageService, args);
   }
 
+  // Keep the active-instance marker of a wrapped GraphQLSP proxy visible to
+  // any plugin instance loaded on top of this one
+  if ((info.languageService as any)[instanceMarker]) {
+    (proxy as any)[instanceMarker] = true;
+  }
+
   return proxy;
 }
 
 export type Logger = (msg: string) => void;
 
-interface Config {
-  schema: SchemaOrigin;
-  schemas: SchemaOrigin[];
-  tadaDisablePreprocessing?: boolean;
-  templateIsCallExpression?: boolean;
-  shouldCheckForColocatedFragments?: boolean;
-  template?: string;
-  clientDirectives?: string[];
-  trackFieldUsage?: boolean;
-  tadaOutputLocation?: string;
-}
-
 function create(info: ts.server.PluginCreateInfo) {
   const logger: Logger = (msg: string) =>
     info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
-  const config: Config = info.config;
+
+  const config = resolveConfig(info, logger, instanceMarker);
+  if (!config) return createBasicDecorator(info);
+
+  // Everything downstream (diagnostics, completions, schema loading) reads
+  // `info.config` directly, so an adopted configuration has to land there
+  info.config = config;
 
   logger('config: ' + JSON.stringify(config));
 
@@ -64,6 +71,9 @@ function create(info: ts.server.PluginCreateInfo) {
   }
 
   const proxy = createBasicDecorator(info);
+  // Marks this project as handled, keeping an editor-contributed instance
+  // loaded on top of this one dormant
+  (proxy as any)[instanceMarker] = true;
 
   const schema = loadSchema(info, logger);
 

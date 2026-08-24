@@ -4,7 +4,11 @@
   "commit": false,
   "access": "public",
   "baseBranch": "main",
-  "ignore": ["example", "fixtures", "vscode-graphqlsp"],
+  "ignore": ["example", "fixtures"],
+  "privatePackages": {
+    "version": true,
+    "tag": false
+  },
   "updateInternalDependencies": "minor",
   "snapshot": {
     "prereleaseTemplate": "{tag}-{commit}",

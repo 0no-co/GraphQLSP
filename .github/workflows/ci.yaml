@@ -60,5 +60,15 @@ jobs:
       - name: Build
         run: pnpm --filter @0no-co/graphqlsp run build
 
+      - name: Test release scripts
+        if: matrix.typescript == '6.0.3'
+        run: node .github/scripts/marketplace-test.mjs
+
+      - name: Package VS Code extension
+        if: matrix.typescript == '6.0.3'
+        run: |
+          pnpm --filter vscode-graphqlsp package
+          unzip -t packages/vscode-graphqlsp/vscode-graphqlsp-*.vsix
+
       - name: Test
         run: pnpm run test:e2e

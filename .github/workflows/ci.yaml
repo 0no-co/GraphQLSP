@@ -62,7 +62,7 @@ jobs:
 
       - name: Test release scripts
         if: matrix.typescript == '6.0.3'
-        run: node .github/scripts/marketplace.test.mjs
+        run: node .github/scripts/marketplace-test.mjs
 
       - name: Package VS Code extension
         if: matrix.typescript == '6.0.3'

@@ -42,6 +42,7 @@ for (const file of [
   'syntaxes',
   'language-configuration.json',
   'README.md',
+  'CHANGELOG.md',
   'LICENSE.md',
   '.vscodeignore',
 ]) {
@@ -139,7 +140,7 @@ const output = path.join(
 );
 run(
   path.join(extensionRoot, 'node_modules', '.bin', 'vsce'),
-  ['package', '--out', output],
+  ['package', '--changelog-path', 'CHANGELOG.md', '--out', output],
   stagingDir
 );
 console.log(`\nPackaged ${output}`);

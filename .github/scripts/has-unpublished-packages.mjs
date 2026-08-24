@@ -2,6 +2,8 @@ import { appendFileSync, existsSync } from 'node:fs';
 import { readdir, readFile } from 'node:fs/promises';
 import path from 'node:path';
 
+import { marketplaceVersionExists } from './marketplace.mjs';
+
 // .staging is the vsix staging area of the VSCode extension; it contains a
 // copy of the extension's manifest with the `private` flag stripped
 const ignoredDirectories = new Set(['.git', 'dist', 'node_modules', '.staging']);
@@ -56,7 +58,7 @@ async function main() {
   const packages = (await findPackageManifests(process.cwd())).sort((a, b) =>
     a.name.localeCompare(b.name)
   );
-  let hasUnpublished = false;
+  let hasUnpublishedNpm = false;
 
   for (const pkg of packages) {
     const isPublished = await hasPublishedVersion(pkg);
@@ -65,14 +67,30 @@ async function main() {
       console.log(`${pkg.name}@${pkg.version} is already published`);
     } else {
       console.log(`${pkg.name}@${pkg.version} is not published yet`);
-      hasUnpublished = true;
+      hasUnpublishedNpm = true;
     }
   }
 
+  const extensionManifest = JSON.parse(
+    await readFile(path.join(workspaceRoot, 'packages/vscode-graphqlsp/package.json'), 'utf8')
+  );
+  const extensionId = `${extensionManifest.publisher}.${extensionManifest.name}`;
+  const extensionIsPublished = await marketplaceVersionExists(extensionManifest);
+  console.log(
+    `${extensionId}@${extensionManifest.version} is ${
+      extensionIsPublished ? 'already published' : 'not published yet'
+    }`
+  );
+
+  const hasUnpublishedExtension = !extensionIsPublished;
+  const hasUnpublished = hasUnpublishedNpm || hasUnpublishedExtension;
   const output =
-    [`has_unpublished=${String(hasUnpublished)}`, `should_publish=${String(hasUnpublished)}`].join(
-      '\n'
-    ) + '\n';
+    [
+      `has_unpublished=${String(hasUnpublished)}`,
+      `has_unpublished_npm=${String(hasUnpublishedNpm)}`,
+      `has_unpublished_vscode_extension=${String(hasUnpublishedExtension)}`,
+      `should_publish=${String(hasUnpublished)}`,
+    ].join('\n') + '\n';
 
   if (process.env.GITHUB_OUTPUT) {
     appendFileSync(process.env.GITHUB_OUTPUT, output);

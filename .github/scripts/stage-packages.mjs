@@ -3,10 +3,14 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { dirname, join, relative } from "node:path";
 
+import { marketplaceVersionExists } from "./marketplace.mjs";
+
 const root = process.cwd();
 const config = JSON.parse(readFileSync(join(root, ".changeset/config.json"), "utf8"));
 const ignored = new Set(config.ignore || []);
 const access = config.access || "public";
+const vscodeExtensionDir = join(root, "packages/vscode-graphqlsp");
+const vscodeExtensionManifest = readJson(join(vscodeExtensionDir, "package.json"));
 
 function readJson(path) {
   return JSON.parse(readFileSync(path, "utf8"));
@@ -107,6 +111,35 @@ function createGitTag(tagName) {
   console.log(`New tag: ${tagName}`);
 }
 
+const shouldPublishVsCodeExtension = !(await marketplaceVersionExists(
+  vscodeExtensionManifest
+));
+const vscodeExtensionId = `${vscodeExtensionManifest.publisher}.${vscodeExtensionManifest.name}`;
+const vscodeExtensionVsix = join(
+  vscodeExtensionDir,
+  `${vscodeExtensionManifest.name}-${vscodeExtensionManifest.version}.vsix`
+);
+
+if (shouldPublishVsCodeExtension) {
+  console.log(
+    `Packaging ${vscodeExtensionId}@${vscodeExtensionManifest.version} before staging packages...`
+  );
+  const result = spawnSync(
+    "pnpm",
+    ["--filter", vscodeExtensionManifest.name, "package"],
+    {
+      cwd: root,
+      encoding: "utf8",
+      stdio: "inherit",
+    }
+  );
+  if (result.status !== 0) process.exit(result.status || 1);
+} else {
+  console.log(
+    `Skipping ${vscodeExtensionId}@${vscodeExtensionManifest.version}; already published.`
+  );
+}
+
 const staged = [];
 for (const packageJsonPath of packageJsonPaths()) {
   const pkg = readJson(packageJsonPath);
@@ -152,10 +185,36 @@ for (const packageJsonPath of packageJsonPaths()) {
   });
 }
 
+if (shouldPublishVsCodeExtension) {
+  console.log(
+    `Publishing ${vscodeExtensionId}@${vscodeExtensionManifest.version} to the VS Code Marketplace...`
+  );
+  const result = spawnSync(
+    "pnpm",
+    [
+      "--filter",
+      vscodeExtensionManifest.name,
+      "exec",
+      "vsce",
+      "publish",
+      "--azure-credential",
+      "--packagePath",
+      vscodeExtensionVsix,
+    ],
+    {
+      cwd: root,
+      encoding: "utf8",
+      stdio: "inherit",
+    }
+  );
+  if (result.status !== 0) process.exit(result.status || 1);
+  createGitTag(`${vscodeExtensionManifest.name}@${vscodeExtensionManifest.version}`);
+}
+
 if (staged.length === 0) {
-  console.log("No unpublished packages to stage.");
+  console.log("No unpublished npm packages to stage.");
 } else {
-  console.log("Staged packages:");
+  console.log("Staged npm packages:");
   for (const pkg of staged) {
     console.log(`- ${pkg.name}@${pkg.version}${pkg.stageId ? ` (${pkg.stageId})` : ""}`);
   }

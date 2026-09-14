@@ -1,6 +1,31 @@
 import { ts } from './ts';
 import { parse, visit } from 'graphql';
 
+/**
+ * Returns true if the given node has a leading or trailing comment containing
+ * @gql-tada-ignore-unused or @gql-tada-mark-used.
+ */
+function hasIgnoreUnusedComment(
+  node: ts.Node,
+  sourceFile: ts.SourceFile
+): boolean {
+  const fullText = sourceFile.getFullText();
+  const start = node.getStart();
+  const length = node.getWidth();
+  const leading = ts.getLeadingCommentRanges(fullText, start) ?? [];
+  const trailing = ts.getTrailingCommentRanges(fullText, start + length) ?? [];
+  for (const range of [...leading, ...trailing]) {
+    const commentText = fullText.substring(range.pos, range.end);
+    if (
+      commentText.includes('@gql-tada-ignore-unused') ||
+      commentText.includes('@gql-tada-mark-used')
+    ) {
+      return true;
+    }
+  }
+  return false;
+}
+
 import { getValueOfIdentifier } from './ast/declaration';
 
 export const UNUSED_FIELD_CODE = 52005;
@@ -79,8 +104,7 @@ const resolveDataType = (
   let dataType: ts.Type | undefined;
 
   const type = checker.getTypeAtLocation(node.parent) as
-    | ts.TypeReference
-    | ts.Type;
+    ts.TypeReference | ts.Type;
   // Attempt to retrieve type from internally resolve type arguments
   if ('target' in type) {
     const typeArguments = (type as any)
@@ -706,6 +730,7 @@ export const checkFieldUsageInFile = (
     // parent field.
     for (const state of docStates) {
       if (!state.accessCount) continue;
+      if (hasIgnoreUnusedComment(state.templateNode, source)) continue;
 
       const node = state.templateNode;
       const fieldToLoc = state.fieldToLoc;

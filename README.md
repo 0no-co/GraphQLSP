@@ -46,12 +46,12 @@ workspace version of TypeScript. In VSCode you can do so by clicking the bottom 
 when on a TypeScript file or adding a file like [this](https://github.com/0no-co/GraphQLSP/blob/main/packages/example/.vscode/settings.json).
 
 > If you are using VSCode ensure that your editor is using [the Workspace Version of TypeScript](https://code.visualstudio.com/docs/typescript/typescript-compiling#_using-the-workspace-version-of-typescript)
-> this can be done by manually selecting it or adding a `.vscode/config.json` with the contents of
+> this can be done by manually selecting it or adding a `.vscode/settings.json` with the contents of
 >
 > ```json
 > {
->   "typescript.tsdk": "node_modules/typescript/lib",
->   "typescript.enablePromptUseWorkspaceTsdk": true
+>   "js/ts.tsdk.path": "node_modules/typescript/lib",
+>   "js/ts.tsdk.promptToUseWorkspaceVersion": true
 > }
 > ```
 

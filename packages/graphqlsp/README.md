@@ -56,22 +56,21 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 TypeScript 7.1 replaces the legacy in-process compiler API with immutable
 native snapshots. GraphQLSP exposes an experimental **batch diagnostics**
 adapter at `@0no-co/graphqlsp/native` for
-`typescript@7.1.0-dev.20260815.1` and later 7.1 builds with the same unstable
-API shape:
+`typescript@7.1.0-beta`, using its public API entry points:
 
 ```ts
 import { createNativeGraphQLSP } from '@0no-co/graphqlsp/native';
 import path from 'node:path';
 import { buildSchema } from 'graphql';
-import * as ast from 'typescript/unstable/ast';
-import * as sync from 'typescript/unstable/sync';
+import * as ast from 'typescript/ast';
+import * as sync from 'typescript/sync';
 
 const api = new sync.API({ cwd: process.cwd() });
 const configFile = path.resolve('tsconfig.json');
-const snapshot = api.updateSnapshot({ openProjects: [configFile] });
+const snapshot = api.createSnapshot({ openProjects: [configFile] });
 
 try {
-  const project = snapshot.getProject(configFile);
+  const project = snapshot.getConfiguredProject(configFile);
   if (!project) throw new Error('Project was not loaded');
 
   const graphqlsp = createNativeGraphQLSP({ sync, ast });
@@ -97,13 +96,17 @@ co-located-fragment analysis because those editor/project-wide features still
 depend on legacy language-service APIs that the native snapshot API does not
 expose.
 
-This is **not an editor plugin replacement yet**. The unstable 7.1 API can read
-an LSP-owned snapshot through `API.fromLSPConnection(...)`, but it currently
-has no public equivalent of `ts.server.PluginCreateInfo` for injecting custom
-diagnostics, hovers, definitions, refactors, and code actions into TypeScript's
-editor responses. Keep using the package's existing default entry with
-TypeScript 5/6 for those features. A sidecar LSP can use this native batch lane
-and publish its returned diagnostics independently.
+This is **not an editor plugin replacement yet**. The beta's separate
+`typescript/vscode` API exposes `ExtensionAPI.registerLspMiddleware` to transform
+LSP feature responses before VS Code conversion. It excludes notifications,
+lifecycle messages, and partial results; this is not a drop-in replacement for
+`ts.server.PluginCreateInfo`. This adapter does not register middleware or
+provide completions, hovers, definitions, refactors, code actions, or editor
+diagnostic delivery. Those integrations need separate implementation and
+verification, including snapshot lifecycle handling and diagnostic publication.
+Keep using the package's existing default entry with TypeScript 5/6 for its
+editor features. A sidecar LSP can use this native batch lane and publish its
+returned diagnostics independently.
 
 ### Configuration
 

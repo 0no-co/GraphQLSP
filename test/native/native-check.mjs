@@ -5,8 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 import { createNativeGraphQLSP } from '@0no-co/graphqlsp/native';
 import { buildSchema } from 'graphql';
-import * as ast from 'typescript/unstable/ast';
-import * as sync from 'typescript/unstable/sync';
+import * as ast from 'typescript/ast';
+import * as sync from 'typescript/sync';
 
 const { API, DiagnosticCategory } = sync;
 
@@ -22,8 +22,8 @@ test('real GraphQLSP diagnostics run on a TypeScript 7.1 native snapshot', () =>
   const api = new API({ cwd: root, collectTiming: true });
   let snapshot;
   try {
-    snapshot = api.updateSnapshot({ openProjects: [configFile] });
-    const project = snapshot.getProject(configFile);
+    snapshot = api.createSnapshot({ openProjects: [configFile] });
+    const project = snapshot.getConfiguredProject(configFile);
     assert.ok(project, 'TypeScript 7.1 should load the fixture project');
 
     const source = project.program.getSourceFile(sourceFileName);
@@ -103,7 +103,8 @@ test('real GraphQLSP diagnostics run on a TypeScript 7.1 native snapshot', () =>
       sourceFileName,
       source.text,
       replacementSnapshot => {
-        const replacementProject = replacementSnapshot.getProject(configFile);
+        const replacementProject =
+          replacementSnapshot.getConfiguredProject(configFile);
         assert.ok(replacementProject);
         const replacementSource =
           replacementProject.program.getSourceFile(sourceFileName);
@@ -115,6 +116,53 @@ test('real GraphQLSP diagnostics run on a TypeScript 7.1 native snapshot', () =>
         );
         assert.equal(replacementDiagnostics[1].file, replacementSource);
       }
+    );
+
+    // Changed content must invalidate diagnostics without mutating the original
+    // immutable snapshot or returning SourceFiles from a previous snapshot.
+    const changedText = source.text.replace('unknownField', 'text');
+    assert.notEqual(changedText, source.text);
+    api.runWithTemporaryFileUpdate(
+      snapshot,
+      sourceFileName,
+      changedText,
+      changedSnapshot => {
+        const changedProject = changedSnapshot.getConfiguredProject(configFile);
+        assert.ok(changedProject);
+        const changedSource =
+          changedProject.program.getSourceFile(sourceFileName);
+        assert.ok(changedSource);
+        assert.equal(changedSource.text, changedText);
+        assert.notEqual(changedSource, source);
+        const changedDiagnostics = nativeGraphQLSP.getDiagnostics(
+          changedProject,
+          sourceFileName,
+          schema
+        );
+        assert.deepEqual(
+          changedDiagnostics.map(diagnostic => diagnostic.code),
+          [52009]
+        );
+        assert.equal(changedDiagnostics[0].file, changedSource);
+        assert.ok(source.text.includes('unknownField'));
+      }
+    );
+    const originalDiagnostics = nativeGraphQLSP.getDiagnostics(
+      project,
+      sourceFileName,
+      schema
+    );
+    assert.deepEqual(
+      originalDiagnostics.map(diagnostic => diagnostic.code),
+      [52009, 52001]
+    );
+    assert.equal(originalDiagnostics[1].file, source);
+    assert.equal(
+      source.text.slice(
+        originalDiagnostics[1].start,
+        originalDiagnostics[1].start + originalDiagnostics[1].length
+      ),
+      'unknownField'
     );
 
     const timing = api.getTimingInfo().totals;

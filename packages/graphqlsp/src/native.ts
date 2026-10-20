@@ -25,9 +25,9 @@ export interface NativeGraphQLSPDiagnostic {
 }
 
 export interface NativeTypeScriptModules {
-  /** The `typescript/unstable/sync` module namespace. */
+  /** The `typescript/sync` module namespace. */
   sync: Record<string, unknown>;
-  /** The `typescript/unstable/ast` module namespace. */
+  /** The `typescript/ast` module namespace. */
   ast: Record<string, unknown>;
 }
 
@@ -63,8 +63,8 @@ const getNativeDiagnosticVersion = (
  * validation, and source mapping against a TypeScript 7.1 native snapshot.
  *
  * This is a batch/native API lane. It does not decorate the native language
- * service or publish diagnostics to an editor; TypeScript 7.1 does not expose
- * a plugin feature-injection contract equivalent to PluginCreateInfo yet.
+ * service or publish diagnostics to an editor. The separate `typescript/vscode`
+ * middleware API is not integrated here and does not make this a tsserver plugin.
  */
 export function createNativeGraphQLSP(modules: NativeTypeScriptModules) {
   const nativeTypeScript = {

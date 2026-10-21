@@ -1,0 +1,5 @@
+query Invalid {
+  pokemons {
+    notAField
+  }
+}

@@ -44,13 +44,17 @@
     "onLanguage:javascript",
     "onLanguage:javascriptreact",
     "onLanguage:typescript",
-    "onLanguage:typescriptreact"
+    "onLanguage:typescriptreact",
+    "onLanguage:graphql"
   ],
   "contributes": {
     "typescriptServerPlugins": [
       {
         "name": "@0no-co/graphqlsp",
-        "enableForWorkspaceTypeScriptVersions": true
+        "enableForWorkspaceTypeScriptVersions": true,
+        "languages": [
+          "graphql"
+        ]
       }
     ],
     "languages": [

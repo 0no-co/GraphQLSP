@@ -14,6 +14,7 @@ auto-complete.
 - Will warn you when you are importing from a file that is exporting fragments that you're not using
 - An "Extract to fragment" refactor that moves selected fields into a new co-located fragment (in `graphql()` call-expression mode)
 - The VS Code extension adds GraphQL operations and fragments to the Outline view and symbol navigation
+- Typed imports, schema validation, and editor features for `.graphql` files (see [`.graphql` files](#graphql-files))
 
 > Note that this plugin does not do syntax highlighting, for that you still need something like
 > [the VSCode/... plugin](https://marketplace.visualstudio.com/items?itemName=GraphQL.vscode-graphql-syntax)
@@ -75,6 +76,45 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
   an `introspection.ts` file for you, just give it the directory to output to and you're done
 - `tadaDisablePreprocessing` this setting disables the optimisation of `tadaOutput` to a pre-processed TypeScript type, this is off by default.
 - `clientDirectives` this setting allows you to specify additional `clientDirectives` which won't be seen as a missing schema-directive.
+
+## `.graphql` files
+
+GraphQLSP can type and check `.graphql` files with [`@gql.tada/content-mapper`](https://github.com/0no-co/gql.tada/tree/main/packages/content-mapper),
+the content mapper TypeScript 7.1+ uses to import `.graphql` files as `gql.tada` documents.
+Install it and register it in your `tsconfig.json`, next to the plugin:
+
+```json
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "./schema.graphql",
+        "tadaOutputLocation": "./src/graphql-env.d.ts"
+      }
+    ]
+  },
+  "contentMappers": [
+    {
+      "package": "@gql.tada/content-mapper",
+      "extensions": [".graphql"],
+      "options": { "module": "./src/graphql.ts" }
+    }
+  ]
+}
+```
+
+TypeScript 5 and 6 ignore the `contentMappers` key, but GraphQLSP reads it and loads the content
+mapper from your project. In your editor, `.graphql` files then:
+
+- can be imported from TypeScript (`import { GetPokemons } from './pokemons.graphql'`), with each
+  operation and fragment typed by your `graphql()` function,
+- are validated against your schema, with completions, hover information, and go-to-definition,
+- support find references and rename for fragments across `.graphql` and TypeScript files.
+
+Editors only send `.graphql` files to the TypeScript server when an extension asks for it, which the
+GraphQLSP VSCode extension does. Outside of your editor, `tsc` only understands `.graphql` imports from
+TypeScript 7.1 onwards (with `tsc --runExternalCode`).
 
 ## Tracking unused fields
 

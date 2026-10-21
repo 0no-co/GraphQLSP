@@ -21,6 +21,11 @@ import {
 import { templates } from './ast/templates';
 import { getPersistedCodeFixAtPosition } from './persisted';
 import { canExtractFragment, getExtractFragmentEdits } from './extractFragment';
+import {
+  getExternalFiles,
+  setupGraphQLFiles,
+  silenceUnmappedGraphQLFiles,
+} from './graphqlFiles';
 
 /** Marks the language service proxies of active GraphQLSP instances.
  *
@@ -56,7 +61,11 @@ function create(info: ts.server.PluginCreateInfo) {
     info.project.projectService.logger.info(`[GraphQLSP] ${msg}`);
 
   const config = resolveConfig(info, logger, instanceMarker);
-  if (!config) return createBasicDecorator(info);
+  if (!config) {
+    const proxy = createBasicDecorator(info);
+    silenceUnmappedGraphQLFiles(info, proxy);
+    return proxy;
+  }
 
   // Everything downstream (diagnostics, completions, schema loading) reads
   // `info.config` directly, so an adopted configuration has to land there
@@ -69,6 +78,10 @@ function create(info: ts.server.PluginCreateInfo) {
   if (config.template) {
     templates.add(config.template);
   }
+
+  // Decorates the project's host before anything reads from the program, so
+  // `.graphql` files are part of it as virtual TypeScript modules
+  const graphqlFiles = setupGraphQLFiles(info, logger);
 
   const proxy = createBasicDecorator(info);
   // Marks this project as handled, keeping an editor-contributed instance
@@ -406,6 +419,9 @@ function create(info: ts.server.PluginCreateInfo) {
     return info.languageService.getQuickInfoAtPosition(...args);
   };
 
+  if (graphqlFiles) graphqlFiles.decorate(proxy);
+  silenceUnmappedGraphQLFiles(info, proxy);
+
   logger('proxy: ' + JSON.stringify(proxy));
 
   return proxy;
@@ -414,7 +430,7 @@ function create(info: ts.server.PluginCreateInfo) {
 const init: ts.server.PluginModuleFactory = ts => {
   initTypeScript(ts);
   registerGraphQLCodeFixes();
-  return { create };
+  return { create, getExternalFiles };
 };
 
 export default init;

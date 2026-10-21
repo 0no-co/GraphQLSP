@@ -18,6 +18,7 @@ const files = {
   fragments: path.join(projectPath, 'fragments.graphql'),
   invalid: path.join(projectPath, 'invalid.graphql'),
   broken: path.join(projectPath, 'broken.graphql'),
+  typing: path.join(projectPath, 'typing.graphql'),
   schema: path.join(projectPath, 'schema.graphql'),
 };
 
@@ -115,6 +116,18 @@ describe('.graphql files', () => {
     // Fields that are already selected aren't suggested again
     expect(names).toContain('type');
     expect(names).not.toContain('damage');
+  });
+
+  it('provides completions in unclosed documents while typing', async () => {
+    const text = read(files.typing);
+    const lines = text.split('\n');
+    const response = await request('completionInfo', {
+      file: files.typing,
+      line: lines.length,
+      offset: lines[lines.length - 1]!.length + 1,
+    });
+    const names = response.body.entries.map((entry: any) => entry.name);
+    expect(names).toEqual(expect.arrayContaining(['id', 'name', 'attacks']));
   });
 
   it('provides schema hovers in .graphql files', async () => {

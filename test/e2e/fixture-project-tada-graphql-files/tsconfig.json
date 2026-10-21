@@ -1,4 +1,5 @@
 {
+  "extends": "./configs/tsconfig.base.json",
   "compilerOptions": {
     "plugins": [
       {
@@ -15,12 +16,5 @@
     "strict": true,
     "skipLibCheck": true
   },
-  "contentMappers": [
-    {
-      "package": "@gql.tada/content-mapper",
-      "extensions": [".graphql"],
-      "options": { "module": "./graphql.js" }
-    }
-  ],
   "exclude": ["node_modules"]
 }

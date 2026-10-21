@@ -263,6 +263,103 @@ describe('.graphql files', () => {
   });
 });
 
+describe('.graphql files created while the server runs', () => {
+  const added = path.join(projectPath, 'added.graphql');
+  const importer = path.join(projectPath, 'added.ts');
+  const unimported = path.join(projectPath, 'unimported.graphql');
+  let server: TSServer;
+
+  const cleanup = () => {
+    for (const file of [added, importer, unimported]) {
+      fs.rmSync(file, { force: true });
+    }
+  };
+
+  beforeAll(async () => {
+    cleanup();
+    fs.writeFileSync(
+      importer,
+      [
+        "import type { ResultOf } from './graphql.js';",
+        "import { Added } from './added.graphql';",
+        '',
+        'declare const result: ResultOf<typeof Added>;',
+        'export const id: number = result.pokemon!.id;',
+        '',
+      ].join('\n')
+    );
+    server = new TSServer(projectPath, { debugLog: false });
+    server.sendCommand('open', {
+      file: importer,
+      fileContent: read(importer),
+      scriptKindName: 'TS',
+    } satisfies ts.server.protocol.OpenRequestArgs);
+    await pollDiagnostics(server, importer, diagnostics =>
+      diagnostics.some(diagnostic => diagnostic.code === 2307)
+    );
+  });
+
+  afterAll(() => {
+    server.close();
+    cleanup();
+  });
+
+  it('adds new .graphql files to the project without opening them', async () => {
+    fs.writeFileSync(unimported, 'query Unimported {\n  notAField\n}\n');
+    let fileNames: string[] = [];
+    for (let attempt = 0; attempt < 40; attempt++) {
+      const seen = server.responses.length;
+      server.sendCommand('projectInfo', {
+        file: importer,
+        needFileNameList: true,
+      } satisfies ts.server.protocol.ProjectInfoRequestArgs);
+      await server.waitForResponse(
+        response =>
+          response.type === 'response' && response.command === 'projectInfo'
+      );
+      const response = server.responses
+        .slice(seen)
+        .find(
+          response =>
+            response.type === 'response' && response.command === 'projectInfo'
+        ) as ts.server.protocol.ProjectInfoResponse;
+      fileNames = response.body!.fileNames!;
+      if (fileNames.includes(unimported)) break;
+      await new Promise(resolve => setTimeout(resolve, 250));
+    }
+    expect(fileNames).toContain(unimported);
+  });
+
+  it('resolves imports of new .graphql files', async () => {
+    fs.writeFileSync(
+      added,
+      'query Added {\n  pokemon(id: "1") {\n    id\n    notAField\n  }\n}\n'
+    );
+    const diagnostics = await pollDiagnostics(server, importer, diagnostics =>
+      diagnostics.some(diagnostic => diagnostic.code === 2322)
+    );
+    expect(diagnostics).toMatchObject([
+      {
+        code: 2322,
+        text: expect.stringContaining(
+          "Type 'string' is not assignable to type 'number'"
+        ),
+      },
+    ]);
+  });
+
+  it('validates new .graphql files against the schema', async () => {
+    server.sendCommand('open', {
+      file: added,
+      fileContent: read(added),
+    } satisfies ts.server.protocol.OpenRequestArgs);
+    const diagnostics = await pollDiagnostics(server, added);
+    expect(diagnostics).toMatchObject([
+      { code: 52001, start: positionOf(added, 'notAField') },
+    ]);
+  });
+});
+
 describe('.graphql files without the content mapper', () => {
   const projectPath = path.resolve(__dirname, 'fixture-project-tada');
   const schemaFile = path.join(projectPath, 'schema.graphql');

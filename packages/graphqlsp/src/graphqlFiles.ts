@@ -96,13 +96,61 @@ export const getExternalFiles = (
   return files ? files.getExternalFiles(updateLevel) : [];
 };
 
+/** Resolves an `extends` specifier like TypeScript does, including packages */
+const resolveExtendedConfig = (
+  configFileName: string,
+  specifier: string
+): string | undefined => {
+  const sourceFile = ts.parseJsonText(
+    configFileName,
+    JSON.stringify({ extends: specifier, files: [] })
+  ) as ts.TsConfigSourceFile;
+  ts.parseJsonSourceFileConfigFileContent(
+    sourceFile,
+    ts.sys,
+    path.dirname(configFileName),
+    undefined,
+    configFileName
+  );
+  // Extended configs are listed depth-first, so the first is the specifier's
+  return sourceFile.extendedSourceFiles && sourceFile.extendedSourceFiles[0];
+};
+
+/** Finds the `contentMappers` that apply to a tsconfig.
+ *
+ * @remarks
+ * Like other options, the nearest `contentMappers` wins, and of several
+ * extended configs the last one wins. Like TypeScript 7.1, options of an
+ * inherited entry aren't rebased, so relative modules stay relative to the
+ * project's tsconfig. */
+const readContentMappers = (
+  configFileName: string,
+  seen = new Set<string>()
+): unknown => {
+  if (seen.has(configFileName)) return undefined;
+  seen.add(configFileName);
+  const { config, error } = ts.readConfigFile(configFileName, ts.sys.readFile);
+  if (error || !config) return undefined;
+  if (config.contentMappers !== undefined) return config.contentMappers;
+  const specifiers: unknown[] = [].concat(config.extends || []);
+  for (let index = specifiers.length - 1; index >= 0; index--) {
+    const specifier = specifiers[index];
+    const extended =
+      typeof specifier === 'string' &&
+      resolveExtendedConfig(configFileName, specifier);
+    const contentMappers = extended && readContentMappers(extended, seen);
+    if (contentMappers !== undefined) return contentMappers;
+  }
+  return undefined;
+};
+
 const readContentMapperEntry = (
   configFileName: string,
   logger: Logger
 ): ContentMapperEntry | null => {
-  const { config, error } = ts.readConfigFile(configFileName, ts.sys.readFile);
-  if (error || !config || !Array.isArray(config.contentMappers)) return null;
-  const entry = config.contentMappers.find(
+  const contentMappers = readContentMappers(configFileName);
+  if (!Array.isArray(contentMappers)) return null;
+  const entry = contentMappers.find(
     (entry: unknown): entry is ContentMapperEntry =>
       !!entry &&
       typeof entry === 'object' &&
@@ -218,7 +266,9 @@ export const setupGraphQLFiles = (
 
   let externalFiles: string[] | undefined;
   const getExternalFiles = (updateLevel: number): string[] => {
-    // Only rescan when tsserver reloads the project's root names
+    // Only rescan when tsserver reloads the project's root names, which its
+    // directory watchers also do for added `.graphql` files, since they accept
+    // the files `getScriptKind` supports (TypeScript 5.3+)
     if (externalFiles && updateLevel === 0) return externalFiles;
     const { config } = ts.readConfigFile(configFileName, ts.sys.readFile);
     const parsed = ts.parseJsonConfigFileContent(

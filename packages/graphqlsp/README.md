@@ -104,7 +104,8 @@ Install it and register it in your `tsconfig.json`, next to the plugin:
 ```
 
 TypeScript 5 and 6 ignore the `contentMappers` key, but GraphQLSP reads it and loads the content
-mapper from your project. In your editor, `.graphql` files then:
+mapper from your project. The entry may also come from a config your `tsconfig.json` extends, in which
+case its `module` option, like in TypeScript 7.1, stays relative to your project's `tsconfig.json`. In your editor, `.graphql` files then:
 
 - can be imported from TypeScript (`import { GetPokemons } from './pokemons.graphql'`), with each
   operation and fragment typed by your `graphql()` function,

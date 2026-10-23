@@ -16,6 +16,7 @@
     "url": "https://github.com/0no-co/GraphQLSP/issues"
   },
   "homepage": "https://github.com/0no-co/GraphQLSP#readme",
+  "icon": "icon.png",
   "keywords": [
     "GraphQL",
     "TypeScript",

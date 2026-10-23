@@ -50,7 +50,7 @@
     "typescript": "^6.0.3"
   },
   "dependencies": {
-    "@gql.tada/internal": "^1.2.1",
+    "@gql.tada/internal": "^2.0.0",
     "graphql": "^15.5.0 || ^16.0.0 || ^17.0.0"
   },
   "peerDependencies": {

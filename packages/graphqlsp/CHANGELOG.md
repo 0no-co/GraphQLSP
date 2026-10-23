@@ -1,5 +1,25 @@
 # @0no-co/graphqlsp
 
+## 1.18.0
+
+### Minor Changes
+
+- Add an "Extract to fragment" refactor for `graphql()` call-expression documents. When you select one or more complete fields inside a document's selection set, the editor now offers an "Extract to fragment" action under the "GraphQL" refactor group, which creates a new `graphql()` fragment document (named after the fields' parent type) above the current statement, replaces the selected fields with a fragment spread, and adds the new fragment variable to the call's fragment array
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#412](https://github.com/0no-co/GraphQLSP/pull/412))
+- Add find-references and rename support for GraphQL fragments. Placing the cursor on a fragment name — either at its definition (`fragment PokemonFields on Pokemon`) or at a spread (`...PokemonFields`) — now lists the definition and every spread of that fragment across the project's source files, and renaming from any of those locations updates all of them at once, including fragments defined in other `graphql()` calls in the same file and fragments imported from other files
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#409](https://github.com/0no-co/GraphQLSP/pull/409))
+- Support being loaded as a "global" tsserver plugin, as contributed by editor extensions, with project configuration taking precedence over editor settings. An editor-contributed instance now defers to a live project-local instance (including `gql.tada/ts-plugin`, detected through a shared marker on the language service), adopts the project's tsconfig `plugins` entry when the plugin package isn't installed locally, falls back to editor settings passed through `configurePlugin`, and otherwise stays dormant instead of reporting configuration errors in projects that never set up GraphQLSP
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#416](https://github.com/0no-co/GraphQLSP/pull/416))
+- Add quick fixes (code actions) for GraphQLSP's own diagnostics. Misspelled fields, arguments, and types with a "Did you mean" suggestion now offer one fix per suggested replacement, deprecated fields whose deprecation reason names a replacement (for example "Use `newField` instead" or "replaced by `newField`") offer a fix that swaps in the replacement, and unused fields reported by field-usage tracking offer a fix that removes them from the document — unless the removal would leave the parent selection set empty
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#413](https://github.com/0no-co/GraphQLSP/pull/413))
+- Improve hover (quick info) for GraphQL documents. Hovering a field now shows a proper signature line — `ParentType.fieldName(arg: ArgType = default): ReturnType` — in the editor's display string, with the schema description and any `@deprecated: <reason>` notice (falling back to the spec default "No longer supported") rendered as documentation, plus a `deprecated` JSDoc tag so editors can render strikethrough. Hover now also works on field and directive arguments (showing the argument's type, default value, and description), enum values, and named types such as fragment type conditions (`on Pokemon`)
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#411](https://github.com/0no-co/GraphQLSP/pull/411))
+
+### Patch Changes
+
+- ⚠️ Fix intermittent `ENOENT: no such file or directory, unlink '<output>.d.ts.tmp'` failures when multiple plugin instances write the same `tadaOutputLocation`, e.g. several TS projects in a monorepo extending a shared tsconfig. The typings swap-file now has a unique name per process and write, so concurrent regenerations no longer clobber each other's swap-files, and swap-file cleanup no longer masks the original write error
+  Submitted by [@macrozone](https://github.com/macrozone) (See [#420](https://github.com/0no-co/GraphQLSP/pull/420))
+
 ## 1.17.5
 
 ### Patch Changes

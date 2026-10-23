@@ -41,6 +41,7 @@ for (const file of [
   'dist',
   'syntaxes',
   'language-configuration.json',
+  'icon.png',
   'README.md',
   'LICENSE.md',
   '.vscodeignore',

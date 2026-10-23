@@ -159,7 +159,8 @@ export function getGraphQLQuickInfo(
     const foundToken = getToken(node.arguments[0], cursorPosition);
     if (!schemaToUse || !foundToken) return undefined;
 
-    text = node.arguments[0].getText();
+    // `getToken` positions tokens within the document, without its quotes
+    text = node.arguments[0].getText().slice(1, -1);
     cursor = new Cursor(foundToken.line, foundToken.start - 1);
   } else if (!isCallExpression && checks.isGraphQLTag(node)) {
     const foundToken = getToken(node.template, cursorPosition);

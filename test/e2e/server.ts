@@ -19,18 +19,22 @@ export class TSServer {
 
   constructor(
     public projectPath: string,
-    public options: { debugLog?: boolean } = {}
+    public options: { debugLog?: boolean; args?: string[] } = {}
   ) {
     const tsserverPath = require.resolve('typescript/lib/tsserver');
 
-    const server = fork(tsserverPath, ['--logVerbosity', 'verbose'], {
-      stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
-      cwd: projectPath,
-      env: {
-        TSS_LOG:
-          '-level verbose -traceToConsole false -logToFile true -file ./tsserver.log',
-      },
-    });
+    const server = fork(
+      tsserverPath,
+      ['--logVerbosity', 'verbose', ...(options.args || [])],
+      {
+        stdio: ['pipe', 'pipe', 'pipe', 'ipc'],
+        cwd: projectPath,
+        env: {
+          TSS_LOG:
+            '-level verbose -traceToConsole false -logToFile true -file ./tsserver.log',
+        },
+      }
+    );
 
     if (!server?.stdout) {
       throw new Error('Failed to start tsserver');

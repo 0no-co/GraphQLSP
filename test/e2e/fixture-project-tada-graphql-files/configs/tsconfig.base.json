@@ -1,0 +1,9 @@
+{
+  "contentMappers": [
+    {
+      "package": "@gql.tada/content-mapper",
+      "extensions": [".graphql"],
+      "options": { "module": "./graphql.js" }
+    }
+  ]
+}

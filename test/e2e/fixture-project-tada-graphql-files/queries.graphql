@@ -1,0 +1,17 @@
+# import PokemonFields from "./fragments.graphql"
+
+query Pokemons($limit: Int = 10) {
+  pokemons(limit: $limit) {
+    ...PokemonFields
+    ...Attacks
+  }
+}
+
+fragment Attacks on Pokemon {
+  attacks {
+    fast {
+      name
+      damage
+    }
+  }
+}

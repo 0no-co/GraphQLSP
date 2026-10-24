@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { fork, type ChildProcess } from 'node:child_process';
+import fs from 'node:fs';
 import path from 'node:path';
 
 import type { CheckDiagnostic } from '@0no-co/graphqlsp/check';
@@ -32,10 +33,84 @@ interface TypeScriptSDK {
 }
 
 interface TypeScript7ExtensionAPI {
+  /** Before `TypeScriptSDK` (e.g. `TypeScriptTeam.native-preview@1.0`), the
+   * listener is called without an argument. */
   onLanguageServerInitialized(
-    listener: (sdk: TypeScriptSDK) => unknown
+    listener: (sdk?: TypeScriptSDK) => unknown
   ): vscode.Disposable;
+  /** Only on the extension API before `TypeScriptSDK`. */
+  initializeAPIConnection?(pipe?: string): Promise<string>;
 }
+
+/** The settings TypeScript 7's extension reads its TypeScript installation from, in order. */
+const tsdkSettings = [
+  ['js/ts', 'tsdk.path'],
+  ['typescript', 'tsdk'],
+  ['typescript.native-preview', 'tsdk'],
+] as const;
+
+/** Finds the `package.json` of the TypeScript 7 installation the language server likely runs.
+ *
+ * @remarks
+ * Older versions of TypeScript 7's extension don't tell which installation
+ * they run, so this resolves it from the same settings, and falls back to
+ * the workspace's own `typescript` package. These may not match when the
+ * extension ignores a workspace's setting, e.g. because it hasn't been
+ * allowed to use it yet.
+ */
+const findTypeScriptPackageJson = (): string | undefined => {
+  const folders = (vscode.workspace.workspaceFolders || []).map(
+    folder => folder.uri.fsPath
+  );
+  const candidates: string[] = [];
+  for (const [section, key] of tsdkSettings) {
+    const value = vscode.workspace.getConfiguration(section).get<string>(key);
+    if (!value) continue;
+    if (path.isAbsolute(value)) candidates.push(value);
+    else
+      for (const folder of folders) candidates.push(path.join(folder, value));
+  }
+  for (const folder of folders)
+    candidates.push(path.join(folder, 'node_modules', 'typescript'));
+
+  for (const candidate of candidates) {
+    // Settings may point at the package or at its `lib` directory
+    for (const directory of [candidate, path.dirname(candidate)]) {
+      const packageJsonPath = path.join(directory, 'package.json');
+      try {
+        const packageJson = JSON.parse(
+          fs.readFileSync(packageJsonPath, 'utf8')
+        );
+        if (
+          packageJson.name === 'typescript' &&
+          parseInt(packageJson.version, 10) >= 7
+        ) {
+          return packageJsonPath;
+        }
+      } catch {}
+    }
+  }
+  return undefined;
+};
+
+/** Describes the language server like a `TypeScriptSDK`, for extension APIs before it. */
+const getLegacySDK = (
+  api: TypeScript7ExtensionAPI
+): TypeScriptSDK | undefined => {
+  const { initializeAPIConnection } = api;
+  if (typeof initializeAPIConnection !== 'function') return undefined;
+  const packageJsonPath = findTypeScriptPackageJson();
+  let version = 'unknown';
+  try {
+    if (packageJsonPath)
+      version = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8')).version;
+  } catch {}
+  return {
+    version,
+    packageJsonPath,
+    initializeAPIConnection: pipe => initializeAPIConnection.call(api, pipe),
+  };
+};
 
 const severities: Record<
   CheckDiagnostic['severity'],
@@ -83,10 +158,14 @@ export function activateTypeScript7(context: vscode.ExtensionContext): void {
         context.subscriptions.push(
           // Fires after every (re)start of the language server, after which
           // API sessions have to be recreated
-          api.onLanguageServerInitialized(sdk => {
+          api.onLanguageServerInitialized(languageServer => {
             diagnostics?.dispose();
             diagnostics = undefined;
-            if (!sdk.packageJsonPath) {
+            const sdk = languageServer || getLegacySDK(api);
+            if (!sdk) {
+              log(`${id} doesn't provide TypeScript 7's API connections.`);
+              return;
+            } else if (!sdk.packageJsonPath) {
               log(
                 `TypeScript ${sdk.version} has no API package, so GraphQLSP's diagnostics are unavailable.`
               );

@@ -124,6 +124,6 @@ jobs:
         run: pnpm --filter ./test/e2e/fixture-project-ts7 add --save-dev ${{ matrix.package }}
 
       - name: Test
-        run: pnpm exec vitest run test/e2e/ts7.test.ts
+        run: pnpm exec vitest run test/e2e/ts7.test.ts test/e2e/ts7-session.test.ts
         env:
           GRAPHQLSP_TS7_COMPILER: ${{ matrix.compiler }}

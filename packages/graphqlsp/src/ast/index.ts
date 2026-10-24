@@ -1,4 +1,5 @@
 import { ts } from '../ts';
+import type { GraphQLSPHost, HostChecker } from '../host';
 import { FragmentDefinitionNode, parse } from 'graphql';
 import * as checks from './checks';
 import { resolveTadaFragmentArray } from './resolve';
@@ -10,7 +11,7 @@ import {
 
 export { getSchemaName } from './checks';
 
-export function getSource(info: ts.server.PluginCreateInfo, filename: string) {
+export function getSource(info: GraphQLSPHost, filename: string) {
   const program = info.languageService.getProgram();
   if (!program) return undefined;
 
@@ -56,8 +57,8 @@ export function findAllTaggedTemplateNodes(
 
 export function resolveIdentifierToGraphQLCall(
   input: ts.Identifier,
-  info: ts.server.PluginCreateInfo,
-  checker: ts.TypeChecker | undefined
+  info: GraphQLSPHost,
+  checker: HostChecker | undefined
 ): checks.GraphQLCallNode | null {
   if (!checker) return null;
 
@@ -70,8 +71,8 @@ export function resolveIdentifierToGraphQLCall(
 
 export function unrollFragment(
   element: ts.Identifier,
-  info: ts.server.PluginCreateInfo,
-  checker: ts.TypeChecker | undefined
+  info: GraphQLSPHost,
+  checker: HostChecker | undefined
 ): Array<FragmentDefinitionNode> {
   const fragments: FragmentDefinitionNode[] = [];
   const elements: ts.Identifier[] = [element];
@@ -109,7 +110,7 @@ export function unrollFragment(
 export function unrollTadaFragments(
   fragmentsArray: ts.ArrayLiteralExpression,
   wip: FragmentDefinitionNode[],
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): FragmentDefinitionNode[] {
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   fragmentsArray.elements.forEach(element => {
@@ -136,7 +137,7 @@ export type FindAllCallExpressionsOptions = {
 
 export function findAllCallExpressions(
   sourceFile: ts.SourceFile,
-  info: ts.server.PluginCreateInfo,
+  info: GraphQLSPHost,
   options: boolean | FindAllCallExpressionsOptions = true
 ): {
   nodes: Array<{
@@ -230,12 +231,12 @@ export function findAllPersistedCallExpressions(
 ): Array<ts.CallExpression>;
 export function findAllPersistedCallExpressions(
   sourceFile: ts.SourceFile,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): Array<{ node: ts.CallExpression; schema: string | null }>;
 
 export function findAllPersistedCallExpressions(
   sourceFile: ts.SourceFile,
-  info?: ts.server.PluginCreateInfo
+  info?: GraphQLSPHost
 ) {
   const result: Array<
     ts.CallExpression | { node: ts.CallExpression; schema: string | null }
@@ -259,10 +260,7 @@ export function findAllPersistedCallExpressions(
   return result;
 }
 
-export function getAllFragments(
-  node: ts.Node,
-  info: ts.server.PluginCreateInfo
-) {
+export function getAllFragments(node: ts.Node, info: GraphQLSPHost) {
   let fragments: Array<FragmentDefinitionNode> = [];
 
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();

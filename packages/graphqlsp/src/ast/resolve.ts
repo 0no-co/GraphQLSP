@@ -1,5 +1,6 @@
 import { print } from '@0no-co/graphql.web';
 import { ts } from '../ts';
+import type { GraphQLSPHost } from '../host';
 import {
   getDeclarationOfIdentifier,
   getValueOfValueDeclaration,
@@ -20,7 +21,7 @@ export function resolveTemplate(
   node:
     ts.TaggedTemplateExpression | ts.StringLiteralLike | ts.TemplateExpression,
   filename: string,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): TemplateResult {
   if (ts.isStringLiteralLike(node)) {
     return {
@@ -93,7 +94,7 @@ export function resolveTemplate(
 
         const parent = declaration;
         if (ts.isVariableDeclaration(parent)) {
-          const identifierName = span.expression.escapedText;
+          const identifierName = span.expression.text;
           const value = getValueOfValueDeclaration(parent);
           if (!value) return;
 
@@ -112,7 +113,7 @@ export function resolveTemplate(
               info
             );
             templateText = templateText.replace(
-              '${' + span.expression.escapedText + '}',
+              '${' + span.expression.text + '}',
               text.combinedText
             );
 
@@ -137,7 +138,7 @@ export function resolveTemplate(
               info
             );
             templateText = templateText.replace(
-              '${' + span.expression.escapedText + '}',
+              '${' + span.expression.text + '}',
               text.combinedText
             );
             const alteredSpan = {
@@ -159,7 +160,7 @@ export function resolveTemplate(
             const astObject = JSON.parse(value.expression.expression.getText());
             const resolvedTemplate = print(astObject);
             templateText = templateText.replace(
-              '${' + span.expression.escapedText + '}',
+              '${' + span.expression.text + '}',
               resolvedTemplate
             );
             const alteredSpan = {

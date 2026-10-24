@@ -1,4 +1,5 @@
 import { ts } from './ts';
+import type { GraphQLSPHost } from './host';
 
 import { createHash } from 'crypto';
 
@@ -33,7 +34,7 @@ type PersistedAction = {
 export function getPersistedCodeFixAtPosition(
   filename: string,
   position: number,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): PersistedAction | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
@@ -178,7 +179,7 @@ export function getPersistedCodeFixAtPosition(
 }
 
 export const generateHashForDocument = (
-  info: ts.server.PluginCreateInfo,
+  info: GraphQLSPHost,
   templateLiteral:
     ts.StringLiteralLike | ts.TemplateExpression | ts.TaggedTemplateExpression,
   foundFilename: string,
@@ -284,7 +285,7 @@ export const generateHashForDocument = (
 export const getDocumentReferenceFromTypeQuery = (
   typeQuery: ts.TypeQueryNode,
   filename: string,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): { node: ts.CallExpression | null; filename: string } => {
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   if (!typeChecker) return { node: null, filename };
@@ -314,7 +315,7 @@ export const getDocumentReferenceFromTypeQuery = (
 export const getDocumentReferenceFromDocumentNode = (
   documentNodeArgument: ts.Identifier | ts.CallExpression,
   filename: string,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): { node: ts.CallExpression | null; filename: string } => {
   if (ts.isIdentifier(documentNodeArgument)) {
     const typeChecker = info.languageService.getProgram()?.getTypeChecker();

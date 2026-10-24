@@ -20,6 +20,7 @@ import {
 } from '@gql.tada/internal';
 
 import { ts } from '../ts';
+import type { GraphQLSPHost } from '../host';
 import { Logger } from '../index';
 
 const statFile = (
@@ -161,6 +162,21 @@ export interface SchemaRef {
   /** Best-effort detection of schema file changes that the file watcher
    * missed; throttled internally, so it's safe to call often. */
   checkStale(): void;
+  /** Settles once the initial schema load has finished, successfully or not;
+   * failures are reported through `errors` instead. */
+  readonly ready: Promise<void>;
+}
+
+export interface LoadSchemaOptions {
+  /** Directory relative schema paths resolve against. Defaults to the
+   * `tsconfig.json` root directory of the project. */
+  rootPath?: string;
+  /** Whether to keep watching schemas for changes after the initial load.
+   * @defaultValue `true` */
+  watch?: boolean;
+  /** Whether to write gql.tada typings (`tadaOutputLocation`) files.
+   * @defaultValue `true` */
+  persist?: boolean;
 }
 
 /** Falls back to the `current` schema for single-schema setups or unnamed documents. */
@@ -191,9 +207,9 @@ const EMPTY_MULTI: { [name: string]: SchemaLoaderResult | null } = {};
 const STALE_CHECK_INTERVAL = 5_000;
 
 export const loadSchema = (
-  // TODO: abstract info away
-  info: ts.server.PluginCreateInfo,
-  logger: Logger
+  info: GraphQLSPHost,
+  logger: Logger,
+  options: LoadSchemaOptions = {}
 ): SchemaRef => {
   const errors: SchemaErrors = {
     config: null,
@@ -208,7 +224,11 @@ export const loadSchema = (
   let detectStaleSchemas: (() => void) | null = null;
   let lastStaleCheck = 0;
 
+  let ready: Promise<void> = Promise.resolve();
   const ref: SchemaRef = {
+    get ready() {
+      return ready;
+    },
     errors,
     outputLocations,
     sourceLocations,
@@ -231,9 +251,10 @@ export const loadSchema = (
     },
   };
 
-  (async () => {
+  ready = (async () => {
     const projectName = info.project.getProjectName();
     const rootPath =
+      options.rootPath ||
       (await resolveTypeScriptRootDir(projectName)) ||
       path.dirname(projectName);
 
@@ -289,6 +310,7 @@ export const loadSchema = (
     };
 
     const persistSchema = (value: SchemaLoaderResult | null | undefined) => {
+      if (options.persist === false) return;
       if (value && value.tadaOutputLocation) {
         saveTadaIntrospection(
           value.introspection,
@@ -372,6 +394,8 @@ export const loadSchema = (
 
     await recordMtimes();
     persistAll();
+
+    if (options.watch === false) return;
 
     (inner.autoupdate as AutoupdateWithErrors)(
       { rootPath },

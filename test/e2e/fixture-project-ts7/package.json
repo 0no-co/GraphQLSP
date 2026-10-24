@@ -1,0 +1,13 @@
+{
+  "name": "fixtures",
+  "private": true,
+  "dependencies": {
+    "graphql": "^16.0.0",
+    "gql.tada": "^1.11.0",
+    "@0no-co/graphqlsp": "workspace:*"
+  },
+  "devDependencies": {
+    "tsrs": "0.18.0-ts7.1.0-dev.20260929",
+    "typescript-7": "npm:typescript@7.1.0-beta"
+  }
+}

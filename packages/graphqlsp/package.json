@@ -18,6 +18,12 @@
       "require": "./dist/api.js",
       "source": "./src/api.ts"
     },
+    "./check": {
+      "types": "./dist/check.d.ts",
+      "import": "./dist/check.mjs",
+      "require": "./dist/check.js",
+      "source": "./src/check.ts"
+    },
     "./package.json": "./package.json"
   },
   "scripts": {
@@ -55,7 +61,7 @@
   },
   "peerDependencies": {
     "graphql": "^15.5.0 || ^16.0.0 || ^17.0.0",
-    "typescript": "^5.0.0 || ^6.0.0"
+    "typescript": "^5.0.0 || ^6.0.0 || ^7.1.0-0"
   },
   "publishConfig": {
     "provenance": true

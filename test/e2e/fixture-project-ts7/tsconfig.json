@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "plugins": [
+      {
+        "name": "@0no-co/graphqlsp",
+        "schema": "./schema.graphql",
+        "tadaOutputLocation": "./src/introspection.d.ts",
+        "trackFieldUsage": true,
+        "shouldCheckForColocatedFragments": true
+      }
+    ],
+    "target": "es2022",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "strict": true,
+    "skipLibCheck": true,
+    "noEmit": true
+  },
+  "include": ["src"]
+}

@@ -76,6 +76,44 @@ when on a TypeScript file or adding a file like [this](https://github.com/0no-co
 - `tadaDisablePreprocessing` this setting disables the optimisation of `tadaOutput` to a pre-processed TypeScript type, this is off by default.
 - `clientDirectives` this setting allows you to specify additional `clientDirectives` which won't be seen as a missing schema-directive.
 
+## Checking projects with TypeScript 7
+
+TypeScript 7 doesn't load language service plugins, so GraphQLSP's diagnostics
+can't run inside `tsc` or the TypeScript 7 language server. Instead,
+`checkProject` reports them for a whole project, using the TypeScript 7.1 API
+(`typescript@>=7.1`, or [`tsrs`](https://github.com/oxc-project/tsrs)). With
+TypeScript 5/6 installed, it uses the TypeScript compiler API instead.
+
+```ts
+import { checkProject } from '@0no-co/graphqlsp/check';
+
+const { diagnostics } = await checkProject({
+  tsconfigPath: './tsconfig.json',
+  // 'typescript' (default) or 'tsrs', resolved from the tsconfig.json's directory
+  compiler: 'typescript',
+});
+
+for (const diagnostic of diagnostics) {
+  console.log(
+    `${diagnostic.file}:${diagnostic.line}:${diagnostic.column} ` +
+      `${diagnostic.severity} (${diagnostic.code}): ${diagnostic.message}`
+  );
+}
+```
+
+The plugin entry is read from `compilerOptions.plugins` in your `tsconfig.json`
+(following `extends`), like the TypeScript plugin's configuration. Schemas are
+loaded once, without watching them, and gql.tada's `tadaOutputLocation` typings
+aren't written.
+
+If your project uses [content mappers](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/)
+(`contentMappers` in your `tsconfig.json`), e.g. to import documents from `.graphql`
+files with `@gql.tada/content-mapper`, pass `runExternalCode: true`. Like
+`tsc --runExternalCode`, this runs the mappers, so documents imported from mapped
+files can be resolved, e.g. by `graphql.persisted()`. Mapped files themselves aren't
+checked, since their mappers report their diagnostics. tsrs's API doesn't run
+content mappers yet.
+
 ## Tracking unused fields
 
 Currently the tracking unused fields feature has a few caveats with regards to tracking, first and foremost

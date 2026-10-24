@@ -1,4 +1,5 @@
 import { ts } from '../ts';
+import type { HostChecker } from '../host';
 import { templates } from './templates';
 
 /** Checks for an immediately-invoked function expression */
@@ -13,8 +14,7 @@ export const isIIFE = (node: ts.Node): boolean =>
 /** Checks if node is a known identifier of graphql functions ('graphql' or 'gql') */
 export const isGraphQLFunctionIdentifier = (
   node: ts.Node
-): node is ts.Identifier =>
-  ts.isIdentifier(node) && templates.has(node.escapedText as string);
+): node is ts.Identifier => ts.isIdentifier(node) && templates.has(node.text);
 
 // The verdicts of the type probes below never change for a given function
 // within one program, but are requested once per call site. Caching them per
@@ -22,18 +22,18 @@ export const isGraphQLFunctionIdentifier = (
 // per distinct callee. Keying by checker makes invalidation automatic, since
 // a new program comes with a new checker.
 const tadaFunctionCache = new WeakMap<
-  ts.TypeChecker,
+  HostChecker,
   WeakMap<ts.Symbol, boolean>
 >();
 
 const schemaNameCache = new WeakMap<
-  ts.TypeChecker,
+  HostChecker,
   WeakMap<ts.Symbol, string | null>
 >();
 
 const getCached = <T>(
-  caches: WeakMap<ts.TypeChecker, WeakMap<ts.Symbol, T>>,
-  checker: ts.TypeChecker,
+  caches: WeakMap<HostChecker, WeakMap<ts.Symbol, T>>,
+  checker: HostChecker,
   node: ts.Node,
   compute: () => T
 ): T => {
@@ -49,7 +49,7 @@ const getCached = <T>(
 /** If `checker` is passed, checks if node (as identifier/expression) is a gql.tada graphql() function */
 export const isTadaGraphQLFunction = (
   node: ts.Node,
-  checker: ts.TypeChecker | undefined
+  checker: HostChecker | undefined
 ): node is ts.LeftHandSideExpression => {
   if (!ts.isLeftHandSideExpression(node) || !checker) return false;
   return getCached(tadaFunctionCache, checker, node, () => {
@@ -78,7 +78,7 @@ const graphqlDocumentPrefix =
 /** If `checker` is passed, checks if node is a gql.tada graphql() call */
 export const isTadaGraphQLCall = (
   node: ts.CallExpression,
-  checker: ts.TypeChecker | undefined
+  checker: HostChecker | undefined
 ): boolean => {
   // We expect graphql() to be called with either a string literal
   // or a string literal and an array of fragments
@@ -104,7 +104,7 @@ export const isTadaGraphQLCall = (
 /** Checks if node is a gql.tada graphql.persisted() call */
 export const isTadaPersistedCall = (
   node: ts.Node | undefined,
-  checker: ts.TypeChecker | undefined
+  checker: HostChecker | undefined
 ): node is ts.CallExpression => {
   if (!node) {
     return false;
@@ -114,7 +114,7 @@ export const isTadaPersistedCall = (
     return false; // rejecting non property access calls: <expression>.<name>()
   } else if (
     !ts.isIdentifier(node.expression.name) ||
-    node.expression.name.escapedText !== 'persisted'
+    node.expression.name.text !== 'persisted'
   ) {
     return false; // rejecting calls on anyting but 'persisted': <expression>.persisted()
   } else if (isGraphQLFunctionIdentifier(node.expression.expression)) {
@@ -132,7 +132,7 @@ export type GraphQLCallNode = ts.CallExpression & {
 /** Checks if node is a gql.tada or regular graphql() call */
 export const isGraphQLCall = (
   node: ts.Node,
-  checker: ts.TypeChecker | undefined
+  checker: HostChecker | undefined
 ): node is GraphQLCallNode => {
   return (
     ts.isCallExpression(node) &&
@@ -152,7 +152,7 @@ export const isGraphQLTag = (
 /** Retrieves the `__name` branded tag from gql.tada `graphql()` or `graphql.persisted()` calls */
 export const getSchemaName = (
   node: ts.CallExpression,
-  typeChecker: ts.TypeChecker | undefined,
+  typeChecker: HostChecker | undefined,
   isTadaPersistedCall = false
 ): string | null => {
   if (!typeChecker) return null;

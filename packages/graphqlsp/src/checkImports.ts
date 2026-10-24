@@ -1,4 +1,5 @@
 import { ts } from './ts';
+import type { GraphQLSPHost, HostChecker } from './host';
 import { FragmentDefinitionNode, Kind, parse } from 'graphql';
 
 import { findAllCallExpressions, findAllImports } from './ast';
@@ -9,7 +10,7 @@ export const MISSING_FRAGMENT_CODE = 52003;
 
 export const getColocatedFragmentNames = (
   source: ts.SourceFile,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): Record<
   string,
   { start: number; length: number; fragments: Array<string> }
@@ -143,8 +144,8 @@ export const getColocatedFragmentNames = (
 
 function getFragmentsInSource(
   src: ts.SourceFile,
-  typeChecker: ts.TypeChecker,
-  info: ts.server.PluginCreateInfo
+  typeChecker: HostChecker,
+  info: GraphQLSPHost
 ): Array<FragmentDefinitionNode> {
   let fragments: Array<FragmentDefinitionNode> = [];
   const callExpressions = findAllCallExpressions(src, info, false);

@@ -1,4 +1,5 @@
 import { ts } from './ts';
+import type { GraphQLSPHost, HostChecker } from './host';
 import { parse, visit } from 'graphql';
 
 import { getValueOfIdentifier } from './ast/declaration';
@@ -74,13 +75,12 @@ interface Entry {
  * type-arguments or through the `__apiType` call-signature. */
 const resolveDataType = (
   node: ts.Node,
-  checker: ts.TypeChecker
+  checker: HostChecker
 ): ts.Type | undefined => {
   let dataType: ts.Type | undefined;
 
   const type = checker.getTypeAtLocation(node.parent) as
-    | ts.TypeReference
-    | ts.Type;
+    ts.TypeReference | ts.Type;
   // Attempt to retrieve type from internally resolve type arguments
   if ('target' in type) {
     const typeArguments = (type as any)
@@ -113,7 +113,7 @@ const resolveDataType = (
 export const checkFieldUsageInFile = (
   source: ts.SourceFile,
   nodes: ts.NoSubstitutionTemplateLiteral[],
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ) => {
   const diagnostics: ts.Diagnostic[] = [];
   const shouldTrackFieldUsage = info.config.trackFieldUsage ?? true;

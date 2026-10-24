@@ -178,6 +178,19 @@ export function getPersistedCodeFixAtPosition(
   }
 }
 
+// `resolveTemplate` returns a string literal's source text, so that diagnostics
+// line up with the source, but hashes are computed from the document itself,
+// e.g. without the escape sequences of a `"query {\n  field\n}"` literal
+const getDocumentText = (
+  node:
+    ts.StringLiteralLike | ts.TemplateExpression | ts.TaggedTemplateExpression,
+  filename: string,
+  info: GraphQLSPHost
+): string =>
+  ts.isStringLiteralLike(node)
+    ? node.text
+    : resolveTemplate(node, filename, info).combinedText;
+
 export const generateHashForDocument = (
   info: GraphQLSPHost,
   templateLiteral:
@@ -188,11 +201,7 @@ export const generateHashForDocument = (
   if (referencedFragments) {
     const fragments: Array<FragmentDefinitionNode> = [];
     unrollTadaFragments(referencedFragments, fragments, info);
-    let text = resolveTemplate(
-      templateLiteral,
-      foundFilename,
-      info
-    ).combinedText;
+    let text = getDocumentText(templateLiteral, foundFilename, info);
     const parsed = parse(text);
     const seen = new Set<unknown>();
     for (const definition of parsed.definitions) {
@@ -220,11 +229,7 @@ export const generateHashForDocument = (
     const externalSource = getSource(info, foundFilename)!;
     const { fragments } = findAllCallExpressions(externalSource, info);
 
-    const text = resolveTemplate(
-      templateLiteral,
-      foundFilename,
-      info
-    ).combinedText;
+    const text = getDocumentText(templateLiteral, foundFilename, info);
 
     const parsed = parse(text);
     const seen = new Set<unknown>();

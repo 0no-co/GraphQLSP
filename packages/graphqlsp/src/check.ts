@@ -55,6 +55,12 @@ export interface CheckProjectOptions {
   files?: readonly string[];
   /** Receives GraphQLSP's log messages. */
   logger?: (message: string) => void;
+  /** Runs the project's content mappers (`contentMappers` in its `tsconfig.json`),
+   * like `tsc --runExternalCode`, so documents imported from mapped files (e.g.
+   * `.graphql` files) are part of the program. Mappers are external processes,
+   * so this is opt-in. Only applies to TypeScript 7.1+ and tsrs.
+   * @defaultValue `false` */
+  runExternalCode?: boolean;
 }
 
 export interface CheckProjectResult {
@@ -73,8 +79,15 @@ const severities: Record<number, CheckSeverity> = {
   3: 'message',
 };
 
+// Content-mapped files (e.g. `.graphql`) are part of the program as virtual
+// TypeScript, but their mappers report their diagnostics, so only TypeScript
+// and JavaScript files are checked
+const isScriptFile = (fileName: string) => /\.[cm]?[jt]sx?$/.test(fileName);
+
 const isCheckedFile = (fileName: string) =>
-  !/\.d\.[cm]?ts$/.test(fileName) && !/[\\/]node_modules[\\/]/.test(fileName);
+  isScriptFile(fileName) &&
+  !/\.d\.[cm]?ts$/.test(fileName) &&
+  !/[\\/]node_modules[\\/]/.test(fileName);
 
 const flattenMessage = (
   message: string | ts.DiagnosticMessageChain
@@ -153,9 +166,13 @@ interface ProjectLoader {
 
 const createApiLoader = (
   modules: CompilerModules,
-  tsconfigPath: string
+  tsconfigPath: string,
+  runExternalCode: boolean
 ): ProjectLoader => {
-  const api = new modules.sync.API({ cwd: path.dirname(tsconfigPath) });
+  const api = new modules.sync.API({
+    cwd: path.dirname(tsconfigPath),
+    runExternalCode,
+  });
   return {
     readConfigFile: configPath => api.readConfigFile(configPath),
     open(tsconfigPath) {
@@ -238,7 +255,7 @@ async function runCheck(
 
   const loader =
     compiler.kind === 'api'
-      ? createApiLoader(compiler, tsconfigPath)
+      ? createApiLoader(compiler, tsconfigPath, !!options.runExternalCode)
       : createLegacyLoader(compiler);
   const previousTypeScript = ts;
   let project: OpenedProject | undefined;
@@ -278,7 +295,7 @@ async function runCheck(
     await schema.ready;
 
     const files = options.files
-      ? options.files.map(file => path.resolve(file))
+      ? options.files.map(file => path.resolve(file)).filter(isScriptFile)
       : project.fileNames;
 
     const diagnostics: CheckDiagnostic[] = [];

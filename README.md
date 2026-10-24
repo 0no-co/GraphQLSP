@@ -106,6 +106,14 @@ The plugin entry is read from `compilerOptions.plugins` in your `tsconfig.json`
 loaded once, without watching them, and gql.tada's `tadaOutputLocation` typings
 aren't written.
 
+If your project uses [content mappers](https://devblogs.microsoft.com/typescript/announcing-typescript-7-1-beta/)
+(`contentMappers` in your `tsconfig.json`), e.g. to import documents from `.graphql`
+files with `@gql.tada/content-mapper`, pass `runExternalCode: true`. Like
+`tsc --runExternalCode`, this runs the mappers, so documents imported from mapped
+files can be resolved, e.g. by `graphql.persisted()`. Mapped files themselves aren't
+checked, since their mappers report their diagnostics. tsrs's API doesn't run
+content mappers yet.
+
 ## Tracking unused fields
 
 Currently the tracking unused fields feature has a few caveats with regards to tracking, first and foremost

@@ -1,0 +1,6 @@
+query PokemonDoc($id: ID!) {
+  pokemon(id: $id) {
+    id
+    name
+  }
+}

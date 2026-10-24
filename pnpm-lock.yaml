@@ -375,6 +375,8 @@ importers:
         specifier: npm:typescript@7.1.0-beta
         version: typescript@7.1.0-beta
 
+  test/e2e/fixture-project-ts7/mapped/mapper: {}
+
   test/e2e/fixture-project-unused-fields:
     dependencies:
       '@0no-co/graphqlsp':

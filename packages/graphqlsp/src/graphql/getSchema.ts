@@ -177,6 +177,8 @@ export interface LoadSchemaOptions {
   /** Whether to write gql.tada typings (`tadaOutputLocation`) files.
    * @defaultValue `true` */
   persist?: boolean;
+  /** Called after schemas were reloaded, e.g. once their files changed. */
+  onChange?: () => void;
 }
 
 /** Falls back to the `current` schema for single-schema setups or unnamed documents. */
@@ -378,6 +380,7 @@ export const loadSchema = (
         logger('Schema files changed without watcher events; reloading...');
         await revalidate(true);
         persistAll();
+        if (options.onChange) options.onChange();
       })().catch(error => {
         logger(`Failed to check schemas for staleness: ${error}`);
       });
@@ -400,7 +403,9 @@ export const loadSchema = (
     (inner.autoupdate as AutoupdateWithErrors)(
       { rootPath },
       (schemaRef, value) => {
-        revalidate();
+        revalidate().then(() => {
+          if (options.onChange) options.onChange();
+        });
         if (!value) return;
 
         const found = value.name

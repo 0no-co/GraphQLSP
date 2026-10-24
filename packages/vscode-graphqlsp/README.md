@@ -65,6 +65,18 @@ only the syntax highlighting is active.
 > **“TypeScript: Select TypeScript Version…”** command and ensure the workspace version is
 > used; the plugin is enabled for both the bundled and workspace versions.
 
+## TypeScript 7
+
+TypeScript 7 doesn't load TypeScript server plugins. When
+[TypeScript 7's extension](https://marketplace.visualstudio.com/items?itemName=TypeScriptTeam.native-preview)
+runs its language server (7.1 or later), this extension instead connects to an API session of
+it, and reports GraphQLSP's diagnostics for open JavaScript and TypeScript files, including
+their unsaved changes. TypeScript 5/6 keep using the plugin.
+
+With TypeScript 7, only projects that configure the plugin in their `tsconfig.json` are
+checked; the `graphqlsp.*` settings don't apply, and hover information and completions
+aren't provided yet. Windows isn't supported yet.
+
 ## Development
 
 ```sh

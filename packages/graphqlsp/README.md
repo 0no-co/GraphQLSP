@@ -152,8 +152,7 @@ For projects with `contentMappers` in their tsconfig, pass
 `.graphql` files used by `@gql.tada/content-mapper`. Mappers run external
 processes, as with `tsc --runExternalCode`. GraphQLSP checks the JS/TS consumers;
 the mappers report diagnostics for the mapped files themselves. The tsrs API
-does not run content mappers yet, and its current package does not provide a
-Windows binary. The native TypeScript path is the locally verified Windows path.
+does not run content mappers yet.
 
 ### Connecting to an existing language server
 
@@ -272,9 +271,8 @@ as follows (the field names depend on the editor):
 }
 ```
 
-This direct Node command also works on Windows clients that cannot launch
-`.cmd` shims. The equivalent executable, when `node_modules/.bin` is on the
-client's PATH, is `graphqlsp --stdio`.
+The equivalent executable, when `node_modules/.bin` is on the client's PATH,
+is `graphqlsp --stdio`.
 
 Attach this server to the editor's JavaScript, JavaScript React, TypeScript,
 and TypeScript React language IDs (JS/JSX/TS/TSX files). It replaces your
@@ -361,10 +359,10 @@ restarting the server creates a fresh API session.
 - The TS 7 path does not reproduce navigation from generated gql.tada
   turbo-cache result types back into queries. Ordinary native TypeScript
   navigation remains available at those positions.
-- On Windows, the sync API relay requires the installed **.NET Framework 4.x
-  C# compiler**. It builds a small included launcher locally; no .NET SDK or
-  download is needed. Unix uses a shell launcher. The relay is bypassed when
-  TypeScript supports synchronous pipe connections directly.
+- Windows isn't supported yet. TypeScript 7.1's sync API client can't connect
+  to the language server's API pipe there, and GraphQLSP's relay is Unix-only.
+  The relay is bypassed when TypeScript supports synchronous pipe connections
+  directly.
 - TypeScript 7.1 can hang during native API-session cleanup. The proxy drains
   its GraphQL worker first and requests clean native shutdown. If the native
   child does not reply within two seconds, the proxy terminates that child
@@ -381,7 +379,6 @@ restarting the server creates a fresh API session.
 | No GraphQL results for a file                          | Ensure it belongs to a configured tsconfig project, has a valid schema, and uses the configured `graphql()` or tagged-template form. Inferred projects without a tsconfig entry are skipped. |
 | Native VS Code integration cannot find the API package | Select the same workspace SDK that the native server uses and allow the TypeScript extension to use it. Older extension APIs discover the package through SDK settings.                      |
 | Settings changed but behavior did not                  | Restart the TypeScript server after config edits. Save schema-file edits so watchers see them.                                                                                               |
-| Windows API relay cannot start                         | Check that .NET Framework 4.x's `csc.exe` is installed; inspect the logged launcher/compiler error.                                                                                          |
 | Duplicate diagnostics or rename edits                  | Ensure only one TypeScript LSP handles each buffer; use either the extension integration or proxy.                                                                                           |
 
 For the proxy, capture stderr without mixing it into stdout. For VS Code,

@@ -27,8 +27,8 @@ references and rename, quick fixes, and fragment extraction.
   Native-mode changes dispose providers and diagnostics; server restarts create
   a fresh connection.
 - `packages/graphqlsp/src/ts7/relay.ts` bridges the synchronous API client when
-  direct pipe connections are unavailable. On Windows, `windowsRelay.ts` embeds
-  source compiled with .NET Framework 4.x; Unix uses a shell launcher.
+  direct pipe connections are unavailable. It uses a Unix shell launcher;
+  Windows isn't supported until TypeScript's sync client connects to pipes.
 
 Results include the source text they were computed against. Integrations must
 discard stale results. Cross-file edits additionally require validation of the
@@ -52,8 +52,7 @@ pnpm --filter vscode-graphqlsp build
 
 The workspace compiler remains TS 5/6 for building and compatibility tests. The
 native fixture installs `typescript-7` as an alias of TypeScript 7.1.0-beta, so
-native testing does not replace the workspace compiler. The tsrs fixture has no
-Windows binary and is skipped there; use the native TypeScript implementation.
+native testing does not replace the workspace compiler.
 
 ## Regression tests and typechecks
 
@@ -120,9 +119,7 @@ After packaging, run the isolated editor harness from the repository root:
 node scripts/dogfood-vscode.mjs --code /absolute/path/to/Code --cli /absolute/path/to/resources/app/out/cli.js --results .tmp/dogfood-results.json
 ```
 
-Use the installed VS Code executable and its matching CLI JavaScript file. On
-Windows, quote paths containing spaces; versioned installations can place
-`resources/app/out/cli.js` under a version directory beside `Code.exe`. The
+Use the installed VS Code executable and its matching CLI JavaScript file. The
 optional `--vsix /absolute/path/to/file.vsix` selects an artifact explicitly.
 
 The harness needs a desktop session and network access to install Microsoft's
@@ -154,18 +151,17 @@ This contains the native cleanup race; it does not repair it upstream.
 
 ## Validation scope and release status
 
-The Windows implementation was exercised with VS Code 1.136.2,
-TypeScriptTeam.native-preview 1.0.1, and TypeScript 7.1.0-beta. Before the
-documentation pass, 149 regression tests in 28 files passed, 13 real-editor
-checks passed, both packages typechecked, and an independent sub-agent's
-14-case native shutdown stress run passed. These are local validation results,
-not claims about every TypeScript or editor extension version.
+The editor features were first exercised on Windows with VS Code 1.136.2,
+TypeScriptTeam.native-preview 1.0.1, and TypeScript 7.1.0-beta, through a
+Windows relay that has since been removed. Those results don't cover the
+supported macOS and Linux paths; rerun the regression suite and the editor
+harness there before release. These are local validation results, not claims
+about every TypeScript or editor extension version.
 
 The released native extension uses its older API shape; the newer middleware
 adapter is covered by unit tests, not an actual released-editor run. The
-`package-vscode.yaml` workflow is configured to build/test/package on Windows,
-macOS, and Linux. macOS/Linux jobs were not executed in this local session,
-and that workflow does not run the actual desktop-editor harness.
+`package-vscode.yaml` workflow builds, tests and packages on macOS and Linux.
+It does not run the actual desktop-editor harness.
 
 The npm changeset and extension version are independent. This local work does
 not publish either artifact; CI packaging and Marketplace publishing are

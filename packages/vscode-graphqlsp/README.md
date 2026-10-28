@@ -116,8 +116,7 @@ resetting explicit native-mode enablement, disposes the native diagnostics and
 providers. The deprecated `typescript.experimental.useTsgo` setting alias is
 also recognized with the native extension's scope precedence.
 
-On Windows, the sync API relay builds an included launcher using the installed
-**.NET Framework 4.x C# compiler**. No .NET SDK or download is needed. The TS 7
+Windows isn't supported yet with TS 7. The TS 7
 path does not reproduce navigation from generated gql.tada turbo-cache result
 types back into queries. This extension supplies syntax highlighting for standalone
 `.graphql` files, but its native API language features target embedded GraphQL
@@ -155,13 +154,12 @@ select the workspace SDK and allow that extension to use it.
 This extension requires a trusted workspace; VS Code's Restricted Mode disables it.
 
 If `graphqlsp.*` settings have no effect under TS 7, move that configuration to
-the tsconfig plugin entry. For Windows relay failures, inspect the Output
-message and verify .NET Framework 4.x's `csc.exe` is installed.
+the tsconfig plugin entry.
 
 ### Packaging and release status
 
 The extension is released separately from the npm package. CI builds a `.vsix`
-artifact on Windows, macOS, and Linux; install it with **Extensions: Install from
+artifact on macOS and Linux; install it with **Extensions: Install from
 VSIX…**. Marketplace publishing remains a separate maintainer action.
 Locally generated packages and VSIX files are not automatically published.
 

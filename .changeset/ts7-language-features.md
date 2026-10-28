@@ -2,7 +2,7 @@
 '@0no-co/graphqlsp': minor
 ---
 
-Expose hover, completion, schema definitions, fragment references and rename, quick fixes, and fragment extraction through TypeScript 7.1 language-server API sessions. Add the `graphqlsp --stdio` LSP proxy for other editors, and support the synchronous API relay on Windows using .NET Framework 4.x.
+Expose hover, completion, schema definitions, fragment references and rename, quick fixes, and fragment extraction through TypeScript 7.1 language-server API sessions. Add the `graphqlsp --stdio` LSP proxy for other editors.
 
 Preserve native TypeScript capabilities, keep GraphQL completion resolution local, reject stale cross-file edits, recover local schemas after deletion/recreation, and await named schemas before the first feature request. The VS Code integration also disposes native providers when switching back to classic TypeScript or resetting native enablement.
 

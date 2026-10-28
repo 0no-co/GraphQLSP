@@ -1,7 +1,6 @@
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { createWindowsRelay } from './windowsRelay';
 
 /** The relay's source, run as a CommonJS script by the sync client.
  *
@@ -213,42 +212,30 @@ const quote = (value: string) => `'${value.replace(/'/g, `'\\''`)}'`;
  * extension host, that is Electron, hence `ELECTRON_RUN_AS_NODE`.
  */
 export const createAPIRelay = (pipe: string): APIRelay => {
+  if (process.platform === 'win32') {
+    throw new Error(
+      "TypeScript 7.1's sync API client can't connect to API pipes on Windows yet."
+    );
+  }
   const directory = fs.mkdtempSync(path.join(os.tmpdir(), 'graphqlsp-'));
   const relayPath = path.join(directory, 'relay.cjs');
+  const tsserverPath = path.join(directory, 'tsserver');
   fs.writeFileSync(relayPath, relaySource);
-  let tsserverPath: string;
-  try {
-    tsserverPath =
-      process.platform === 'win32'
-        ? createWindowsRelay(directory, relayPath, pipe)
-        : path.join(directory, 'tsserver');
-    if (process.platform !== 'win32') {
-      fs.writeFileSync(
-        tsserverPath,
-        '#!/bin/sh\n' +
-          `ELECTRON_RUN_AS_NODE=1 exec ${quote(process.execPath)} ${quote(
-            relayPath
-          )} ${quote(pipe)}\n`,
-        { mode: 0o755 }
-      );
-    }
-  } catch (error) {
-    fs.rmSync(directory, { recursive: true, force: true });
-    throw error;
-  }
+  fs.writeFileSync(
+    tsserverPath,
+    '#!/bin/sh\n' +
+      `ELECTRON_RUN_AS_NODE=1 exec ${quote(process.execPath)} ${quote(
+        relayPath
+      )} ${quote(pipe)}\n`,
+    { mode: 0o755 }
+  );
   return {
     tsserverPath,
     drain(client) {
       client.apiRequest('__graphqlspClose', null);
     },
     dispose() {
-      // Windows may still be closing the launcher executable after api.close().
-      fs.rmSync(directory, {
-        recursive: true,
-        force: true,
-        maxRetries: 20,
-        retryDelay: 25,
-      });
+      fs.rmSync(directory, { recursive: true, force: true });
     },
   };
 };

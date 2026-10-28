@@ -11,6 +11,7 @@ import { execFileSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createRequire } from 'node:module';
 
 const extensionRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
@@ -21,11 +22,27 @@ const stagingDir = path.join(extensionRoot, '.staging');
 
 const run = (command, args, cwd) => {
   console.log(`> ${command} ${args.join(' ')}`);
-  execFileSync(command, args, { cwd, stdio: 'inherit' });
+  // Windows .cmd shims need a shell. Invoke the JavaScript CLIs directly so
+  // paths containing spaces work without shell command construction.
+  if (command === 'pnpm' && process.env.npm_execpath) {
+    args = [process.env.npm_execpath, ...args];
+    command = process.execPath;
+  } else if (command === 'npm' && process.platform === 'win32') {
+    args = [
+      path.join(
+        path.dirname(process.execPath),
+        'node_modules/npm/bin/npm-cli.js'
+      ),
+      ...args,
+    ];
+    command = process.execPath;
+  }
+  execFileSync(command, args, { cwd, stdio: 'inherit', windowsHide: true });
 };
 
 fs.rmSync(stagingDir, { recursive: true, force: true });
 fs.mkdirSync(stagingDir, { recursive: true });
+run('pnpm', ['--filter', '@0no-co/graphqlsp', 'build'], repoRoot);
 
 // Pack the workspace's graphqlsp into a tarball (this builds it through its
 // prepublishOnly script)
@@ -139,8 +156,13 @@ const output = path.join(
   `vscode-graphqlsp-${manifest.version}.vsix`
 );
 run(
-  path.join(extensionRoot, 'node_modules', '.bin', 'vsce'),
-  ['package', '--out', output],
+  process.execPath,
+  [
+    createRequire(import.meta.url).resolve('@vscode/vsce/vsce'),
+    'package',
+    '--out',
+    output,
+  ],
   stagingDir
 );
 console.log(`\nPackaged ${output}`);

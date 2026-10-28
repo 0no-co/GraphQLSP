@@ -1,3 +1,4 @@
+import type { GraphQLSPHost } from './host';
 import { ts } from './ts';
 
 import {
@@ -33,7 +34,7 @@ export function getGraphQLCompletions(
   filename: string,
   cursorPosition: number,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.WithMetadata<ts.CompletionInfo> | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();

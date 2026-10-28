@@ -33,11 +33,21 @@ const BINARY_METHODS = new Set([
 ]);
 
 const socket = net.createConnection(process.argv[2]);
+let closingMethod;
+socket.on('end', () => { if (process.env.GRAPHQLSP_RELAY_DEBUG) process.stderr.write('relay remote end\n'); });
+if (process.env.GRAPHQLSP_RELAY_DEBUG) socket.on('connect', () => process.stderr.write('relay connected\n'));
 socket.on('error', error => {
   process.stderr.write('[graphqlsp] API relay: ' + error.message + '\n');
   process.exit(1);
 });
-socket.on('close', () => process.exit(0));
+socket.on('close', () => {
+  if (process.env.GRAPHQLSP_RELAY_DEBUG) process.stderr.write('relay remote close\n');
+  if (!closingMethod) return process.exit(0);
+  // The remote JSON-RPC loop drains its handlers before closing its socket.
+  // Flush our acknowledgement before exiting the local binary relay.
+  writeTuple(MSG_RESPONSE, closingMethod, Buffer.from('null'));
+  process.stdout.end(() => process.exit(0));
+});
 process.stdin.on('end', () => socket.end());
 
 let seq = 0;
@@ -81,6 +91,7 @@ const send = message => {
 };
 
 const respond = (method, message) => {
+  if (process.env.GRAPHQLSP_RELAY_DEBUG) process.stderr.write('relay response ' + method + '\n');
   if (message.error) {
     writeTuple(MSG_ERROR, method, Buffer.from(String(message.error.message)));
   } else if (BINARY_METHODS.has(method)) {
@@ -162,6 +173,13 @@ process.stdin.on('data', chunk => {
     stdinBuffer = stdinBuffer.subarray(payload.end);
     if (type !== MSG_REQUEST) continue;
     const method = name.value.toString();
+    if (method === '__graphqlspClose') {
+      if (process.env.GRAPHQLSP_RELAY_DEBUG) process.stderr.write('relay close requested\n');
+      closingMethod = method;
+      socket.end();
+      continue;
+    }
+    if (process.env.GRAPHQLSP_RELAY_DEBUG) process.stderr.write('relay request ' + method + '\n');
     const id = ++seq;
     pending.set(id, method);
     const text = payload.value.toString();
@@ -178,6 +196,8 @@ process.stdin.on('data', chunk => {
 export interface APIRelay {
   /** Passed as the sync client's `tsserverPath`, which it spawns. */
   tsserverPath: string;
+  /** Half-closes the API socket and waits for remote request-handler drain. */
+  drain(client: { apiRequest(method: string, params: unknown): unknown }): void;
   dispose(): void;
 }
 
@@ -211,6 +231,9 @@ export const createAPIRelay = (pipe: string): APIRelay => {
   );
   return {
     tsserverPath,
+    drain(client) {
+      client.apiRequest('__graphqlspClose', null);
+    },
     dispose() {
       fs.rmSync(directory, { recursive: true, force: true });
     },

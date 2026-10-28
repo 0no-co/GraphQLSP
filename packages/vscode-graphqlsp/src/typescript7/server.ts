@@ -10,19 +10,33 @@ import type {
   LanguageServerSession,
 } from '@0no-co/graphqlsp/check';
 
-export type ServerRequest = { type: 'check'; id: number; fileName: string };
+export type ServerRequest =
+  | { type: 'stop' }
+  | { type: 'check'; id: number; fileName: string }
+  | {
+      type: 'feature';
+      id: number;
+      fileName: string;
+      method: string;
+      params: any;
+    };
 
 export type ServerMessage =
   | {
       type: 'result';
       id: number;
-      result?: LanguageServerCheckResult | null;
+      result?: any;
       error?: string;
     }
   | { type: 'schemaChange' }
   | { type: 'log'; message: string };
 
-const send = (message: ServerMessage) => process.send!(message);
+const send = (message: ServerMessage) => {
+  if (!process.connected) return;
+  try {
+    process.send!(message, () => {});
+  } catch {}
+};
 const log = (message: string) => send({ type: 'log', message });
 
 const packageJsonPath = process.env.GRAPHQLSP_TS7_PACKAGE_JSON!;
@@ -49,16 +63,41 @@ session.then(
   error => log(`Failed to connect to TypeScript's API session: ${error}`)
 );
 
-process.on('message', async (request: ServerRequest) => {
-  if (request.type !== 'check') return;
-  try {
-    const result = await (await session).check(request.fileName);
-    send({ type: 'result', id: request.id, result });
-  } catch (error) {
-    send({ type: 'result', id: request.id, error: String(error) });
+let closing = false;
+let work: Promise<void> = Promise.resolve();
+const stop = () => {
+  if (closing) return;
+  closing = true;
+  void work
+    .then(() => session)
+    .then(session => session.dispose())
+    .catch(error => process.stderr.write(String(error)))
+    .finally(() => process.exit(0));
+};
+process.on('message', (request: ServerRequest) => {
+  if (request.type === 'stop') {
+    stop();
+    return;
   }
+  if (closing) return;
+  if (request.type !== 'check' && request.type !== 'feature') return;
+  work = work.then(async () => {
+    try {
+      const active = await session;
+      const result =
+        request.type === 'check'
+          ? await active.check(request.fileName)
+          : await active.request(
+              request.method,
+              request.fileName,
+              request.params
+            );
+      if (!closing) send({ type: 'result', id: request.id, result });
+    } catch (error) {
+      if (!closing)
+        send({ type: 'result', id: request.id, error: String(error) });
+    }
+  });
 });
 
-process.on('disconnect', () => {
-  session.then(session => session.dispose()).finally(() => process.exit(0));
-});
+process.on('disconnect', stop);

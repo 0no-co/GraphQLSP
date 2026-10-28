@@ -26,6 +26,7 @@ export type { CheckDiagnostic, CheckSeverity } from './ts7/report';
 export { createLanguageServerSession } from './session';
 export type {
   LanguageServerCheckResult,
+  LanguageServerFeatureResult,
   LanguageServerSession,
   LanguageServerSessionOptions,
 } from './session';

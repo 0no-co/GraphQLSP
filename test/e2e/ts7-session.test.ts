@@ -28,6 +28,9 @@ class LanguageServer {
       cwd: projectPath,
       stdio: ['pipe', 'pipe', 'inherit'],
     });
+    this.#process.stdin!.on('error', error => {
+      if ((error as NodeJS.ErrnoException).code !== 'EPIPE') throw error;
+    });
     this.#process.stdout!.on('data', (chunk: Buffer) => {
       this.#buffer = Buffer.concat([this.#buffer, chunk]);
       for (;;) {
@@ -148,14 +151,16 @@ const servers = [
   },
 ].filter(
   server =>
-    !process.env.GRAPHQLSP_TS7_COMPILER ||
-    process.env.GRAPHQLSP_TS7_COMPILER === server.name
+    (server.name !== 'tsrs' || process.platform !== 'win32') &&
+    (!process.env.GRAPHQLSP_TS7_COMPILER ||
+      process.env.GRAPHQLSP_TS7_COMPILER === server.name)
 );
 
 describe.each(servers)('language server session with $label', server => {
   const fileName = path.join(projectPath, 'src/valid.ts');
   let languageServer: LanguageServer;
   let session: LanguageServerSession | undefined;
+  let schemaChanges = 0;
   // Set when the language server doesn't provide API sessions
   let unsupported: string | undefined;
   const requireSession = (context: TestContext) => {
@@ -203,6 +208,9 @@ describe.each(servers)('language server session with $label', server => {
       packageJsonPath: server.packageJsonPath,
       pipe,
       persist: false,
+      onSchemaChange: () => {
+        schemaChanges++;
+      },
     });
   }, 60_000);
 
@@ -217,7 +225,7 @@ describe.each(servers)('language server session with $label', server => {
     expect(result!.text).toContain('nmae');
     expect(
       result!.diagnostics.map(({ file, ...diagnostic }) => ({
-        file: path.relative(projectPath, file),
+        file: path.relative(projectPath, file).replace(/\\/g, '/'),
         ...diagnostic,
       }))
     ).toMatchInlineSnapshot(`
@@ -249,10 +257,290 @@ describe.each(servers)('language server session with $label', server => {
     expect(result!.diagnostics).toEqual([]);
   }, 60_000);
 
+  let version = 2;
+  const changeText = async (session: LanguageServerSession, text: string) => {
+    languageServer.change(fileName, ++version, text);
+    await languageServer.request('textDocument/hover', {
+      textDocument: { uri: url.pathToFileURL(fileName).href },
+      position: { line: 0, character: 0 },
+    });
+    for (let attempt = 0; attempt < 30; attempt++) {
+      if ((await session.check(fileName))?.text === text) return;
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+    const actual = (await session.check(fileName))?.text;
+    throw new Error(
+      `Language server did not apply the edit: ${JSON.stringify({ actual, expected: text })}`
+    );
+  };
+  const savedText = fs.readFileSync(fileName, 'utf8');
+  const positionAt = (text: string, offset: number) => {
+    const lines = text.slice(0, offset).split('\n');
+    return {
+      line: lines.length - 1,
+      character: lines[lines.length - 1]!.length,
+    };
+  };
+
+  it('provides hover and completions on unsaved documents with replacement ranges', async context => {
+    const session = requireSession(context);
+    const text = savedText.replace('        id', '        name\n        maxC');
+    await changeText(session, text);
+    const hover = await session.hover(
+      fileName,
+      positionAt(text, text.indexOf('        name') + 10)
+    );
+    expect(hover?.text).toBe(text);
+    expect(hover?.result.contents.value).toContain('Pokemon.name');
+    const offset = text.indexOf('maxC') + 4;
+    const completion = await session.complete(
+      fileName,
+      positionAt(text, offset)
+    );
+    const maxCP = completion?.result.items.find(
+      (item: any) => item.label === 'maxCP'
+    );
+    expect(maxCP?.textEdit.newText).toBe('maxCP');
+    expect(maxCP?.textEdit.range).toEqual({
+      start: positionAt(text, offset - 4),
+      end: positionAt(text, offset),
+    });
+  }, 60_000);
+
+  it('finds schema definitions, fragment references and rename edits across files', async context => {
+    const session = requireSession(context);
+    await changeText(session, savedText);
+    const fieldPosition = positionAt(
+      savedText,
+      savedText.indexOf('        id') + 9
+    );
+    const definition = await session.request(
+      'textDocument/definition',
+      fileName,
+      { position: fieldPosition }
+    );
+    expect(definition?.result[0].uri).toBe(
+      url.pathToFileURL(path.join(projectPath, 'schema.graphql')).href
+    );
+    const position = positionAt(
+      savedText,
+      savedText.indexOf('...pokemonFields') + 4
+    );
+    const prepare = await session.request(
+      'textDocument/prepareRename',
+      fileName,
+      { position }
+    );
+    expect(prepare?.result.placeholder).toBe('pokemonFields');
+    const references = await session.request(
+      'textDocument/references',
+      fileName,
+      { position, context: { includeDeclaration: true } }
+    );
+    expect(references?.result).toHaveLength(2);
+    const renamed = await session.request('textDocument/rename', fileName, {
+      position,
+      newName: 'PokemonDetails',
+    });
+    expect(Object.keys(renamed?.result.changes)).toHaveLength(2);
+    expect(
+      Object.values<any[]>(renamed?.result.changes)
+        .flat()
+        .every(edit => edit.newText === 'PokemonDetails')
+    ).toBe(true);
+    expect(
+      (
+        await session.request('textDocument/rename', fileName, {
+          position,
+          newName: 'bad-name',
+        })
+      )?.result
+    ).toBeNull();
+  }, 60_000);
+
+  it('offers typo fixes and an extract-to-fragment refactor', async context => {
+    const session = requireSession(context);
+    const text = savedText.replace('        id', '        nmae');
+    await changeText(session, text);
+    const start = positionAt(text, text.indexOf('nmae')),
+      end = positionAt(text, text.indexOf('nmae') + 4);
+    const fixes = await session.request('textDocument/codeAction', fileName, {
+      range: { start, end },
+      context: {
+        diagnostics: [{ source: 'graphqlsp', code: 52001 }],
+        only: ['quickfix'],
+      },
+    });
+    expect(
+      fixes?.result.some((action: any) => action.title.includes('name'))
+    ).toBe(true);
+    await changeText(session, savedText);
+    const offset = savedText.indexOf('        id') + 8;
+    const extracted = await session.request(
+      'textDocument/codeAction',
+      fileName,
+      {
+        range: {
+          start: positionAt(savedText, offset),
+          end: positionAt(savedText, offset + 2),
+        },
+        context: { diagnostics: [], only: ['refactor.extract'] },
+      }
+    );
+    expect(extracted?.result[0].title).toBe('Extract to fragment');
+    expect(
+      extracted?.result[0].edit.changes[url.pathToFileURL(fileName).href]
+    ).toHaveLength(3);
+  }, 60_000);
+
+  it('leaves ordinary TypeScript positions alone and serializes concurrent calls', async context => {
+    const session = requireSession(context);
+    const [hover, completion] = await Promise.all([
+      session.hover(fileName, { line: 0, character: 10 }),
+      session.complete(fileName, { line: 0, character: 10 }),
+    ]);
+    expect(hover?.result).toBeNull();
+    expect(completion?.result).toBeNull();
+  }, 60_000);
+  it('reloads changed schemas and notifies the editor', async context => {
+    const active = requireSession(context);
+    const schemaPath = path.join(projectPath, 'schema.graphql');
+    const original = fs.readFileSync(schemaPath, 'utf8');
+    const previous = schemaChanges;
+    try {
+      fs.writeFileSync(
+        schemaPath,
+        original.replace(
+          '  name: String!',
+          '  newEditorField: String\n  name: String!'
+        )
+      );
+      for (
+        let attempt = 0;
+        attempt < 100 && schemaChanges === previous;
+        attempt++
+      )
+        await new Promise(resolve => setTimeout(resolve, 50));
+      expect(schemaChanges).toBeGreaterThan(previous);
+      const text = savedText.replace('        id', '        newEditorField');
+      await changeText(active, text);
+      const hover = await active.hover(
+        fileName,
+        positionAt(text, text.indexOf('newEditorField') + 3)
+      );
+      expect(hover?.result.contents.value).toContain('Pokemon.newEditorField');
+    } finally {
+      fs.writeFileSync(schemaPath, original);
+      await changeText(active, savedText);
+    }
+  }, 60_000);
+
+  it('awaits named schemas on the first request without a second editor change', async context => {
+    requireSession(context);
+    const directory = fs.mkdtempSync(path.join(projectPath, '.named-'));
+    let fresh: LanguageServerSession | undefined;
+    try {
+      fs.writeFileSync(
+        path.join(directory, 'tsconfig.json'),
+        JSON.stringify({
+          compilerOptions: {
+            target: 'es2022',
+            module: 'nodenext',
+            moduleResolution: 'nodenext',
+            skipLibCheck: true,
+            plugins: [
+              {
+                name: '@0no-co/graphqlsp',
+                schemas: [
+                  {
+                    name: 'one',
+                    schema: '../schema.graphql',
+                    tadaOutputLocation: './introspection.d.ts',
+                  },
+                ],
+              },
+            ],
+          },
+          include: ['*.ts'],
+        })
+      );
+      fs.writeFileSync(
+        path.join(directory, 'introspection.d.ts'),
+        fs
+          .readFileSync(
+            path.join(projectPath, 'src/introspection.d.ts'),
+            'utf8'
+          )
+          .replace(/^  name: never;$/m, "  name: 'one';")
+      );
+      const text =
+        "import { initGraphQLTada } from 'gql.tada';\nimport type { introspection } from './introspection.js';\nconst graphql = initGraphQLTada<{ introspection: introspection }>();\nconst query = graphql(`query { pokemons(limit: 1) { nmae } }`);\n";
+      const namedFile = path.join(directory, 'query.ts');
+      fs.writeFileSync(namedFile, text);
+      languageServer.open(namedFile, text);
+      await languageServer.request('textDocument/hover', {
+        textDocument: { uri: url.pathToFileURL(namedFile).href },
+        position: { line: 0, character: 0 },
+      });
+      const { pipe } = await languageServer.request(
+        'custom/initializeAPISession',
+        {}
+      );
+      fresh = await createLanguageServerSession({
+        compiler: server.name,
+        packageJsonPath: server.packageJsonPath,
+        pipe,
+        persist: false,
+      });
+      const result = await fresh.check(namedFile);
+      expect(result?.diagnostics).toEqual(
+        expect.arrayContaining([
+          expect.objectContaining({ message: expect.stringContaining('nmae') }),
+        ])
+      );
+    } finally {
+      fresh?.dispose();
+      fs.rmSync(directory, { recursive: true, force: true });
+    }
+  }, 60_000);
+
   it('returns null for files outside of GraphQLSP projects', async context => {
     const session = requireSession(context);
     const outside = path.resolve(__dirname, 'ts7.test.ts');
     languageServer.open(outside, fs.readFileSync(outside, 'utf8'));
     expect(await session.check(outside)).toBeNull();
+  }, 60_000);
+
+  it('reconnects after the language server restarts', async context => {
+    requireSession(context).dispose();
+    await languageServer.dispose();
+    const manifest = JSON.parse(
+      fs.readFileSync(server.packageJsonPath, 'utf8')
+    );
+    const bin = path.resolve(
+      path.dirname(server.packageJsonPath),
+      Object.values<string>(manifest.bin)[0]!
+    );
+    languageServer = new LanguageServer(process.execPath, [
+      bin,
+      ...server.args,
+    ]);
+    await languageServer.initialize();
+    languageServer.open(fileName, savedText);
+    const { pipe } = await languageServer.request(
+      'custom/initializeAPISession',
+      {}
+    );
+    session = await createLanguageServerSession({
+      compiler: server.name,
+      packageJsonPath: server.packageJsonPath,
+      pipe,
+      persist: false,
+    });
+    const hover = await session.hover(
+      fileName,
+      positionAt(savedText, savedText.indexOf('        id') + 9)
+    );
+    expect(hover?.result.contents.value).toContain('Pokemon.id');
   }, 60_000);
 });

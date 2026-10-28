@@ -31,7 +31,7 @@ const check = async (runExternalCode: boolean) => {
   return {
     files: result.files.map(file => path.relative(projectPath, file)).sort(),
     diagnostics: result.diagnostics.map(diagnostic => ({
-      file: path.relative(projectPath, diagnostic.file),
+      file: path.relative(projectPath, diagnostic.file).replace(/\\/g, '/'),
       line: diagnostic.line,
       column: diagnostic.column,
       code: diagnostic.code,

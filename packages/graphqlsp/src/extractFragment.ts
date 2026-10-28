@@ -1,3 +1,4 @@
+import type { GraphQLSPHost } from './host';
 import {
   BREAK,
   DocumentNode,
@@ -49,7 +50,7 @@ const findExtractableSelection = (
   filename: string,
   positionOrRange: number | ts.TextRange,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ExtractableSelection | undefined => {
   // The refactor is only supported for call-expression documents; in
   // tagged-template mode fragments aren't composed via a fragment array
@@ -73,6 +74,7 @@ const findExtractableSelection = (
   });
 
   for (const { node, schema: schemaName } of nodes) {
+    if (!ts.isStringLiteralLike(node)) continue;
     const documentOffset = node.getStart() + 1;
     const documentText = node.getText().slice(1, -1);
     if (
@@ -153,7 +155,7 @@ const findExtractableSelection = (
       start,
       end,
       parentTypeName,
-      documentNodes: nodes.map(x => x.node),
+      documentNodes: nodes.map(x => x.node).filter(ts.isStringLiteralLike),
     };
   }
 
@@ -166,7 +168,7 @@ export const canExtractFragment = (
   filename: string,
   positionOrRange: number | ts.TextRange,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): boolean =>
   !!findExtractableSelection(filename, positionOrRange, schema, info);
 
@@ -323,7 +325,7 @@ export const getExtractFragmentEdits = (
   filename: string,
   positionOrRange: number | ts.TextRange,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.RefactorEditInfo | undefined => {
   const found = findExtractableSelection(
     filename,

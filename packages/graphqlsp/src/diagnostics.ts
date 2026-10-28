@@ -768,6 +768,13 @@ const runDiagnostics = (
         undefined,
         docFragments
       )
+        .map(diag => ({
+          ...diag,
+          message:
+            typeof diag.message === 'string'
+              ? diag.message
+              : diag.message.value,
+        }))
         .filter(diag => {
           if (!diag.message.includes('Unknown directive')) return true;
 
@@ -845,7 +852,10 @@ const runDiagnostics = (
             : diag.severity === 2
               ? USING_DEPRECATED_FIELD_CODE
               : SEMANTIC_DIAGNOSTIC_CODE,
-        messageText: diag.message.split('\n')[0],
+        messageText: (typeof diag.message === 'string'
+          ? diag.message
+          : diag.message.value
+        ).split('\n')[0],
       }) as ts.Diagnostic
   );
 

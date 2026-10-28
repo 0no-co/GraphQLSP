@@ -1,3 +1,6 @@
+import { registerFeatures, type MiddlewareAPI } from './features';
+import { captureDocumentVersions, editsAreCurrent } from './editVersions';
+import { nativeModeSetting } from './nativeMode';
 import * as vscode from 'vscode';
 import { fork, type ChildProcess } from 'node:child_process';
 import fs from 'node:fs';
@@ -32,7 +35,7 @@ interface TypeScriptSDK {
   initializeAPIConnection(pipe?: string): Promise<string>;
 }
 
-interface TypeScript7ExtensionAPI {
+interface TypeScript7ExtensionAPI extends MiddlewareAPI {
   /** Before `TypeScriptSDK` (e.g. `TypeScriptTeam.native-preview@1.0`), the
    * listener is called without an argument. */
   onLanguageServerInitialized(
@@ -148,6 +151,31 @@ export function activateTypeScript7(context: vscode.ExtensionContext): void {
 
     let diagnostics: TypeScript7Diagnostics | undefined;
     context.subscriptions.push({ dispose: () => diagnostics?.dispose() });
+    let stoppedByConfiguration = false;
+    const mode = () =>
+      nativeModeSetting(
+        vscode.workspace
+          .getConfiguration('js/ts')
+          .inspect<boolean>('experimental.useTsgo'),
+        vscode.workspace
+          .getConfiguration('typescript')
+          .inspect<boolean>('experimental.useTsgo')
+      );
+    context.subscriptions.push(
+      vscode.workspace.onDidChangeConfiguration(event => {
+        if (
+          event.affectsConfiguration('js/ts.experimental.useTsgo') ||
+          event.affectsConfiguration('typescript.experimental.useTsgo')
+        ) {
+          stoppedByConfiguration = mode() !== true;
+          if (!stoppedByConfiguration) return;
+          // The legacy extension API has no server-stopped event. Dispose before
+          // a switch to classic TypeScript so diagnostics/providers cannot linger.
+          diagnostics?.dispose();
+          diagnostics = undefined;
+        }
+      })
+    );
 
     extension.activate().then(
       api => {
@@ -161,6 +189,7 @@ export function activateTypeScript7(context: vscode.ExtensionContext): void {
           api.onLanguageServerInitialized(languageServer => {
             diagnostics?.dispose();
             diagnostics = undefined;
+            if (stoppedByConfiguration || mode() === false) return;
             const sdk = languageServer || getLegacySDK(api);
             if (!sdk) {
               log(`${id} doesn't provide TypeScript 7's API connections.`);
@@ -174,7 +203,8 @@ export function activateTypeScript7(context: vscode.ExtensionContext): void {
             diagnostics = new TypeScript7Diagnostics(
               context,
               sdk as TypeScriptSDK & { packageJsonPath: string },
-              log
+              log,
+              api
             );
           })
         );
@@ -189,17 +219,15 @@ class TypeScript7Diagnostics {
   #disposables: vscode.Disposable[] = [this.#collection];
   #server: Promise<ChildProcess | undefined>;
   #timers = new Map<string, NodeJS.Timeout>();
-  #pending = new Map<
-    number,
-    (message: ServerMessage & { type: 'result' }) => void
-  >();
+  #pending = new Map<number, (message: any) => void>();
   #seq = 0;
   #disposed = false;
 
   constructor(
     context: vscode.ExtensionContext,
     sdk: TypeScriptSDK & { packageJsonPath: string },
-    private log: (message: string) => void
+    private log: (message: string) => void,
+    api: MiddlewareAPI
   ) {
     this.#server = sdk.initializeAPIConnection().then(
       pipe => this.#startServer(context, sdk.packageJsonPath, pipe),
@@ -225,6 +253,11 @@ class TypeScript7Diagnostics {
         this.#cancel(document);
         this.#collection.delete(document.uri);
       })
+    );
+    this.#disposables.push(
+      registerFeatures(api, (method, document, params) =>
+        this.#feature(method, document, params)
+      )
     );
     this.#checkAll();
   }
@@ -279,6 +312,65 @@ class TypeScript7Diagnostics {
       }
     });
     return server;
+  }
+
+  async #feature(
+    method: string,
+    document: vscode.TextDocument,
+    params: any
+  ): Promise<any> {
+    const version = document.version;
+    const versions = captureDocumentVersions(vscode.workspace.textDocuments);
+    for (let retry = 0; retry < maxStaleRetries; retry++) {
+      const server = await this.#server;
+      if (
+        !server?.connected ||
+        this.#disposed ||
+        document.isClosed ||
+        document.version !== version
+      )
+        return;
+      const id = ++this.#seq;
+      const message: any = await new Promise(resolve => {
+        const timeout = setTimeout(() => {
+          this.#pending.delete(id);
+          resolve({ error: 'Feature request timed out' });
+        }, 10000);
+        this.#pending.set(id, message => {
+          clearTimeout(timeout);
+          resolve(message);
+        });
+        server.send({
+          type: 'feature',
+          id,
+          fileName: document.uri.fsPath,
+          method,
+          params,
+        } satisfies ServerRequest);
+      });
+      if (this.#disposed || document.isClosed || document.version !== version)
+        return;
+      if (message.error) {
+        this.log(message.error);
+        return;
+      }
+      if (!message.result) return;
+      if (
+        !editsAreCurrent(
+          message.result.result,
+          versions,
+          vscode.workspace.textDocuments
+        )
+      ) {
+        this.log(
+          'Discarded GraphQL edits because a referenced document changed.'
+        );
+        return;
+      }
+      if (message.result.text === document.getText())
+        return message.result.result ?? undefined;
+      await new Promise(resolve => setTimeout(resolve, staleRetryDelay));
+    }
   }
 
   #checkAll() {
@@ -346,27 +438,41 @@ class TypeScript7Diagnostics {
 
     this.#collection.set(
       document.uri,
-      message.result.diagnostics.map(diagnostic => {
-        const result = new vscode.Diagnostic(
-          new vscode.Range(
-            document.positionAt(diagnostic.start),
-            document.positionAt(diagnostic.start + diagnostic.length)
-          ),
-          diagnostic.message,
-          severities[diagnostic.severity]
-        );
-        result.code = diagnostic.code;
-        result.source = 'graphqlsp';
-        return result;
-      })
+      message.result.diagnostics.map(
+        (diagnostic: import('@0no-co/graphqlsp/check').CheckDiagnostic) => {
+          const result = new vscode.Diagnostic(
+            new vscode.Range(
+              document.positionAt(diagnostic.start),
+              document.positionAt(diagnostic.start + diagnostic.length)
+            ),
+            diagnostic.message,
+            severities[diagnostic.severity]
+          );
+          result.code = diagnostic.code;
+          result.source = 'graphqlsp';
+          return result;
+        }
+      )
     );
   }
 
   dispose() {
     this.#disposed = true;
+    for (const resolve of this.#pending.values())
+      resolve({ error: 'GraphQLSP session ended' });
+    this.#pending.clear();
     for (const timer of this.#timers.values()) clearTimeout(timer);
     this.#timers.clear();
     for (const disposable of this.#disposables) disposable.dispose();
-    this.#server.then(server => server?.kill());
+    this.#server.then(server => {
+      if (!server) return;
+      if (server.connected)
+        server.send({ type: 'stop' } satisfies ServerRequest, error => {
+          if (error) server.kill();
+        });
+      const timeout = setTimeout(() => server.kill(), 2000);
+      timeout.unref();
+      server.once('exit', () => clearTimeout(timeout));
+    });
   }
 }

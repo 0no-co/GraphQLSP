@@ -22,6 +22,7 @@ export type HostChecker = Pick<
 export interface HostProgram {
   getSourceFile(fileName: string): ts.SourceFile | undefined;
   getTypeChecker(): HostChecker;
+  getSourceFiles?(): readonly ts.SourceFile[];
 }
 
 /** The subset of a TypeScript plugin's `PluginCreateInfo` that GraphQLSP's

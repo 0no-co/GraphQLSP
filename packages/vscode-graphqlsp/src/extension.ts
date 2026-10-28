@@ -1,6 +1,7 @@
 import * as vscode from 'vscode';
 
 import { getGraphQLDocumentSymbols } from './documentSymbols';
+import { activateTypeScript7 } from './typescript7';
 
 /** Must match the `typescriptServerPlugins` contribution in package.json. */
 const pluginName = '@0no-co/graphqlsp';
@@ -86,6 +87,10 @@ export async function activate(
   context.subscriptions.push({
     dispose: () => documentSymbolRegistration.dispose(),
   });
+
+  // TypeScript 7 doesn't load the tsserver plugin, so GraphQLSP's
+  // diagnostics are reported through its API instead while it runs
+  activateTypeScript7(context);
 
   const tsExtension =
     vscode.extensions.getExtension<TypeScriptLanguageFeaturesExports>(

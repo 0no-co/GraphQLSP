@@ -114,6 +114,25 @@ files can be resolved, e.g. by `graphql.persisted()`. Mapped files themselves ar
 checked, since their mappers report their diagnostics. tsrs's API doesn't run
 content mappers yet.
 
+Editor integrations can use `createLanguageServerSession` instead, which checks
+files in a running TypeScript 7.1 language server's projects, including unsaved
+changes, through an API session of the language server (e.g. from the
+TypeScript 7 VS Code extension's `TypeScriptSDK.initializeAPIConnection()`, or
+its `custom/initializeAPISession` request). Its API is synchronous, so it
+should run in its own process or worker. The GraphQLSP VS Code extension uses
+it to report diagnostics while TypeScript 7's language server runs.
+
+```ts
+import { createLanguageServerSession } from '@0no-co/graphqlsp/check';
+
+const session = await createLanguageServerSession({
+  packageJsonPath: sdk.packageJsonPath,
+  pipe: await sdk.initializeAPIConnection(),
+});
+// `text` is the file's text the diagnostics were computed for
+const { text, diagnostics } = (await session.check(fileName)) ?? {};
+```
+
 ## Tracking unused fields
 
 Currently the tracking unused fields feature has a few caveats with regards to tracking, first and foremost

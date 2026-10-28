@@ -1,4 +1,5 @@
 import { ts } from '../ts';
+import type { HostChecker } from '../host';
 
 export type ValueDeclaration =
   | ts.BinaryExpression
@@ -192,7 +193,7 @@ function getNameFromPropertyName(name: ts.PropertyName): string | undefined {
  */
 export function getDeclarationOfIdentifier(
   node: ts.Identifier,
-  checker: ts.TypeChecker
+  checker: HostChecker
 ): ValueDeclaration | undefined {
   // See: https://github.com/microsoft/TypeScript/blob/a5eec24/src/services/goToDefinition.ts#L523-L540
   let symbol = checker.getSymbolAtLocation(node);
@@ -311,7 +312,7 @@ export function getDeclarationOfIdentifier(
 /** Loops {@link getDeclarationOfIdentifier} until a value of the identifier is found */
 export function getValueOfIdentifier(
   node: ts.Identifier,
-  checker: ts.TypeChecker
+  checker: HostChecker
 ): ValueOfDeclaration | undefined {
   while (ts.isIdentifier(node)) {
     const declaration = getDeclarationOfIdentifier(node, checker);

@@ -1,0 +1,13 @@
+{
+  "name": "graphqlsp-test-content-mapper",
+  "version": "0.0.0",
+  "private": true,
+  "typescript": {
+    "contentMapper": {
+      "exec": [
+        "node",
+        "./server.mjs"
+      ]
+    }
+  }
+}

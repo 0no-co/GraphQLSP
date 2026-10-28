@@ -1,4 +1,5 @@
 import { ts } from './ts';
+import type { GraphQLSPHost } from './host';
 
 import { createHash } from 'crypto';
 
@@ -33,7 +34,7 @@ type PersistedAction = {
 export function getPersistedCodeFixAtPosition(
   filename: string,
   position: number,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): PersistedAction | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
@@ -177,8 +178,21 @@ export function getPersistedCodeFixAtPosition(
   }
 }
 
+// `resolveTemplate` returns a string literal's source text, so that diagnostics
+// line up with the source, but hashes are computed from the document itself,
+// e.g. without the escape sequences of a `"query {\n  field\n}"` literal
+const getDocumentText = (
+  node:
+    ts.StringLiteralLike | ts.TemplateExpression | ts.TaggedTemplateExpression,
+  filename: string,
+  info: GraphQLSPHost
+): string =>
+  ts.isStringLiteralLike(node)
+    ? node.text
+    : resolveTemplate(node, filename, info).combinedText;
+
 export const generateHashForDocument = (
-  info: ts.server.PluginCreateInfo,
+  info: GraphQLSPHost,
   templateLiteral:
     ts.StringLiteralLike | ts.TemplateExpression | ts.TaggedTemplateExpression,
   foundFilename: string,
@@ -187,11 +201,7 @@ export const generateHashForDocument = (
   if (referencedFragments) {
     const fragments: Array<FragmentDefinitionNode> = [];
     unrollTadaFragments(referencedFragments, fragments, info);
-    let text = resolveTemplate(
-      templateLiteral,
-      foundFilename,
-      info
-    ).combinedText;
+    let text = getDocumentText(templateLiteral, foundFilename, info);
     const parsed = parse(text);
     const seen = new Set<unknown>();
     for (const definition of parsed.definitions) {
@@ -219,11 +229,7 @@ export const generateHashForDocument = (
     const externalSource = getSource(info, foundFilename)!;
     const { fragments } = findAllCallExpressions(externalSource, info);
 
-    const text = resolveTemplate(
-      templateLiteral,
-      foundFilename,
-      info
-    ).combinedText;
+    const text = getDocumentText(templateLiteral, foundFilename, info);
 
     const parsed = parse(text);
     const seen = new Set<unknown>();
@@ -284,7 +290,7 @@ export const generateHashForDocument = (
 export const getDocumentReferenceFromTypeQuery = (
   typeQuery: ts.TypeQueryNode,
   filename: string,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): { node: ts.CallExpression | null; filename: string } => {
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
   if (!typeChecker) return { node: null, filename };
@@ -314,7 +320,7 @@ export const getDocumentReferenceFromTypeQuery = (
 export const getDocumentReferenceFromDocumentNode = (
   documentNodeArgument: ts.Identifier | ts.CallExpression,
   filename: string,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): { node: ts.CallExpression | null; filename: string } => {
   if (ts.isIdentifier(documentNodeArgument)) {
     const typeChecker = info.languageService.getProgram()?.getTypeChecker();

@@ -1,4 +1,5 @@
 import { ts } from './ts';
+import type { GraphQLSPHost, HostChecker } from './host';
 import { Diagnostic, getDiagnostics } from 'graphql-language-service';
 import {
   FragmentDefinitionNode,
@@ -96,7 +97,7 @@ const getMisconfigurationDiagnostics = (
     schema: string | null;
   }[],
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.Diagnostic[] => {
   if (!schema.errors || !nodes.length) return [];
   const diagnostics: ts.Diagnostic[] = [];
@@ -169,7 +170,7 @@ const getMisconfigurationDiagnostics = (
 const getModeMismatchDiagnostic = (
   source: ts.SourceFile,
   isCallExpression: boolean,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.Diagnostic | null => {
   // Cheap text probe before walking the AST of files without any documents
   const probe = new RegExp(
@@ -220,10 +221,16 @@ const cache = new LRUCache<bigint, ts.Diagnostic[]>({
   max: 5000,
 });
 
+/** Drops cached diagnostics, whose keys only cover a schema's version and
+ * not its contents, e.g. before checking another project in the same process. */
+export const clearGraphQLDiagnosticsCache = () => {
+  cache.clear();
+};
+
 export function getGraphQLDiagnostics(
   filename: string,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.Diagnostic[] | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
 
@@ -527,8 +534,8 @@ export function getGraphQLDiagnostics(
  * document, excluding fragments it only composes via its reference array. */
 function getFragmentNamesForIdentifier(
   identifier: ts.Identifier,
-  checker: ts.TypeChecker,
-  info: ts.server.PluginCreateInfo
+  checker: HostChecker,
+  info: GraphQLSPHost
 ): string[] {
   const value = getValueOfIdentifier(identifier, checker);
   if (!value || !ts.isCallExpression(value)) return [];
@@ -568,8 +575,8 @@ function getFragmentNamesForIdentifier(
 function getDirectlyUsedFragments(
   source: ts.SourceFile,
   nodes: Array<{ tadaFragmentRefs?: readonly ts.Identifier[] | null }>,
-  typeChecker: ts.TypeChecker | undefined,
-  info: ts.server.PluginCreateInfo
+  typeChecker: HostChecker | undefined,
+  info: GraphQLSPHost
 ): Set<string> {
   const directlyUsedFragments = new Set<string>();
   if (!typeChecker) return directlyUsedFragments;
@@ -647,7 +654,7 @@ const runDiagnostics = (
     fragments: FragmentDefinitionNode[];
   },
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.Diagnostic[] => {
   const filename = source.fileName;
   const isCallExpression = info.config.templateIsCallExpression ?? true;

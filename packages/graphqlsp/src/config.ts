@@ -1,4 +1,5 @@
 import type { SchemaOrigin } from '@gql.tada/internal';
+import path from 'node:path';
 
 import { ts } from './ts';
 
@@ -42,15 +43,15 @@ const hasLocalPluginPackage = (
   let directory = info.project.getCurrentDirectory();
 
   while (true) {
-    const manifest = ts.combinePaths(
-      directory,
+    const manifest = path.posix.join(
+      directory.replace(/\\/g, '/'),
       'node_modules',
       packageName,
       'package.json'
     );
     if (info.project.fileExists(manifest)) return true;
 
-    const parent = ts.getDirectoryPath(directory);
+    const parent = path.posix.dirname(directory.replace(/\\/g, '/'));
     if (parent === directory) return false;
     directory = parent;
   }

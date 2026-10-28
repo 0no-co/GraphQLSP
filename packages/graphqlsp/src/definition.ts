@@ -1,3 +1,4 @@
+import type { GraphQLSPHost, HostProgram } from './host';
 import path from 'path';
 
 import {
@@ -116,7 +117,7 @@ const getTadaCacheMatch = (node: ts.Node): TadaCacheMatch | undefined => {
 
 const findTadaCacheMatch = (
   definition: ts.DefinitionInfo,
-  program: ts.Program
+  program: HostProgram
 ): TadaCacheMatch | undefined => {
   const source = program.getSourceFile(definition.fileName);
   if (!source) return undefined;
@@ -129,7 +130,7 @@ const findDocumentCallInSource = (
   source: ts.SourceFile,
   documentText: string,
   schemaName: string | null,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): { fileName: string; node: ts.StringLiteralLike } | undefined => {
   if (source.isDeclarationFile) return undefined;
   if (!source.getText().includes(documentText)) return undefined;
@@ -151,8 +152,8 @@ const findDocumentCall = (
   documentText: string,
   schemaName: string | null,
   preferFileName: string,
-  program: ts.Program,
-  info: ts.server.PluginCreateInfo
+  program: HostProgram,
+  info: GraphQLSPHost
 ): { fileName: string; node: ts.StringLiteralLike } | undefined => {
   // The document literal is usually co-located with the result usage, so the
   // originating file is the likeliest match.
@@ -167,7 +168,7 @@ const findDocumentCall = (
     if (match) return match;
   }
 
-  for (const source of program.getSourceFiles()) {
+  for (const source of program.getSourceFiles?.() || []) {
     if (source === preferred) continue;
     const match = findDocumentCallInSource(
       source,
@@ -303,9 +304,9 @@ const getFieldAtOffset = (
             nameLoc && isPositionInRange(offset, nameLoc.start, nameLoc.end)
               ? nameLoc
               : aliasLoc &&
-                isPositionInRange(offset, aliasLoc.start, aliasLoc.end)
-              ? aliasLoc
-              : null;
+                  isPositionInRange(offset, aliasLoc.start, aliasLoc.end)
+                ? aliasLoc
+                : null;
           if (!loc) return;
 
           const parentType = typeInfo.getParentType();
@@ -356,7 +357,7 @@ const getDefinitionForDocumentField = (
   filename: string,
   cursorPosition: number,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.DefinitionInfoAndBoundSpan | undefined => {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
@@ -420,7 +421,7 @@ const getDefinitionForDocumentField = (
 const getDefinitionForTadaResultField = (
   filename: string,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo,
+  info: GraphQLSPHost,
   originalDefinitions: readonly ts.DefinitionInfo[] | undefined
 ): readonly ts.DefinitionInfo[] | undefined => {
   if (!originalDefinitions?.length) return undefined;
@@ -475,7 +476,7 @@ export function getGraphQLDefinitionAtPosition(
   filename: string,
   cursorPosition: number,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo,
+  info: GraphQLSPHost,
   originalDefinitions: readonly ts.DefinitionInfo[] | undefined
 ): readonly ts.DefinitionInfo[] | undefined {
   const documentFieldDefinition = getDefinitionForDocumentField(
@@ -500,7 +501,7 @@ export function getGraphQLDefinitionAndBoundSpan(
   filename: string,
   cursorPosition: number,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo,
+  info: GraphQLSPHost,
   original: ts.DefinitionInfoAndBoundSpan | undefined
 ): ts.DefinitionInfoAndBoundSpan | undefined {
   const documentFieldDefinition = getDefinitionForDocumentField(

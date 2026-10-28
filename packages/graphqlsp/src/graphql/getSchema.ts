@@ -72,7 +72,24 @@ export const swapWrite = async (
   const tempTarget = getSwapFilePath(target);
   await fs.writeFile(tempTarget, contents);
   try {
-    await fs.rename(tempTarget, target);
+    // Windows can briefly lock the destination while another instance touches
+    // or reads its typings. Retry the atomic replacement; never delete it first.
+    for (let attempt = 0; ; attempt++) {
+      try {
+        await fs.rename(tempTarget, target);
+        break;
+      } catch (error) {
+        if (
+          process.platform !== 'win32' ||
+          attempt >= 20 ||
+          !['EPERM', 'EACCES', 'EBUSY'].includes(
+            (error as NodeJS.ErrnoException).code || ''
+          )
+        )
+          throw error;
+        await new Promise(resolve => setTimeout(resolve, 5 * (attempt + 1)));
+      }
+    }
   } catch (error) {
     // Clean-up is best-effort and must not mask the rename error
     await fs.unlink(tempTarget).catch(() => {});
@@ -161,7 +178,7 @@ export interface SchemaRef {
   readonly turboLocations: ReadonlyMap<string | null, string>;
   /** Best-effort detection of schema file changes that the file watcher
    * missed; throttled internally, so it's safe to call often. */
-  checkStale(): void;
+  checkStale(force?: boolean): void;
   /** Settles once the initial schema load has finished, successfully or not;
    * failures are reported through `errors` instead. */
   readonly ready: Promise<void>;
@@ -225,6 +242,7 @@ export const loadSchema = (
   let inner: InternalSchemaRef<SchemaLoaderResult | null> | null = null;
   let detectStaleSchemas: (() => void) | null = null;
   let lastStaleCheck = 0;
+  let revision = 0;
 
   let ready: Promise<void> = Promise.resolve();
   const ref: SchemaRef = {
@@ -242,11 +260,14 @@ export const loadSchema = (
       return inner ? inner.multi : EMPTY_MULTI;
     },
     get version() {
-      return inner ? inner.version : 0;
+      return (inner ? inner.version : 0) + revision;
     },
-    checkStale() {
+    checkStale(force = false) {
       const now = Date.now();
-      if (!detectStaleSchemas || now - lastStaleCheck < STALE_CHECK_INTERVAL)
+      if (
+        !detectStaleSchemas ||
+        (!force && now - lastStaleCheck < STALE_CHECK_INTERVAL)
+      )
         return;
       lastStaleCheck = now;
       detectStaleSchemas();
@@ -340,13 +361,15 @@ export const loadSchema = (
           typeof origin === 'string' && !getURLConfig(origin)
       )
       .map(origin => path.resolve(rootPath, origin));
-    const schemaFileMtimes = new Map<string, number>();
+    const schemaFileMtimes = new Map<string, number | null>();
     const recordMtimes = async () => {
       await Promise.all(
         schemaFilePaths.map(async file => {
           try {
             schemaFileMtimes.set(file, (await fs.stat(file)).mtimeMs);
-          } catch (_error) {}
+          } catch (_error) {
+            schemaFileMtimes.set(file, null);
+          }
         })
       );
     };
@@ -366,24 +389,50 @@ export const loadSchema = (
         })
         .then(recordMtimes);
 
+    let reloading: Promise<void> | undefined;
+    let reloadQueued = false;
     detectStaleSchemas = () => {
-      (async () => {
-        let stale = false;
+      if (reloading) {
+        reloadQueued = true;
+        return;
+      }
+      reloading = (async () => {
+        const changed = new Set<string>();
+        const observed = new Map<string, number | null>();
         for (const file of schemaFilePaths) {
+          let mtime: number | null = null;
           try {
-            const lastMtime = schemaFileMtimes.get(file);
-            const mtime = (await fs.stat(file)).mtimeMs;
-            if (lastMtime !== undefined && mtime > lastMtime) stale = true;
+            mtime = (await fs.stat(file)).mtimeMs;
           } catch (_error) {}
+          observed.set(file, mtime);
+          if (mtime !== schemaFileMtimes.get(file)) changed.add(file);
         }
-        if (!stale) return;
+        if (!changed.size) return;
+        revision++;
         logger('Schema files changed without watcher events; reloading...');
+        // A failed reload must not leave the previous schema active. Healthy
+        // schemas in a multi-schema configuration remain available.
+        for (const [name, file] of sourceLocations) {
+          if (!changed.has(file)) continue;
+          if (name) inner!.multi[name] = null;
+          else inner!.current = null;
+        }
         await revalidate(true);
+        // Preserve the pre-read state so a concurrent file change is not lost.
+        for (const [file, mtime] of observed) schemaFileMtimes.set(file, mtime);
         persistAll();
         if (options.onChange) options.onChange();
-      })().catch(error => {
-        logger(`Failed to check schemas for staleness: ${error}`);
-      });
+      })()
+        .catch(error => {
+          logger(`Failed to check schemas for staleness: ${error}`);
+        })
+        .finally(() => {
+          reloading = undefined;
+          if (reloadQueued) {
+            reloadQueued = false;
+            detectStaleSchemas?.();
+          }
+        });
     };
 
     try {

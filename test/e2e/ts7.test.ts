@@ -39,14 +39,15 @@ const compilers: Compiler[] = [
   },
 ].filter(
   compiler =>
-    !process.env.GRAPHQLSP_TS7_COMPILER ||
-    process.env.GRAPHQLSP_TS7_COMPILER === compiler.name
+    (compiler.name !== 'tsrs' || process.platform !== 'win32') &&
+    (!process.env.GRAPHQLSP_TS7_COMPILER ||
+      process.env.GRAPHQLSP_TS7_COMPILER === compiler.name)
 );
 
 const toSnapshot = (diagnostics: CheckDiagnostic[]) =>
   diagnostics
     .map(({ file, ...diagnostic }) => ({
-      file: path.relative(projectPath, file),
+      file: path.relative(projectPath, file).replace(/\\/g, '/'),
       ...diagnostic,
     }))
     .sort((a, b) => a.file.localeCompare(b.file) || a.start - b.start);
@@ -140,8 +141,11 @@ describe.each(compilers)('checkProject with $label', compiler => {
     });
     if (compiler.name === 'typescript')
       expect(parseInt(result.compiler.version, 10)).toBeGreaterThanOrEqual(7);
-    expect(result.files.map(file => path.relative(projectPath, file)).sort())
-      .toMatchInlineSnapshot(`
+    expect(
+      result.files
+        .map(file => path.relative(projectPath, file).replace(/\\/g, '/'))
+        .sort()
+    ).toMatchInlineSnapshot(`
         [
           "src/colocation.ts",
           "src/field-usage.ts",

@@ -217,7 +217,7 @@ describe('Extract to fragment refactor', () => {
   it('extracts selected fields into a new fragment appended to the fragment array', async () => {
     const editInfo = await getEditsForExtractFragment(validSelection);
     expect(editInfo.edits).toHaveLength(1);
-    expect(editInfo.edits[0]!.fileName).toBe(outfile);
+    expect(path.normalize(editInfo.edits[0]!.fileName)).toBe(outfile);
 
     const result = applyEdits(fixtureContent, editInfo.edits[0]!.textChanges);
     expect(result).toMatchInlineSnapshot(`

@@ -1,3 +1,4 @@
+import type { GraphQLSPHost, HostChecker } from './host';
 import type { NameNode } from 'graphql';
 import { parse, visit } from 'graphql';
 
@@ -81,7 +82,7 @@ const findFragmentNameAtOffset = (
 const getFragmentTokenAtPosition = (
   filename: string,
   cursorPosition: number,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): FragmentNameToken | undefined => {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();
@@ -142,8 +143,8 @@ interface FragmentDocument {
 
 const collectCallDependencies = (
   callNode: checks.GraphQLCallNode,
-  info: ts.server.PluginCreateInfo,
-  typeChecker: ts.TypeChecker | undefined,
+  info: GraphQLSPHost,
+  typeChecker: HostChecker | undefined,
   dependencies = new Set<checks.GraphQLCallNode>()
 ): Set<checks.GraphQLCallNode> => {
   const fragmentRefs = resolveTadaFragmentArray(callNode.arguments[1]);
@@ -209,7 +210,7 @@ const parseFragmentDocument = (
 
 const collectFragmentDocuments = (
   token: FragmentNameToken,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): FragmentDocument[] => {
   const program = info.languageService.getProgram();
   if (!program) return [];
@@ -217,7 +218,7 @@ const collectFragmentDocuments = (
   const isCallExpression = info.config.templateIsCallExpression ?? true;
   const typeChecker = program.getTypeChecker();
   const documents: FragmentDocument[] = [];
-  for (const source of program.getSourceFiles()) {
+  for (const source of program.getSourceFiles?.() || []) {
     if (source.isDeclarationFile || source.fileName.includes('node_modules')) {
       continue;
     }
@@ -234,7 +235,9 @@ const collectFragmentDocuments = (
         if (found.schema !== token.schemaName) continue;
         if (!ts.isStringLiteralLike(found.node)) continue;
         const parent = found.node.parent;
-        const callNode = ts.isCallExpression(parent) ? parent : undefined;
+        const callNode = checks.isGraphQLCall(parent, typeChecker)
+          ? parent
+          : undefined;
         const document = parseFragmentDocument(
           source,
           found.node,
@@ -269,7 +272,7 @@ const collectFragmentDocuments = (
 
 const findAllFragmentReferences = (
   token: FragmentNameToken,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): FragmentReferenceLocation[] => {
   const documents = collectFragmentDocuments(token, info);
   if (!documents.length) return [];
@@ -329,7 +332,7 @@ const findAllFragmentReferences = (
 export function getGraphQLFragmentReferences(
   filename: string,
   cursorPosition: number,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.ReferencedSymbol[] | undefined {
   const token = getFragmentTokenAtPosition(filename, cursorPosition, info);
   if (!token) return undefined;
@@ -337,7 +340,8 @@ export function getGraphQLFragmentReferences(
   const references = findAllFragmentReferences(token, info);
   if (!references.length) return undefined;
 
-  const definition = references.find(ref => ref.isDefinition) || references[0];
+  const definition = (references.find(ref => ref.isDefinition) ||
+    references[0])!;
 
   return [
     {
@@ -363,7 +367,7 @@ export function getGraphQLFragmentReferences(
 export function getGraphQLFragmentReferenceEntries(
   filename: string,
   cursorPosition: number,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.ReferenceEntry[] | undefined {
   const token = getFragmentTokenAtPosition(filename, cursorPosition, info);
   if (!token) return undefined;
@@ -381,7 +385,7 @@ export function getGraphQLFragmentReferenceEntries(
 export function getGraphQLFragmentRenameInfo(
   filename: string,
   cursorPosition: number,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.RenameInfoSuccess | undefined {
   const token = getFragmentTokenAtPosition(filename, cursorPosition, info);
   if (!token) return undefined;
@@ -399,7 +403,7 @@ export function getGraphQLFragmentRenameInfo(
 export function getGraphQLFragmentRenameLocations(
   filename: string,
   cursorPosition: number,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): readonly ts.RenameLocation[] | undefined {
   const token = getFragmentTokenAtPosition(filename, cursorPosition, info);
   if (!token) return undefined;

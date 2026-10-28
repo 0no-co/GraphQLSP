@@ -1,3 +1,4 @@
+import type { GraphQLSPHost } from './host';
 import { ts } from './ts';
 import { parse, visit } from 'graphql';
 import type { FieldNode, SelectionSetNode } from 'graphql';
@@ -60,7 +61,7 @@ export function getGraphQLCodeFixesAtPosition(
   end: number,
   errorCodes: readonly number[],
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.CodeFixAction[] {
   if (!errorCodes.some(code => CODE_FIXABLE_DIAGNOSTICS.includes(code))) {
     return [];
@@ -243,7 +244,7 @@ const getUnusedFieldFixes = (
   source: ts.SourceFile,
   diagnosticStart: number,
   message: string,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.CodeFixAction[] => {
   const listMatch =
     /^Field\(s\) (.+) are not used\.$/.exec(message) ||

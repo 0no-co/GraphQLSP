@@ -29,6 +29,26 @@ export const createTypeScriptNamespace = (
     ...is,
 
     SyntaxKind,
+    ScriptElementKind: {
+      label: 'label',
+      variableElement: 'var',
+      constElement: 'const',
+      unknown: '',
+      memberVariableElement: 'property',
+      interfaceElement: 'interface',
+      scriptElement: 'script',
+    },
+    ScriptElementKindModifier: { none: '' },
+    flattenDiagnosticMessageText: (message: any, newline: string): string =>
+      typeof message === 'string'
+        ? message
+        : [
+            message.messageText,
+            ...(message.next || []).map((part: any) =>
+              namespace.flattenDiagnosticMessageText(part, newline)
+            ),
+          ].join(newline),
+    getLeadingCommentRanges: ast.getLeadingCommentRanges,
     SymbolFlags: sync.SymbolFlags,
     TypeFlags: sync.TypeFlags,
     DiagnosticCategory: sync.DiagnosticCategory,

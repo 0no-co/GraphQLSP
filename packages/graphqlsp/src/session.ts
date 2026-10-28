@@ -1,4 +1,8 @@
 import path from 'node:path';
+import fs from 'node:fs';
+import { getLanguageFeature } from './languageFeatures';
+import type { Position } from './languageFeatures';
+import { clearGraphQLDiagnosticsCache } from './diagnostics';
 
 import { ts, init } from './ts';
 import { templates } from './ast/templates';
@@ -46,7 +50,24 @@ export interface LanguageServerCheckResult {
   diagnostics: CheckDiagnostic[];
 }
 
+export interface LanguageServerFeatureResult {
+  text: string;
+  result: any;
+}
 export interface LanguageServerSession {
+  request(
+    method: string,
+    fileName: string,
+    params: any
+  ): Promise<LanguageServerFeatureResult | null>;
+  hover(
+    fileName: string,
+    position: Position
+  ): Promise<LanguageServerFeatureResult | null>;
+  complete(
+    fileName: string,
+    position: Position
+  ): Promise<LanguageServerFeatureResult | null>;
   /** Reports GraphQLSP's diagnostics for a file in the language server's
    * current state, including unsaved changes it received from editors.
    * Returns `null` for files outside of projects configuring GraphQLSP. */
@@ -59,6 +80,8 @@ interface ProjectState {
   schema: SchemaRef;
   /** Swapped for the program of the snapshot a file is checked in. */
   program: HostProgram | undefined;
+  ready?: boolean;
+  stopWatching(): void;
 }
 
 /** Runs GraphQLSP's diagnostics on a TypeScript 7.1 language server's
@@ -102,6 +125,24 @@ export async function createLanguageServerSession(
       throw error;
     }
   }
+  if (relay) {
+    // API.close() releases retained files and snapshots before client.close().
+    // Drain at that final boundary, while the underlying channel is usable.
+    const client = api.client;
+    const close = client.close.bind(client);
+    let closed = false;
+    client.close = () => {
+      if (closed) return;
+      closed = true;
+      try {
+        relay!.drain(client);
+      } catch (error) {
+        logger(`API relay already closed while draining: ${error}`);
+      } finally {
+        close();
+      }
+    };
+  }
   const typescript = createTypeScriptNamespace(compiler);
   const projects = new Map<string, ProjectState | null>();
 
@@ -118,7 +159,6 @@ export async function createLanguageServerSession(
       return null;
     }
 
-    if (plugin.config.template) templates.add(plugin.config.template);
     const host: GraphQLSPHost = {
       config: plugin.config,
       languageService: {
@@ -129,68 +169,133 @@ export async function createLanguageServerSession(
         projectService: { logger: { info: logger } },
       },
     };
+    const stopWatching: (() => void)[] = [];
     state = {
       host,
       program: undefined,
       schema: loadSchema(host, logger, {
         rootPath: path.dirname(plugin.configPath),
-        // Schemas are checked for changes on every check instead
+        // @gql.tada/internal's watcher depends on the legacy TypeScript sys API.
+        // Sessions own portable Node watchers instead.
         watch: false,
         persist: options.persist !== false,
         onChange: options.onSchemaChange,
       }),
+      stopWatching: () => {
+        for (const stop of stopWatching) stop();
+      },
     };
+    const ownedState = state;
+    void state.schema.ready.then(() => {
+      if (disposed) return;
+      for (const schemaPath of ownedState.schema.sourceLocations.values()) {
+        const changed = () => ownedState.schema.checkStale(true);
+        fs.watchFile(schemaPath, { persistent: false, interval: 500 }, changed);
+        stopWatching.push(() => fs.unwatchFile(schemaPath, changed));
+      }
+    });
     projects.set(configFileName, state);
     return state;
   };
 
-  return {
-    async check(fileName) {
-      let snapshot = api.getCurrentLanguageServerSnapshot();
-      try {
-        let project = snapshot.getDefaultProjectForFile(fileName);
-        if (!project || !project.configFileName) return null;
-        const state = getProjectState(project.configFileName);
-        if (!state) return null;
+  let disposed = false;
+  let queue: Promise<unknown> = Promise.resolve();
+  const run = <T>(operation: () => Promise<T>): Promise<T> => {
+    const result = queue.then(() => {
+      if (disposed) throw new Error('GraphQLSP session is disposed');
+      return operation();
+    });
+    queue = result.catch(() => {});
+    return result;
+  };
+  const withProject = async (
+    fileName: string,
+    callback: (state: ProjectState, text: string) => any
+  ): Promise<any> => {
+    let snapshot = api.getCurrentLanguageServerSnapshot();
+    try {
+      let project = snapshot.getDefaultProjectForFile(fileName);
+      if (!project || !project.configFileName) return null;
+      const state = getProjectState(project.configFileName);
+      if (!state) return null;
 
-        if (!state.schema.current && !Object.keys(state.schema.multi).length) {
-          // While the schema loads, the language server may receive changes
-          await state.schema.ready;
-          snapshot.dispose();
-          snapshot = api.getCurrentLanguageServerSnapshot();
-          project = snapshot.getDefaultProjectForFile(fileName);
-          if (!project) return null;
-        }
-        state.schema.checkStale();
-
-        const source = project.program.getSourceFile(fileName);
-        if (!source) return null;
-        const program = project.program;
-        const checker = createChecker(project.checker, project);
-        state.program = {
-          getSourceFile: (fileName: string) => program.getSourceFile(fileName),
-          getTypeChecker: () => checker,
-        };
-
-        const previousTypeScript = ts;
-        init({ typescript });
-        try {
-          const diagnostics =
-            getGraphQLDiagnostics(fileName, state.schema, state.host) || [];
-          return {
-            text: source.text,
-            diagnostics: toCheckDiagnostics(fileName, diagnostics),
-          };
-        } finally {
-          init({ typescript: previousTypeScript });
-          state.program = undefined;
-        }
-      } finally {
+      if (!state.ready) {
+        // While the schema loads, the language server may receive changes
+        await state.schema.ready;
+        state.ready = true;
         snapshot.dispose();
+        snapshot = api.getCurrentLanguageServerSnapshot();
+        project = snapshot.getDefaultProjectForFile(fileName);
+        if (!project) return null;
       }
-    },
+      state.schema.checkStale();
 
+      const source = project.program.getSourceFile(fileName);
+      if (!source) return null;
+      const program = project.program;
+      const checker = createChecker(project.checker, project);
+      state.program = {
+        getSourceFile: (fileName: string) => program.getSourceFile(fileName),
+        getTypeChecker: () => checker,
+        getSourceFiles: () =>
+          program
+            .getSourceFileNames()
+            .map((name: string) => program.getSourceFile(name))
+            .filter(Boolean),
+      };
+
+      const previousTypeScript = ts;
+      const template = state.host.config.template;
+      const hadTemplate = templates.has(template);
+      if (template) templates.add(template);
+      init({ typescript });
+      try {
+        clearGraphQLDiagnosticsCache();
+        return callback(state, source.text);
+      } finally {
+        init({ typescript: previousTypeScript });
+        if (template && !hadTemplate) templates.delete(template);
+        state.program = undefined;
+      }
+    } finally {
+      snapshot.dispose();
+    }
+  };
+  const request = (method: string, fileName: string, params: any) =>
+    run(() =>
+      withProject(fileName, (state, text) => ({
+        text,
+        result:
+          getLanguageFeature(
+            method,
+            params,
+            fileName,
+            text,
+            state.schema,
+            state.host
+          ) ?? null,
+      }))
+    );
+  return {
+    check: fileName =>
+      run(() =>
+        withProject(fileName, (state, text) => ({
+          text,
+          diagnostics: toCheckDiagnostics(
+            fileName,
+            getGraphQLDiagnostics(fileName, state.schema, state.host) || []
+          ),
+        }))
+      ),
+    request,
+    hover: (fileName, position) =>
+      request('textDocument/hover', fileName, { position }),
+    complete: (fileName, position) =>
+      request('textDocument/completion', fileName, { position }),
     dispose() {
+      if (disposed) return;
+      disposed = true;
+      for (const state of projects.values()) state?.stopWatching();
       projects.clear();
       try {
         api.close();

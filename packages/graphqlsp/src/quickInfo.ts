@@ -1,3 +1,4 @@
+import type { GraphQLSPHost } from './host';
 import { ts } from './ts';
 import { getTokenAtPosition, getTypeInfo } from 'graphql-language-service';
 import type { GraphQLArgument, GraphQLSchema } from 'graphql';
@@ -134,7 +135,7 @@ export function getGraphQLQuickInfo(
   filename: string,
   cursorPosition: number,
   schema: SchemaRef,
-  info: ts.server.PluginCreateInfo
+  info: GraphQLSPHost
 ): ts.QuickInfo | undefined {
   const isCallExpression = info.config.templateIsCallExpression ?? true;
   const typeChecker = info.languageService.getProgram()?.getTypeChecker();

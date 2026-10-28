@@ -24,7 +24,13 @@
       "require": "./dist/check.js",
       "source": "./src/check.ts"
     },
-    "./package.json": "./package.json"
+    "./package.json": "./package.json",
+    "./lsp": {
+      "types": "./dist/lsp.d.ts",
+      "import": "./dist/lsp.mjs",
+      "require": "./dist/lsp.js",
+      "source": "./src/lsp.ts"
+    }
   },
   "scripts": {
     "build": "rollup -c ../../scripts/rollup.config.mjs",
@@ -65,5 +71,8 @@
   },
   "publishConfig": {
     "provenance": true
+  },
+  "bin": {
+    "graphqlsp": "./bin/graphqlsp.cjs"
   }
 }

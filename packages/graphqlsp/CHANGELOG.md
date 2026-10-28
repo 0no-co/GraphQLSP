@@ -1,5 +1,19 @@
 # @0no-co/graphqlsp
 
+## 1.19.0
+
+### Minor Changes
+
+- Add `checkProject` (`@0no-co/graphqlsp/check`), which reports GraphQLSP's diagnostics for a whole project without a language service. It runs on the TypeScript 7.1 API (`typescript@>=7.1` or `tsrs`), where language service plugins aren't loaded, and on the compiler API of TypeScript 5/6. To support this, the diagnostics now only depend on a small host interface rather than tsserver's plugin API, and identifiers are compared by their `text` instead of their `escapedText`
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#438](https://github.com/0no-co/GraphQLSP/pull/438))
+- Add `createLanguageServerSession` to `@0no-co/graphqlsp/check`, which reports GraphQLSP's diagnostics for files in a TypeScript 7.1 language server's projects, including editors' unsaved changes, through an API session of the language server
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#439](https://github.com/0no-co/GraphQLSP/pull/439))
+
+### Patch Changes
+
+- Add a `runExternalCode` option to `checkProject`, which runs a project's content mappers (like `tsc --runExternalCode`), so documents imported from content-mapped files (e.g. `.graphql` files mapped by `@gql.tada/content-mapper`) are resolved. Content-mapped files themselves aren't checked, since their mappers report their diagnostics. Also compute persisted document hashes from string literals' values rather than their source text, which failed to parse documents written with escape sequences
+  Submitted by [@JoviDeCroock](https://github.com/JoviDeCroock) (See [#438](https://github.com/0no-co/GraphQLSP/pull/438))
+
 ## 1.18.0
 
 ### Minor Changes
